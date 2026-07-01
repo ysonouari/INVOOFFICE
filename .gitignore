@@ -1,0 +1,33 @@
+# Documentation (exclude all .md except README and audits)
+*.md
+!README.md
+!AUDIT-*.md
+!PROJECT-VALIDATION.md
+
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+
+# Editor config
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Deployment
+.vercel/

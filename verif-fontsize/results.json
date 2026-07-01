@@ -1,0 +1,89 @@
+{
+  "cascadeOrder": {
+    "linkExists": true,
+    "linkInHead": true,
+    "injectedStyleExists": true,
+    "injectedStyleInStage": true,
+    "linkBeforeStyleInDOM": true,
+    "computedTHFontSize": "13px",
+    "expectedTHFontSize": "13px",
+    "pass": true,
+    "domHTMLFile": "verif-fontsize/cascade-dom.html"
+  },
+  "cellOverflow": {
+    "0": {
+      "textWidth": 289,
+      "cellWidth": 289,
+      "overflows": false,
+      "tdRect": {
+        "width": 288.90625,
+        "height": 44.875
+      },
+      "hasTable": true
+    },
+    "3": {
+      "textWidth": 289,
+      "cellWidth": 289,
+      "overflows": false,
+      "tdRect": {
+        "width": 288.90625,
+        "height": 53.59375
+      },
+      "hasTable": true
+    },
+    "-3": {
+      "textWidth": 289,
+      "cellWidth": 289,
+      "overflows": false,
+      "tdRect": {
+        "width": 288.90625,
+        "height": 24.59375
+      },
+      "hasTable": true
+    }
+  },
+  "pageCount": {
+    "0": {
+      "canvasWidth": 1588,
+      "canvasHeight": 2246,
+      "imgHeightMm": "297.02",
+      "totalPages": 1
+    },
+    "1": {
+      "canvasWidth": 1588,
+      "canvasHeight": 2246,
+      "imgHeightMm": "297.02",
+      "totalPages": 1
+    },
+    "2": {
+      "canvasWidth": 1588,
+      "canvasHeight": 2246,
+      "imgHeightMm": "297.02",
+      "totalPages": 1
+    },
+    "3": {
+      "canvasWidth": 1588,
+      "canvasHeight": 2246,
+      "imgHeightMm": "297.02",
+      "totalPages": 1
+    },
+    "-3": {
+      "canvasWidth": 1588,
+      "canvasHeight": 2246,
+      "imgHeightMm": "297.02",
+      "totalPages": 1
+    },
+    "-2": {
+      "canvasWidth": 1588,
+      "canvasHeight": 2246,
+      "imgHeightMm": "297.02",
+      "totalPages": 1
+    },
+    "-1": {
+      "canvasWidth": 1588,
+      "canvasHeight": 2246,
+      "imgHeightMm": "297.02",
+      "totalPages": 1
+    }
+  }
+}

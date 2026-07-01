@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="app.title">Système de Facturation</title>
+
+<meta name="theme-color" content="#121a2e">
+<script>(function(){var t=localStorage.getItem('fb_theme');if(!t){t=window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';}document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='light'?'#ffffff':'#121a2e';})();</script>
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/rtl.css">
+<link rel="stylesheet" href="css/fonts.css">
+
+<!-- LIBS (CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/i18next/23.16.8/i18next.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/i18next-browser-languagedetector/8.0.2/i18nextBrowserLanguageDetector.min.js"></script>
+</head>
+<body>
+
+<main class="wrap">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo" id="brandLogo">SF</div>
+      <div>
+        <h1 data-i18n="app.title">Système de Facturation</h1>
+        <p data-i18n="app.subtitle">Générez un document en quelques secondes</p>
+      </div>
+    </div>
+    <nav class="nav-actions" aria-label="Navigation principale">
+      <button class="btn btn-primary" id="navNouveau"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span data-i18n="nav.newDoc">Nouveau Document</span></button>
+      <button class="btn" id="navInfos"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> <span data-i18n="nav.companyInfo">Mes Informations</span></button>
+      <button class="btn" id="navHistorique"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <span data-i18n="nav.history">Historique</span></button>
+      <button class="btn" id="langSwitcher" style="font-weight:700;" data-i18n="lang.label">FR</button>
+      <button class="btn" id="themeToggle" aria-label="Basculer le thème clair/sombre" aria-pressed="false" title="Basculer le thème clair/sombre"></button>
+    </nav>
+  </header>
+
+  <!-- VIEW: NOUVEAU DOCUMENT -->
+  <section id="view-nouveau" class="view active">
+
+    <div id="editingBanner" style="display:none;background:var(--accent-2);color:#fff;border-radius:var(--radius-lg);padding:12px 18px;margin-bottom:16px;font-size:13.5px;font-weight:600;"></div>
+
+    <div class="panel">
+      <div class="grid grid-2">
+        <div class="field">
+          <label for="docType" data-i18n="form.docType">Type de document</label>
+          <select id="docType">
+            <option value="devis" data-i18n="docTypes.devis">Devis</option>
+            <option value="facture" data-i18n="docTypes.facture">Facture</option>
+            <option value="bl" data-i18n="docTypes.bl">Bon de livraison</option>
+            <option value="avoir" data-i18n="docTypes.avoir">Avoir</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="docStatus" data-i18n="form.status">Statut</label>
+          <select id="docStatus">
+            <option value="brouillon" data-i18n="status.draft">Brouillon</option>
+            <option value="final" data-i18n="status.final">Final / Validé</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="docNumero" data-i18n="form.numero">Numéro de document</label>
+          <input type="text" id="docNumero">
+          <div class="hint" data-i18n="form.numeroHint">Généré automatiquement, modifiable.</div>
+        </div>
+        <div class="field">
+          <label for="docDate" data-i18n="form.date">Date</label>
+          <input type="date" id="docDate">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 data-i18n="form.client_section">Client</h2>
+      <div class="field">
+        <label for="clientSelect" data-i18n="form.client_select">Sélectionner un client</label>
+        <div style="display:flex;gap:8px;">
+          <select id="clientSelect" style="flex:1;">
+            <option value="" data-i18n="form.client_placeholder">— Sélectionner un client —</option>
+          </select>
+          <button class="btn" data-action="add-client" title="Ajouter un client" style="padding:10px 14px;" aria-label="Ajouter un client" data-i18n-title="form.client_add" data-i18n-aria-label="form.client_add"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+          <button class="btn" data-action="manage-clients" title="Gérer les clients" style="padding:10px 14px;" aria-label="Gérer les clients" data-i18n-title="form.client_manage" data-i18n-aria-label="form.client_manage"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg></button>
+        </div>
+        <div id="clientPreview" style="display:none;margin-top:8px;padding:10px;background:var(--panel-2);border-radius:8px;font-size:12px;line-height:1.6;"></div>
+      </div>
+      <div class="field" id="clientRefWrap" style="display:none;margin-top:16px;">
+        <label for="clientRef" data-i18n="form.client_ref">Référence (document lié)</label>
+        <input type="text" id="clientRef" placeholder="Ex: relatif à la facture N° FAC-2026-0004" data-i18n-placeholder="form.client_ref_placeholder">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin:0 0 16px;" data-i18n="form.details_section">Détails du document</h2>
+
+      <table class="lines">
+        <thead>
+          <tr>
+            <th scope="col" data-i18n="form.line_designation">Désignation</th>
+            <th scope="col" class="col-prix" data-i18n="form.line_price">Prix U.</th>
+            <th scope="col" class="col-qte" data-i18n="form.line_qty">Qté</th>
+            <th scope="col" class="col-total" data-i18n="form.line_total">Total</th>
+            <th scope="col" class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody id="linesBody"></tbody>
+      </table>
+      <button class="btn add-line-btn" data-action="add-line"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span data-i18n="form.line_add">Ajouter une ligne</span></button>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="panel">
+        <h2 data-i18n="form.info_section">Informations supplémentaires</h2>
+        <div class="grid grid-2">
+          <div class="field">
+            <label for="conditions" data-i18n="form.conditions">Conditions de règlement</label>
+            <input type="text" id="conditions" list="conditionsList" placeholder="Ex: Paiement à 30 jours" data-i18n-placeholder="form.conditions_placeholder">
+            <datalist id="conditionsList">
+              <option value="Paiement comptant" data-i18n="payment_options.cash">
+              <option value="Paiement à 30 jours" data-i18n="payment_options.30days">
+              <option value="Paiement à 50% à la commande, solde à la livraison" data-i18n="payment_options.50deposit">
+            </datalist>
+          </div>
+          <div class="field">
+            <label for="modeReglement" data-i18n="form.mode_reglement">Mode de règlement</label>
+            <input type="text" id="modeReglement" list="modesList" placeholder="Ex: Virement bancaire" data-i18n-placeholder="form.mode_placeholder">
+            <datalist id="modesList">
+              <option value="Espèces" data-i18n="payment_options.cash_simple">
+              <option value="Virement bancaire" data-i18n="payment_options.wire">
+              <option value="Chèque" data-i18n="payment_options.check">
+              <option value="Carte bancaire" data-i18n="payment_options.card">
+            </datalist>
+          </div>
+          <div class="field" style="grid-column:1/-1;">
+            <label for="notes" data-i18n="form.notes">Notes / observations</label>
+            <textarea id="notes"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 data-i18n="form.summary_section">Résumé</h2>
+        <div class="summary-box">
+          <div class="summary-row"><span data-i18n="form.total_ht">Total HT</span><span id="sumHT">0.00 DH</span></div>
+          <div class="summary-row" id="sumTvaRow"><span id="sumTvaLabel">TVA (20%)</span><span id="sumTva">0.00 DH</span></div>
+          <div class="summary-row total"><span data-i18n="form.total_ttc">Total TTC</span><span id="sumTTC">0.00 DH</span></div>
+          <div class="summary-row">
+            <label for="avance" data-i18n="form.avance">Avance</label>
+            <input type="number" id="avance" value="0" min="0">
+          </div>
+          <div class="summary-row">
+            <label for="remise" data-i18n="form.remise">Remise (%)</label>
+            <input type="number" id="remise" value="0" min="0" max="100">
+          </div>
+          <div class="summary-row" id="sumRemiseRow"><span data-i18n="form.remise_label">Remise</span><span id="sumRemise">0.00 DH</span></div>
+          <div class="summary-row" id="sumResteRow"><span data-i18n="form.reste_a_payer">Reste à payer</span><span id="sumReste">0.00 DH</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:center;margin-top:8px;">
+      <button class="btn btn-accent" data-action="generate-pdf" style="padding:13px 26px;font-size:14.5px;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> <span data-i18n="form.generate_pdf">Générer le document PDF</span></button>
+    </div>
+
+  </section>
+
+  <!-- VIEW: HISTORIQUE -->
+  <section id="view-historique" class="view">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h2 style="margin:0;" data-i18n="history.title">Historique des documents</h2>
+        <input type="text" id="histSearch" placeholder="Rechercher (numéro, client...)" aria-label="Rechercher un document par numéro ou client"
+          data-i18n-placeholder="history.search_placeholder" data-i18n-aria-label="history.search_aria"
+          style="background:var(--panel-2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;width:240px;">
+      </div>
+      <div id="histTableWrap"></div>
+    </div>
+  </section>
+
+  <footer class="app-footer">
+    <span data-i18n="app.footer_prefix">© </span><span id="footerYear"></span><span data-i18n="app.footer_suffix"> — Système de Facturation. Tous droits réservés.</span>
+  </footer>
+</main>
+
+<!-- MODAL: MES INFORMATIONS -->
+<div class="modal-overlay" id="companyModalOverlay" role="dialog" aria-modal="true" aria-labelledby="companyModalTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="companyModalTitle" data-i18n="company.title">Vos Informations d'Entreprise</h3>
+        <p data-i18n="company.desc">Ces informations sont utilisées pour générer vos documents et l'en-tête PDF.</p>
+      </div>
+      <button class="modal-close" data-action="close-modal" aria-label="Fermer" data-i18n-aria-label="company.close"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="cDevise" data-i18n="company.devise">Devise</label>
+        <select id="cDevise">
+          <option value="DH" data-i18n="company.devise_dh">Dirham marocain (DH)</option>
+          <option value="EUR" data-i18n="company.devise_eur">Euro (€)</option>
+          <option value="USD" data-i18n="company.devise_usd">Dollar US ($)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="cNom" data-i18n="company.nom">Nom de l'entreprise</label>
+        <input type="text" id="cNom" placeholder="Nom de l'entreprise" data-i18n-placeholder="company.nom_placeholder">
+      </div>
+      <div class="field">
+        <label for="cRegimeTva" data-i18n="company.regime_tva">Régime TVA</label>
+        <select id="cRegimeTva">
+          <option value="exoneree" data-i18n="company.regime_exoneree">Exonéré (sans TVA)</option>
+          <option value="normal" data-i18n="company.regime_assujetti">Régime normal (avec TVA)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="cContact" data-i18n="company.contact">Email / Téléphone</label>
+        <input type="text" id="cContact" placeholder="email@exemple.com / 06 00 00 00 00" data-i18n-placeholder="company.contact_placeholder">
+      </div>
+      <div class="field" id="cTvaRateWrap" style="display:none;">
+        <label for="cTvaTaux" data-i18n="company.tva_taux">Taux de TVA (%)</label>
+        <input type="number" id="cTvaTaux" value="20" min="0" max="100">
+      </div>
+      <div class="field">
+        <label for="cAdresse" data-i18n="company.adresse">Adresse</label>
+        <textarea id="cAdresse" placeholder="Adresse complète" data-i18n-placeholder="company.adresse_placeholder"></textarea>
+      </div>
+    </div>
+
+    <h2 style="margin:22px 0 14px;" data-i18n="company.legal_title">Informations légales (DGI)</h2>
+    <div class="grid grid-3">
+      <div class="field"><label for="cICE" data-i18n="company.ice">ICE</label><input type="text" id="cICE" maxlength="15" inputmode="numeric" pattern="[0-9]*"></div>
+      <div class="field"><label for="cIF" data-i18n="company.if">IF</label><input type="text" id="cIF" maxlength="8" inputmode="numeric" pattern="[0-9]*"></div>
+      <div class="field"><label for="cRC" data-i18n="company.rc">RC</label><input type="text" id="cRC" maxlength="10" inputmode="numeric" pattern="[0-9]*"></div>
+      <div class="field"><label for="cTP" data-i18n="company.tp">TP</label><input type="text" id="cTP" maxlength="8" inputmode="numeric" pattern="[0-9]*"></div>
+      <div class="field"><label for="cCNSS" data-i18n="company.cnss">CNSS</label><input type="text" id="cCNSS" maxlength="8" inputmode="numeric" pattern="[0-9]*"></div>
+      <div class="field">
+        <label data-i18n="company.next_numero">Prochain n° (par type, JJ-MM-AAAA reset annuel)</label>
+        <div class="hint" style="margin-top:0;" data-i18n="company.next_numero_hint">Géré automatiquement par type de document.</div>
+      </div>
+    </div>
+
+    <h2 style="margin:22px 0 14px;" data-i18n="company.pdf_layout_title">Mise en page du PDF</h2>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="cTableColor" data-i18n="company.table_color">Couleur de fond de l'en-tête du tableau</label>
+        <div class="color-row">
+          <input type="color" id="cTableColor" value="#eef1f6">
+          <input type="text" id="cTableColorHex" value="#eef1f6">
+        </div>
+      </div>
+      <div class="field">
+        <label for="cTableTextColor" data-i18n="company.table_text_color">Couleur du texte de l'en-tête du tableau</label>
+        <div class="color-row">
+          <input type="color" id="cTableTextColor" value="#333333">
+          <input type="text" id="cTableTextColorHex" value="#333333">
+        </div>
+      </div>
+      <div class="field">
+        <label for="cMargeHaut" data-i18n="company.marge_haut">Marge du haut (cm)</label>
+        <input type="number" id="cMargeHaut" value="3" min="0" max="15" step="0.5">
+         <div class="hint" data-i18n="company.marge_hint">Décale le contenu si un fond d'en-tête est actif.</div>
+       </div>
+       <div class="field">
+         <label for="cFontSizeOffset" data-i18n="company.font_size_offset">Taille globale des polices du PDF</label>
+         <input type="number" id="cFontSizeOffset" value="0" min="-3" max="3" step="1">
+         <div class="hint" data-i18n="company.font_size_offset_hint">Augmente ou diminue toutes les tailles de police du PDF en conservant leurs proportions. -3 = plus petit, 0 = normal, +3 = plus grand.</div>
+       </div>
+       <div class="field" style="grid-column:1/-1;">
+        <label for="headerFileInput" data-i18n="company.header_add">Ajouter un en-tête (fond de page)</label>
+        <label class="upload-box" id="uploadBox" for="headerFileInput">
+          <span id="uploadPreviewSlot"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Cliquer pour ajouter une image (fond de page)</span>
+        </label>
+        <input type="file" id="headerFileInput" accept="image/*" style="display:none">
+        <label class="toggle" for="cHeaderActive" style="margin-top:10px;">
+          <input type="checkbox" id="cHeaderActive">
+          <span class="track"></span> <span data-i18n="company.header_active">Activer l'en-tête comme fond</span>
+        </label>
+      </div>
+    </div>
+
+    <h2 style="margin:22px 0 14px;" data-i18n="company.storage_title">Stockage des données</h2>
+    <div id="storageInfo" style="padding:10px 14px;background:var(--panel-2);border-radius:var(--radius);font-size:12.5px;color:var(--muted);line-height:1.5;">
+      Chargement…
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn" data-action="export-backup" style="flex:1;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span data-i18n="backup.export">Exporter une sauvegarde</span></button>
+      <button class="btn" data-action="import-backup" style="flex:1;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> <span data-i18n="backup.import">Importer une sauvegarde</span></button>
+    </div>
+    <input type="file" id="backupFileInput" accept=".json" style="display:none">
+    <div style="margin-top:8px;font-size:11px;color:var(--muted-2);line-height:1.4;" data-i18n="backup.desc">
+      Sauvegarde des données structurées (société, historique, clients) et de l'image d'en-tête.
+      Les PDF déjà générés ne sont pas inclus mais peuvent être réimprimés depuis l'historique.
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" data-action="close-modal"><span data-i18n="company.close">Fermer</span></button>
+      <button class="btn btn-accent" data-action="save-company"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> <span data-i18n="company.save">Sauvegarder</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: GESTION DES CLIENTS -->
+<div class="modal-overlay" id="clientManagerOverlay" role="dialog" aria-modal="true" aria-labelledby="clientManagerTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="clientManagerTitle" data-i18n="client.manager_title">Gestion des clients</h3>
+        <p data-i18n="client.manager_desc">Ajoutez, modifiez ou supprimez vos clients ici.</p>
+      </div>
+      <button class="modal-close" data-action="close-client-manager" aria-label="Fermer" data-i18n-aria-label="client.close"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div id="clientListWrap"></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="close-client-manager"><span data-i18n="client.close">Fermer</span></button>
+      <button class="btn btn-accent" data-action="add-client-from-manager"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span data-i18n="client.add">Ajouter un client</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: AJOUT / MODIFICATION CLIENT -->
+<div class="modal-overlay" id="clientModalOverlay" role="dialog" aria-modal="true" aria-labelledby="clientModalTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="clientModalTitle" data-i18n="client.add_title">Ajouter un client</h3>
+        <p data-i18n="client.modal_desc">Les clients enregistrés sont réutilisables d'un document à l'autre.</p>
+      </div>
+      <button class="modal-close" data-action="close-client-modal" aria-label="Fermer" data-i18n-aria-label="client.close"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="grid grid-2">
+      <div class="field" style="grid-column:1/-1;">
+        <label for="cClientNom" data-i18n="client.nom">Nom du client</label>
+        <input type="text" id="cClientNom" placeholder="Nom / Raison sociale" data-i18n-placeholder="client.nom_placeholder">
+      </div>
+      <div class="field"><label for="cClientTel" data-i18n="client.telephone">Téléphone</label><input type="text" id="cClientTel" placeholder="06 00 00 00 00" data-i18n-placeholder="client.tel_placeholder"></div>
+      <div class="field"><label for="cClientIce" data-i18n="client.ice">ICE</label><input type="text" id="cClientIce" maxlength="15" inputmode="numeric" pattern="[0-9]*" placeholder="ICE" data-i18n-placeholder="client.ice_placeholder"></div>
+      <div class="field" style="grid-column:1/-1;"><label for="cClientAdresse" data-i18n="client.adresse">Adresse</label><textarea id="cClientAdresse" placeholder="Adresse complète" data-i18n-placeholder="client.adresse_placeholder"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" data-action="close-client-modal"><span data-i18n="client.close">Fermer</span></button>
+      <button class="btn btn-accent" data-action="save-client"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> <span data-i18n="client.save">Enregistrer</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ZONE PDF (hors écran) -->
+<div id="pdf-stage"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+/* RTL overrides — applies when <html dir="rtl"> */
+
+[dir="rtl"] {
+  direction: rtl;
+}
+
+[dir="rtl"] body {
+  text-align: right;
+}
+
+/* tables : aligner le texte à droite */
+[dir="rtl"] table.lines th,
+[dir="rtl"] table.hist th {
+  text-align: right;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+[dir="rtl"] table.lines td,
+[dir="rtl"] table.hist td {
+  text-align: right;
+}
+
+/* la colonne "total" dans le tableau de lignes */
+[dir="rtl"] .line-total {
+  direction: ltr;
+  text-align: right;
+}
+
+/* zone PDF hors écran : déporter à droite au lieu de gauche */
+[dir="rtl"] #pdf-stage {
+  left: auto;
+  right: -99999px;
+}
+
+/* toggle track : inverser la direction du curseur */
+[dir="rtl"] label.toggle .track::after {
+  left: auto;
+  right: 2.5px;
+}
+[dir="rtl"] label.toggle input:checked + .track::after {
+  left: auto;
+  right: 19.5px;
+}
+
+/* PDF elements in RTL mode */
+[dir="rtl"] .pdf-page {
+  direction: rtl;
+}
+
+[dir="rtl"] table.pdf-table {
+  direction: rtl;
+}
+
+[dir="rtl"] table.pdf-table thead th {
+  text-align: right;
+  text-transform: none;
+}
+[dir="rtl"] table.pdf-table th.num,
+[dir="rtl"] table.pdf-table td.num {
+  text-align: right;
+}
+
+[dir="rtl"] .pdf-totals {
+  justify-content: flex-end;
+}
+[dir="rtl"] .pdf-totals td.lbl {
+  text-align: left;
+}
+[dir="rtl"] .pdf-totals td.val {
+  direction: ltr;
+  text-align: left;
+}
+
+[dir="rtl"] .doc-meta,
+[dir="rtl"] .pdf-client {
+  text-align: right;
+}
+
+[dir="rtl"] .pdf-words {
+  text-align: right;
+}
+
+[dir="rtl"] .pdf-conditions {
+  text-align: right;
+}
+
+[dir="rtl"] .pdf-footer {
+  text-align: center;
+}
+
+[dir="rtl"] .pdf-title {
+  text-align: center;
+  letter-spacing: normal;
+}
+
+[dir="rtl"] .pdf-ref {
+  text-align: right;
+}
+
+[dir="rtl"] .pdf-note {
+  text-align: right;
+}
+
+/* select arrow position in RTL */
+[dir="rtl"] select {
+  background-position: left 10px center;
+  padding-right: 12px;
+  padding-left: 32px;
+}
+
+/* number fields in summary: LTR digits in RTL layout */
+[dir="rtl"] .summary-row input {
+  direction: ltr;
+  text-align: right;
+}
