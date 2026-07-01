@@ -8,4 +8,10 @@
     <xhtml:link rel="alternate" hreflang="fr" href="https://www.invooffice.com/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.invooffice.com/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
   </url>
+  <url>
+    <loc>https://www.invooffice.com/pourquoi-invooffice.html</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>
