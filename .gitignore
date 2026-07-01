@@ -4,6 +4,7 @@
 !AUDIT-*.md
 !PROJECT-VALIDATION.md
 !SEO-ARCHITECTURE.md
+!SEO-PHASE-*.md
 
 # Dependencies
 node_modules/
