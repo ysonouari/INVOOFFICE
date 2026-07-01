@@ -175,6 +175,56 @@
 
 ---
 
+## 15. Corrections post-revue
+
+### 15.1 Liens vers pages inexistantes
+
+**Problème** : La navigation secondaire contenait 6 liens vers des pages non créées (Pourquoi, Fonctionnalités, Blog, Modèles, FAQ, Confidentialité).
+
+**Correction** : La navigation secondaire a été supprimée. Les liens seront ajoutés au fur et à mesure de la création des pages en Phase 2.
+
+### 15.2 robots.txt — CSS/JS bloqués
+
+**Problème** : Les règles `Disallow: /css/` et `Disallow: /js/` empêchaient Google de crawler les fichiers CSS et JavaScript nécessaires au rendu de la page (Googlebot les utilise pour le mobile-friendly test et le rendu JavaScript).
+
+**Correction** : Suppression des `Disallow` pour `/css/`, `/js/`, `/assets/`, `/guides/`, `/modeles/`, `/faq/`, `/documentation/`. Seul `/verif-fontsize/` reste exclu (scripts de test). Les autres sections n'ont pas besoin d'être bloquées — le sitemap détermine ce qui doit être indexé.
+
+### 15.3 Hreflang pour l'arabe
+
+**Problème** : Les balises `hreflang="ar"` et `hreflang="ar-ma"` pointaient vers `/ar/` qui n'existe pas encore.
+
+**Correction** : Suppression de toutes les balises hreflang sauf `fr` et `x-default`. Les balises `ar` et `ar-ma` seront ajoutées quand la version arabe existera.
+
+### 15.4 Trust bar simplifiée
+
+**Problème** : La barre contenait des emojis et des formulations longues, rendant l'accueil plus chargé.
+
+**Correction** : Simplification en 4 mots-clés sans emojis, police plus petite (`font-size:12.5px`), couleur atténuée (`var(--muted-2)`), bordure plus discrète (`var(--border-soft)`).
+
+**Avant** :
+```
+✅ 100% gratuit — Sans abonnement | 🔒 Données sur votre navigateur — ...
+```
+
+**Après** :
+```
+100% gratuit | Sans inscription | Documents générés dans votre navigateur | Données stockées localement
+```
+
+---
+
+## Fichiers modifiés (corrections)
+
+| Fichier | Modification |
+|---------|-------------|
+| `index.html` | Hreflang AR supprimé, trust bar simplifiée, nav secondaire supprimée |
+| `robots.txt` | CSS/JS/assets débloqués |
+| `sitemap.xml` | Référence AR supprimée |
+| `sitemap-fr.xml` | Pages inexistantes supprimées |
+| `sitemap-ar.xml` | Supprimé (aucune page AR) |
+
+---
+
 ## Conclusion
 
-La Phase 1 est terminée. Toutes les fondations techniques SEO sont en place. L'application n'a subi aucune régression fonctionnelle. Les prochaines étapes (Phase 2) consistent à créer les pages de contenu (Pourquoi, Fonctionnalités, Confidentialité, FAQ) qui sont déjà référencées dans le sitemap et le footer.
+La Phase 1 est terminée et corrigée. Toutes les fondations techniques SEO sont en place, sans lien mort, sans hreflang invalide, sans blocage inutile dans robots.txt. L'application n'a subi aucune régression fonctionnelle. Les prochaines étapes (Phase 2) consistent à créer les pages de contenu (Pourquoi, Fonctionnalités, Confidentialité, FAQ).

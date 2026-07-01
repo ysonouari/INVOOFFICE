@@ -6,49 +6,6 @@
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="fr" href="https://www.invooffice.com/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
-    <xhtml:link rel="alternate" hreflang="ar" href="https://www.invooffice.com/ar/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.invooffice.com/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
-  </url>
-  <url>
-    <loc>https://www.invooffice.com/pourquoi-invooffice.html</loc>
-    <lastmod>2026-07-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.invooffice.com/fonctionnalites.html</loc>
-    <lastmod>2026-07-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.invooffice.com/confidentialite.html</loc>
-    <lastmod>2026-07-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.invooffice.com/a-propos.html</loc>
-    <lastmod>2026-07-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://www.invooffice.com/mentions-legales.html</loc>
-    <lastmod>2026-07-01</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.invooffice.com/faq/index.html</loc>
-    <lastmod>2026-07-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.invooffice.com/documentation/index.html</loc>
-    <lastmod>2026-07-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
   </url>
 </urlset>
