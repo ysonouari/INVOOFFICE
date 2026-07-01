@@ -3,13 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title data-i18n="app.title">Système de Facturation</title>
+<title>INVOOFFICE — Générateur de factures, devis et avoirs gratuit en ligne</title>
+<meta name="description" content="Créez des factures, devis, bons de livraison et avoirs en PDF gratuitement. Sans inscription, sans publicité. Vos documents et données restent sur votre navigateur.">
+<link rel="canonical" href="https://www.invooffice.com/">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph -->
+<meta property="og:title" content="INVOOFFICE — Générateur de factures, devis et avoirs gratuit en ligne">
+<meta property="og:description" content="Créez des factures, devis, bons de livraison et avoirs en PDF gratuitement. Sans inscription, sans publicité. Vos documents et données restent sur votre navigateur.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.invooffice.com/">
+<meta property="og:image" content="https://www.invooffice.com/icons/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:locale" content="fr_MA">
+<meta property="og:site_name" content="INVOOFFICE">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="INVOOFFICE — Générateur de factures, devis et avoirs gratuit en ligne">
+<meta name="twitter:description" content="Créez des factures, devis, bons de livraison et avoirs en PDF gratuitement. Sans inscription, sans publicité. Vos données restent sur votre navigateur.">
+<meta name="twitter:image" content="https://www.invooffice.com/icons/icon-512.png">
+
+<!-- Hreflang -->
+<link rel="alternate" hreflang="fr" href="https://www.invooffice.com/">
+<link rel="alternate" hreflang="fr-ma" href="https://www.invooffice.com/">
+<link rel="alternate" hreflang="ar" href="https://www.invooffice.com/ar/">
+<link rel="alternate" hreflang="ar-ma" href="https://www.invooffice.com/ar/">
+<link rel="alternate" hreflang="x-default" href="https://www.invooffice.com/">
+
+<!-- Icons -->
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
 
 <meta name="theme-color" content="#121a2e">
 <script>(function(){var t=localStorage.getItem('fb_theme');if(!t){t=window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';}document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='light'?'#ffffff':'#121a2e';})();</script>
 
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="mobile-web-app-capable" content="yes">
 
 <link rel="stylesheet" href="css/styles.css">
@@ -22,6 +52,33 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/i18next/23.16.8/i18next.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/i18next-browser-languagedetector/8.0.2/i18nextBrowserLanguageDetector.min.js"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2269008589730162" crossorigin="anonymous"></script>
+
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "INVOOFFICE",
+  "url": "https://www.invooffice.com",
+  "description": "Générateur de factures, devis, bons de livraison et avoirs en PDF. 100% gratuit, sans inscription, sans publicité. Vos documents restent sur votre appareil.",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "browserRequirements": "JavaScript requis. Fonctionne hors ligne.",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "MAD" },
+  "featureList": [
+    "Génération de factures PDF",
+    "Génération de devis",
+    "Bon de livraison",
+    "Avoir",
+    "Multi-devise (DH, EUR, USD)",
+    "Calcul automatique de TVA",
+    "Historique local sécurisé",
+    "Fonctionne hors ligne",
+    "Export et import de sauvegarde",
+    "Interface en français et en arabe"
+  ]
+}
+</script>
 </head>
 <body>
 
@@ -190,6 +247,21 @@
     <span data-i18n="app.footer_prefix">© </span><span id="footerYear"></span><span data-i18n="app.footer_suffix"> — Système de Facturation. Tous droits réservés.</span>
   </footer>
 </main>
+
+<div class="trust-bar" style="text-align:center;padding:14px 20px;font-size:13px;color:var(--muted);border-top:1px solid var(--border);display:flex;justify-content:center;gap:24px;flex-wrap:wrap;">
+  <span>✅ 100% gratuit — Sans abonnement</span>
+  <span>🔒 Données sur votre navigateur — Aucun transfert vers nos serveurs</span>
+  <span>🚫 Aucune publicité — Aucun compte requis</span>
+</div>
+
+<nav class="secondary-nav" aria-label="Navigation secondaire" style="text-align:center;padding:8px 20px 16px;font-size:12.5px;display:flex;justify-content:center;gap:16px;flex-wrap:wrap;">
+  <a href="/pourquoi-invooffice.html" style="color:var(--muted);text-decoration:none;">Pourquoi INVOOFFICE</a>
+  <a href="/fonctionnalites.html" style="color:var(--muted);text-decoration:none;">Fonctionnalités</a>
+  <a href="/blog/" style="color:var(--muted);text-decoration:none;">Blog</a>
+  <a href="/modeles/" style="color:var(--muted);text-decoration:none;">Modèles</a>
+  <a href="/faq/" style="color:var(--muted);text-decoration:none;">FAQ</a>
+  <a href="/confidentialite.html" style="color:var(--muted);text-decoration:none;">Confidentialité</a>
+</nav>
 
 <!-- MODAL: MES INFORMATIONS -->
 <div class="modal-overlay" id="companyModalOverlay" role="dialog" aria-modal="true" aria-labelledby="companyModalTitle">

@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /blog/
+Allow: /guides/
+Allow: /modeles/
+Allow: /faq/
+Allow: /documentation/
+Disallow: /css/
+Disallow: /js/
+Disallow: /assets/
+Disallow: /verif-fontsize/
+
+Sitemap: https://www.invooffice.com/sitemap.xml
