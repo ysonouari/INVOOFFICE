@@ -1,0 +1,230 @@
+/* ============================================================
+   ADMIN DASHBOARD — INVOOFFICE
+   Réutilise les variables CSS de styles.css
+   ============================================================ */
+
+.view { display: none; }
+.view.active { display: block; }
+
+/* ---------- stats cards ---------- */
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+.admin-stat-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 20px;
+}
+.admin-stat-card .stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.admin-stat-card .stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+}
+.admin-stat-card .stat-sub {
+  font-size: 12px;
+  color: var(--muted-2);
+  margin-top: 6px;
+}
+.stat-accent { color: var(--accent); }
+.stat-green { color: var(--success); }
+.stat-yellow { color: var(--warning); }
+.stat-red { color: var(--danger); }
+
+/* ---------- filter pills ---------- */
+.admin-filter-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.admin-filter-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+}
+.admin-filter-pill:hover { border-color: var(--accent-2); color: var(--text); }
+.admin-filter-pill.active {
+  background: var(--accent-2);
+  border-color: var(--accent-2);
+  color: #fff;
+}
+
+/* ---------- table ---------- */
+.admin-table-wrap { overflow-x: auto; }
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.admin-table th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted-2);
+  font-weight: 600;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+.admin-table th:hover { color: var(--text); }
+.admin-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+}
+.admin-table tr:hover td { background: var(--panel-2); }
+
+/* ---------- badges ---------- */
+.admin-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.admin-badge-active { background: color-mix(in srgb, var(--panel) 90%, var(--success) 10%); color: var(--success); border: 1px solid color-mix(in srgb, var(--panel) 75%, var(--success) 25%); }
+.admin-badge-pending { background: color-mix(in srgb, var(--panel) 90%, var(--warning) 10%); color: var(--warning); border: 1px solid color-mix(in srgb, var(--panel) 75%, var(--warning) 25%); }
+.admin-badge-inactive { background: color-mix(in srgb, var(--panel) 95%, var(--danger) 5%); color: var(--danger); border: 1px solid color-mix(in srgb, var(--panel) 80%, var(--danger) 20%); }
+.admin-badge-lifetime { background: color-mix(in srgb, var(--panel) 92%, var(--accent-2) 8%); color: var(--accent-2); border: 1px solid color-mix(in srgb, var(--panel) 80%, var(--accent-2) 20%); }
+.admin-badge-paid { background: color-mix(in srgb, var(--panel) 90%, var(--success) 10%); color: var(--success); border: 1px solid color-mix(in srgb, var(--panel) 75%, var(--success) 25%); }
+.admin-badge-admin { background: color-mix(in srgb, var(--panel) 92%, var(--accent) 8%); color: var(--accent); border: 1px solid color-mix(in srgb, var(--panel) 80%, var(--accent) 20%); }
+
+/* ---------- action buttons ---------- */
+.admin-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.admin-actions .btn {
+  padding: 4px 10px;
+  font-size: 11.5px;
+  border-radius: 6px;
+}
+
+/* ---------- pagination ---------- */
+.admin-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  margin-top: 16px;
+}
+.admin-pagination button {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: var(--radius);
+  font-size: 13px;
+  cursor: pointer;
+}
+.admin-pagination button:hover { background: var(--panel-2); }
+.admin-pagination button.active {
+  background: var(--accent-2);
+  border-color: var(--accent-2);
+  color: #fff;
+}
+.admin-pagination button:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ---------- detail ---------- */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  padding: 8px 0;
+}
+.detail-item label {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 4px;
+}
+.detail-item span {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+}
+.detail-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ---------- empty state ---------- */
+.admin-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------- spinner ---------- */
+.lp-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: lp-spin .6s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+@keyframes lp-spin { to { transform: rotate(360deg); } }
+
+/* ---------- toast notifications ---------- */
+.lp-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 20px;
+  font-size: 13px;
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .25s, transform .25s;
+}
+.lp-toast.lp-toast-visible { opacity: 1; transform: translateY(0); }
+.lp-toast-success { border-color: var(--success-border); }
+.lp-toast-error { border-color: color-mix(in srgb, var(--panel) 80%, var(--danger) 20%); }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1200px) {
+  .admin-stats-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 720px) {
+  .admin-stats-grid { grid-template-columns: 1fr 1fr; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .nav-actions { gap: 4px; }
+  .nav-actions .btn { padding: 8px 10px; font-size: 12px; }
+}
+@media (max-width: 480px) {
+  .admin-stats-grid { grid-template-columns: 1fr; }
+}

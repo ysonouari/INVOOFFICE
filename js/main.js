@@ -9,7 +9,28 @@ import { exportBackup, importBackup } from './backup.js';
 import { initI18n, setLang, getCurrentLang } from './i18n.js';
 import { toggleTheme, getCurrentTheme } from './theme.js';
 import { ICONS } from './icons.js';
+import { checkAccessAndInit, logout } from './auth.js';
+
 document.addEventListener('DOMContentLoaded', async () => {
+  // Auth guard
+  const auth = await checkAccessAndInit();
+  if (!auth || auth.blocked) {
+    if (auth && auth.blocked) {
+      document.getElementById('authBlockedMessage').textContent = auth.message;
+      document.getElementById('authBlockedOverlay').style.display = 'flex';
+      document.getElementById('authBlockedLogout').addEventListener('click', logout);
+    }
+    return;
+  }
+
+  // Show user info
+  const userEl = document.getElementById('authUser');
+  if (userEl) {
+    userEl.style.display = 'flex';
+    document.getElementById('authUserName').textContent = auth.profile.full_name || auth.user.email;
+  }
+  document.getElementById('authLogout').addEventListener('click', logout);
+
   await initStorage();
   await initI18n();
   document.documentElement.lang = i18next.language;

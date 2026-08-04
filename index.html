@@ -2,15 +2,16 @@
 <html lang="fr" dir="ltr">
 <head>
 <meta charset="UTF-8">
+<base href="/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>INVOOFFICE — Générateur de factures, devis et avoirs gratuit en ligne</title>
-<meta name="description" content="Créez des factures, devis, bons de livraison et avoirs en PDF gratuitement. Sans inscription, sans publicité. Vos documents et données restent sur votre navigateur.">
+<title>INVOOFFICE — Factures, devis et avoirs en PDF, 200 DH accès à vie</title>
+<meta name="description" content="Créez des factures, devis, bons de livraison et avoirs en PDF. Paiement unique de 200 DH, accès à vie. Vos données restent sur votre appareil.">
 <link rel="canonical" href="https://www.invooffice.com/">
 <meta name="robots" content="index, follow">
 
 <!-- Open Graph -->
-<meta property="og:title" content="INVOOFFICE — Générateur de factures, devis et avoirs gratuit en ligne">
-<meta property="og:description" content="Créez des factures, devis, bons de livraison et avoirs en PDF gratuitement. Sans inscription, sans publicité. Vos documents et données restent sur votre navigateur.">
+<meta property="og:title" content="INVOOFFICE — Factures, devis et avoirs en PDF, 200 DH accès à vie">
+<meta property="og:description" content="Créez des factures, devis, bons de livraison et avoirs en PDF. Paiement unique de 200 DH, accès à vie. Vos données restent sur votre appareil.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.invooffice.com/">
 <meta property="og:image" content="https://www.invooffice.com/icons/icon-512.png">
@@ -21,8 +22,8 @@
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="INVOOFFICE — Générateur de factures, devis et avoirs gratuit en ligne">
-<meta name="twitter:description" content="Créez des factures, devis, bons de livraison et avoirs en PDF gratuitement. Sans inscription, sans publicité. Vos données restent sur votre navigateur.">
+<meta name="twitter:title" content="INVOOFFICE — Factures, devis et avoirs en PDF, 200 DH accès à vie">
+<meta name="twitter:description" content="Créez des factures, devis, bons de livraison et avoirs en PDF. Paiement unique de 200 DH, accès à vie. Vos données restent sur votre appareil.">
 <meta name="twitter:image" content="https://www.invooffice.com/icons/icon-512.png">
 
 <!-- Hreflang -->
@@ -44,11 +45,11 @@
 <link rel="stylesheet" href="css/fonts.css">
 
 <!-- LIBS (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/i18next/23.16.8/i18next.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/i18next-browser-languagedetector/8.0.2/i18nextBrowserLanguageDetector.min.js"></script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2269008589730162" crossorigin="anonymous"></script>
 
 <!-- JSON-LD Structured Data -->
 <script type="application/ld+json">
@@ -57,11 +58,11 @@
   "@type": "WebApplication",
   "name": "INVOOFFICE",
   "url": "https://www.invooffice.com",
-  "description": "Générateur de factures, devis, bons de livraison et avoirs en PDF. 100% gratuit, sans inscription, sans publicité. Vos documents restent sur votre appareil.",
+  "description": "Générateur de factures, devis, bons de livraison et avoirs en PDF. Paiement unique de 200 DH, accès à vie, sans abonnement.",
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
   "browserRequirements": "JavaScript requis. Fonctionne hors ligne.",
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "MAD" },
+  "offers": { "@type": "Offer", "price": "200", "priceCurrency": "MAD" },
   "featureList": [
     "Génération de factures PDF",
     "Génération de devis",
@@ -96,6 +97,10 @@
       <button class="btn" id="navHistorique"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <span data-i18n="nav.history">Historique</span></button>
       <button class="btn" id="langSwitcher" style="font-weight:700;" data-i18n="lang.label">FR</button>
       <button class="btn" id="themeToggle" aria-label="Basculer le thème clair/sombre" aria-pressed="false" title="Basculer le thème clair/sombre"></button>
+      <span id="authUser" style="display:none;align-items:center;gap:10px;">
+        <span id="authUserName" style="font-size:13px;font-weight:600;"></span>
+        <button class="btn btn-ghost" id="authLogout" style="font-size:12px;">Déconnexion</button>
+      </span>
     </nav>
   </header>
 
@@ -246,8 +251,8 @@
 </main>
 
 <div class="trust-bar" style="text-align:center;padding:12px 20px;font-size:12.5px;color:var(--muted-2);border-top:1px solid var(--border-soft);display:flex;justify-content:center;gap:20px;flex-wrap:wrap;">
-  <span>100% gratuit</span>
-  <span>Sans inscription</span>
+  <span>Paiement unique</span>
+  <span>Accès à vie</span>
   <span>Documents générés dans votre navigateur</span>
   <span>Données stockées localement</span>
 </div>
@@ -420,6 +425,17 @@
       <button class="btn" data-action="close-client-modal"><span data-i18n="client.close">Fermer</span></button>
       <button class="btn btn-accent" data-action="save-client"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> <span data-i18n="client.save">Enregistrer</span></button>
     </div>
+  </div>
+</div>
+
+<!-- AUTH BLOCKED OVERLAY -->
+<div id="authBlockedOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="authBlockedTitle" style="display:none;">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="authBlockedTitle">Accès non autorisé</h2>
+    </div>
+    <div style="text-align:center;padding:20px;"><p id="authBlockedMessage" style="font-size:14px;color:var(--muted);line-height:1.7;"></p></div>
+    <div class="modal-actions"><button class="btn btn-primary btn-block" id="authBlockedLogout">Retour à l'accueil</button></div>
   </div>
 </div>
 

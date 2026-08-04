@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" dir="ltr">
+<html lang="fr" dir="ltr" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,6 +36,7 @@
 
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/landing.css">
 
 <script type="application/ld+json">
 {
@@ -247,11 +248,6 @@
     <p>Oui. INVOOFFICE est disponible en français et en arabe. L'interface et les documents générés s'adaptent à la langue choisie, y compris la direction du texte (droite à gauche pour l'arabe).</p>
   </div>
 
-  <div class="cta-box">
-    <p>Essayez INVOOFFICE — toutes les fonctionnalités sont gratuites.</p>
-    <a href="/">Créer mon premier document</a>
-  </div>
-
   <div class="inline-links">
     En savoir plus :
     <a href="/pourquoi-invooffice.html">Pourquoi INVOOFFICE</a>
@@ -260,19 +256,34 @@
 
 </main>
 
-<div class="trust-bar" style="text-align:center;padding:12px 20px;font-size:12.5px;color:var(--muted-2);border-top:1px solid var(--border-soft);display:flex;justify-content:center;gap:20px;flex-wrap:wrap;">
-  <span>100% gratuit</span><span>Sans inscription</span><span>Documents générés dans votre navigateur</span><span>Données stockées localement</span>
+<div class="lp-card-block lp-card-cta" id="cta">
+  <div class="lp-cta-row">
+    <div>
+      <h2>Prêt à simplifier votre facturation ?</h2>
+      <p>Paiement unique · Accès à vie · Support inclus</p>
+    </div>
+    <div class="lp-cta-right">
+      <div class="lp-cta-price">200 <span>DH</span></div>
+      <button class="btn btn-accent btn-lg" data-action="show-signup">Créer mon compte</button>
+      <button class="btn btn-ghost btn-lg" data-action="show-signin">Se connecter</button>
+    </div>
+  </div>
 </div>
-<nav class="secondary-nav" aria-label="Navigation secondaire" style="text-align:center;padding:6px 20px 20px;font-size:12px;display:flex;justify-content:center;gap:14px;flex-wrap:wrap;">
-  <a href="/" style="color:var(--muted-2);text-decoration:none;">Accueil</a>
-  <a href="/pourquoi-invooffice.html" style="color:var(--muted-2);text-decoration:none;">Pourquoi INVOOFFICE</a>
-  <a href="/fonctionnalites.html" style="color:var(--muted-2);text-decoration:none;">Fonctionnalités</a>
-  <a href="/confidentialite.html" style="color:var(--muted-2);text-decoration:none;">Confidentialité</a>
-  <a href="/faq.html" style="color:var(--muted-2);text-decoration:none;">FAQ</a>
-  <a href="/blog/" style="color:var(--muted-2);text-decoration:none;">Blog</a>
-  <a href="/mentions-legales.html" style="color:var(--muted-2);text-decoration:none;">Mentions légales</a>
-  <a href="/cgu.html" style="color:var(--muted-2);text-decoration:none;">CGU</a>
-</nav>
+
+<footer class="app-footer lp-footer">
+  <nav class="secondary-nav" aria-label="Navigation secondaire">
+    <a href="/">Accueil</a>
+    <a href="/pourquoi-invooffice.html">Pourquoi INVOOFFICE</a>
+    <a href="/fonctionnalites.html">Fonctionnalités</a>
+    <a href="/confidentialite.html">Confidentialité</a>
+    <a href="/faq.html">FAQ</a>
+    <a href="/blog/">Blog</a>
+    <a href="/cgu.html">CGU</a>
+  </nav>
+  <p>&copy; <span id="footerYear">2026</span> INVOOFFICE. Tous droits réservés.</p>
+</footer>
+
+<script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
 
 </body>
 </html>

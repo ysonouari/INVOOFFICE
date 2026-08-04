@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Administration — INVOOFFICE</title>
+  <meta name="theme-color" content="#121a2e">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/fonts.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    (function(){var t=localStorage.getItem('fb_theme');if(!t){t=window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';}document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='light'?'#ffffff':'#121a2e';})();
+  </script>
+</head>
+<body>
+
+<div id="loadingOverlay" class="modal-overlay" style="display:flex;align-items:center;justify-content:center;">
+  <div style="text-align:center;color:var(--muted);">
+    <p style="font-size:16px;">Chargement...</p>
+  </div>
+</div>
+
+<main class="wrap" id="adminApp" style="display:none;">
+
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">AD</div>
+      <div>
+        <h1>Administration</h1>
+        <p>INVOOFFICE</p>
+      </div>
+    </div>
+    <nav class="nav-actions" aria-label="Navigation admin">
+      <button class="btn" id="navDashboard" data-view="dashboard">Tableau de bord</button>
+      <button class="btn" id="navUsers" data-view="users">Utilisateurs</button>
+      <button class="btn" id="navPayments" data-view="payments">Paiements</button>
+      <button class="btn" id="navMethods" data-view="methods">Méthodes</button>
+      <button class="btn" id="navLogs" data-view="logs">Journal</button>
+      <button class="btn" id="navSettings" data-view="settings">Paramètres</button>
+      <span style="font-size:13px;color:var(--muted);margin-left:8px;" id="adminName"></span>
+      <button class="btn btn-ghost" id="adminLogout">Déconnexion</button>
+    </nav>
+  </header>
+
+  <!-- View: Dashboard -->
+  <section id="view-dashboard" class="view active">
+    <div class="admin-stats-grid" id="statsGrid"></div>
+    <div class="panel" style="margin-top:20px;">
+      <h2>Activité récente</h2>
+      <div id="recentActivity"></div>
+    </div>
+  </section>
+
+  <!-- View: Users -->
+  <section id="view-users" class="view">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <input type="text" id="userSearch" placeholder="Rechercher par nom, email, WhatsApp..." style="flex:1;min-width:200px;">
+        <div class="admin-filter-pills" id="userFilters"></div>
+      </div>
+      <div id="usersTable"></div>
+    </div>
+  </section>
+
+  <!-- View: Payments -->
+  <section id="view-payments" class="view">
+    <div class="panel">
+      <h2>Paiements</h2>
+      <div id="paymentsTable"></div>
+    </div>
+  </section>
+
+  <!-- View: Methods -->
+  <section id="view-methods" class="view">
+    <div class="panel">
+      <h2>Méthodes de paiement</h2>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Configurez les méthodes de paiement affichées aux utilisateurs.</p>
+      <div id="paymentMethodsTable"></div>
+    </div>
+  </section>
+
+  <!-- View: Logs -->
+  <section id="view-logs" class="view">
+    <div class="panel">
+      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <input type="text" id="logSearch" placeholder="Rechercher dans le journal..." style="flex:1;min-width:200px;">
+        <select id="logActionFilter">
+          <option value="">Toutes les actions</option>
+          <option value="activate">Activation</option>
+          <option value="deactivate">Désactivation</option>
+          <option value="grant_access">Attribution accès</option>
+          <option value="revoke_access">Retrait accès</option>
+          <option value="mark_paid">Paiement validé</option>
+          <option value="edit_profile">Modification profil</option>
+          <option value="change_role">Changement rôle</option>
+          <option value="delete_user">Suppression</option>
+        </select>
+      </div>
+      <div id="logsTable"></div>
+    </div>
+  </section>
+
+  <!-- View: Settings -->
+  <section id="view-settings" class="view">
+    <div class="panel">
+      <h2>Paramètres de la plateforme</h2>
+      <form id="settingsForm" novalidate style="max-width:500px;"></form>
+    </div>
+  </section>
+
+</main>
+
+<!-- User detail modal -->
+<div id="userDetailOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="userDetailTitle">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-head">
+      <h2 id="userDetailTitle">Fiche utilisateur</h2>
+      <button class="icon-btn" data-action="close-user-detail">&times;</button>
+    </div>
+    <div id="userDetailContent"></div>
+  </div>
+</div>
+
+<!-- Confirm modal -->
+<div id="confirmOverlay" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:400px;text-align:center;">
+    <div class="modal-head"><h2 id="confirmTitle">Confirmer</h2></div>
+    <p id="confirmMessage" style="padding:12px 0;color:var(--muted);"></p>
+    <div class="modal-actions">
+      <button class="btn" id="confirmCancel">Annuler</button>
+      <button class="btn btn-danger" id="confirmOk">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="../js/admin.js"></script>
+</body>
+</html>

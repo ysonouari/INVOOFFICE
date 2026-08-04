@@ -1,6 +1,9 @@
 User-agent: *
 Allow: /
 
+Disallow: /app
+Disallow: /admin
+Disallow: /confirmation
 Disallow: /verif-fontsize/
 
 Sitemap: https://www.invooffice.com/sitemap.xml

@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.invooffice.com/</loc>
-    <lastmod>2026-07-01</lastmod>
+    <lastmod>2026-08-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="fr" href="https://www.invooffice.com/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
@@ -10,25 +10,25 @@
   </url>
   <url>
     <loc>https://www.invooffice.com/pourquoi-invooffice.html</loc>
-    <lastmod>2026-07-01</lastmod>
+    <lastmod>2026-08-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.invooffice.com/confidentialite.html</loc>
-    <lastmod>2026-07-01</lastmod>
+    <lastmod>2026-08-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.invooffice.com/fonctionnalites.html</loc>
-    <lastmod>2026-07-01</lastmod>
+    <lastmod>2026-08-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.invooffice.com/faq.html</loc>
-    <lastmod>2026-07-01</lastmod>
+    <lastmod>2026-08-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -47,6 +47,5 @@
   <url><loc>https://www.invooffice.com/blog/auto-entrepreneur/statut-auto-entrepreneur-maroc.html</loc><lastmod>2026-07-14</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://www.invooffice.com/blog/auto-entrepreneur/facturation-auto-entrepreneur-guide.html</loc><lastmod>2026-07-14</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.invooffice.com/blog/guides/pourquoi-application-facturation-donnees-locales.html</loc><lastmod>2026-07-01</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://www.invooffice.com/mentions-legales.html</loc><lastmod>2026-07-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://www.invooffice.com/cgu.html</loc><lastmod>2026-07-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
 </urlset>
