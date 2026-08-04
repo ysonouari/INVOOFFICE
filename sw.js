@@ -1,4 +1,4 @@
-const CACHE_NAME = 'facturation-v2';
+const CACHE_NAME = 'facturation-v3';
 
 const PRECACHE_URLS = [
   './',
@@ -45,6 +45,15 @@ const PRECACHE_URLS = [
   'icons/icon-maskable-192.png',
   'icons/icon-maskable-512.png',
   'supabase/config/supabase-config.js',
+  'modules/auth/supabase-client.js',
+  'modules/auth/guard.js',
+  'modules/auth/session.js',
+  'modules/auth/signin.js',
+  'modules/auth/signup.js',
+  'modules/landing/auth-modals.js',
+  'modules/landing/faq.js',
+  'modules/shared/ui.js',
+  'modules/shared/validators.js',
 ];
 
 const CDN_ORIGIN = 'cdnjs.cloudflare.com';
@@ -65,17 +74,39 @@ self.addEventListener('install', (e) => {
   );
 });
 
+self.addEventListener('message', (e) => {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('activate', (e) => {
   e.waitUntil(self.clients.claim());
-  e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
-  );
-});
+    e.waitUntil(
+      caches.keys().then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      )
+    );
+    e.waitUntil(
+      self.clients.matchAll({ type: 'window' }).then((clients) => {
+        clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED' }));
+      })
+    );
+  });
 
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
+
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then((response) => {
+          const cloned = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, cloned));
+          return response;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
 
   if (url.hostname === CDN_ORIGIN) {
     e.respondWith(

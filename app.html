@@ -443,5 +443,18 @@
 <div id="pdf-stage"></div>
 
 <script type="module" src="js/main.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'SW_UPDATED') {
+      var banner = document.createElement('div');
+      banner.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;text-align:center;';
+      banner.textContent = 'Une nouvelle version est disponible — Cliquez pour recharger';
+      banner.addEventListener('click', function () { window.location.reload(); });
+      document.body.appendChild(banner);
+    }
+  });
+}
+</script>
 </body>
 </html>
