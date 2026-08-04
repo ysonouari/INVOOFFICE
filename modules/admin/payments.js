@@ -71,8 +71,15 @@ function renderPayments() {
 }
 
 function paymentBadge(s) {
-  const map = { completed: 'admin-badge-paid', pending: 'admin-badge-pending', failed: 'admin-badge-inactive' };
-  return `<span class="admin-badge ${map[s] || ''}">${s}</span>`;
+  const map = {
+    completed: 'admin-badge-paid',
+    pending: 'admin-badge-pending',
+    failed: 'admin-badge-failed',
+    refunded: 'admin-badge-inactive',
+    manual: 'admin-badge-admin'
+  };
+  const cls = map[s] || 'admin-badge-waiting';
+  return `<span class="admin-badge ${cls}">${s || 'inconnu'}</span>`;
 }
 
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

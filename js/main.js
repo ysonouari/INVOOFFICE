@@ -12,6 +12,20 @@ import { ICONS } from './icons.js';
 import { checkAccessAndInit, logout } from './auth.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Hamburger menu toggle
+  var hamburger = document.getElementById('appHamburgerToggle');
+  var appNav = document.getElementById('appNav');
+  if (hamburger && appNav) {
+    hamburger.addEventListener('click', function() {
+      appNav.classList.toggle('open');
+    });
+    document.addEventListener('click', function(e) {
+      if (!appNav.contains(e.target) && e.target !== hamburger) {
+        appNav.classList.remove('open');
+      }
+    });
+  }
+
   // Auth guard
   const auth = await checkAccessAndInit();
   if (!auth || auth.blocked) {

@@ -214,16 +214,16 @@ function statusBadge(s) {
 
 function subBadge(subs) {
   const active = subs.filter(s => s.status === 'active');
-  return active.length > 0 ? '<span class="admin-badge admin-badge-lifetime">À vie</span>' : '<span style="color:var(--muted);font-size:12px;">Aucun</span>';
+  return active.length > 0 ? '<span class="admin-badge admin-badge-lifetime admin-badge-nowrap">À vie</span>' : '<span style="color:var(--muted);font-size:12px;">Aucun</span>';
 }
 
 function paymentBadge(pays) {
   const done = pays.filter(p => p.status === 'completed');
-  return done.length > 0 ? `<span class="admin-badge admin-badge-paid">${formatAmount(done[0].amount)}</span>` : '<span style="color:var(--muted);font-size:12px;">En attente</span>';
+  return done.length > 0 ? `<span class="admin-badge admin-badge-paid">${formatAmount(done[0].amount)}</span>` : '<span class="admin-badge admin-badge-waiting">En attente</span>';
 }
 
 function roleBadge(r) {
-  return r === 'admin' ? '<span class="admin-badge admin-badge-admin">Admin</span>' : '<span style="font-size:12px;">User</span>';
+  return r === 'admin' ? '<span class="admin-badge admin-badge-admin">Admin</span>' : '<span class="admin-badge" style="background:color-mix(in srgb, var(--panel) 95%, var(--muted-2) 5%);color:var(--muted-2);border:1px solid color-mix(in srgb, var(--panel) 85%, var(--muted-2) 15%);">User</span>';
 }
 
 function formatAmount(centimes) {

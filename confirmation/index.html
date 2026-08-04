@@ -10,6 +10,158 @@
   <link rel="stylesheet" href="../css/styles.css">
   <link rel="stylesheet" href="../css/fonts.css">
   <link rel="stylesheet" href="../css/landing.css">
+  <style>
+    .pm-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 10px;
+    }
+    .pm-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .pm-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .pm-card-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .pm-card-beneficiary {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .pm-card-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--muted);
+      padding: 6px 0;
+      border-top: 1px solid var(--border-soft);
+      gap: 8px;
+    }
+    .pm-card-row:first-of-type { border-top: none; }
+    .pm-card-label { flex-shrink: 0; color: var(--muted-2); font-size: 12px; }
+    .pm-card-value {
+      text-align: right;
+      font-family: monospace;
+      font-size: 12.5px;
+      color: var(--text);
+      word-break: break-all;
+    }
+    .pm-card-instructions {
+      font-size: 12px;
+      color: var(--muted-2);
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-soft);
+      line-height: 1.6;
+    }
+    .btn-copy {
+      padding: 3px 10px;
+      font-size: 11px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all .15s;
+    }
+    .btn-copy:hover { border-color: var(--accent-2); color: var(--accent-2); }
+    .btn-copy.copied { border-color: var(--success); color: var(--success); background: color-mix(in srgb, var(--success) 10%, var(--panel-2)); }
+    .btn-whatsapp {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: var(--radius);
+      background: #25D366;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .2s;
+    }
+    .btn-whatsapp:hover { background: #20bd5a; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,211,102,.3); }
+    .pm-empty {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .lp-steps-v { margin-top: 32px; position: relative; }
+    .lp-steps-v::before {
+      content: '';
+      position: absolute;
+      left: 21px;
+      top: 22px;
+      bottom: 22px;
+      width: 2px;
+      background: var(--border-soft);
+      z-index: 0;
+    }
+    .lp-step-v {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .lp-step-v + .lp-step-v { margin-top: 28px; }
+    .lp-step-v-dot {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--panel);
+      border: 2px solid var(--border);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      font-weight: 700;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .lp-step-v-dot-done {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+    }
+    .lp-step-v-body { flex: 1; min-width: 0; padding-top: 2px; }
+    .lp-step-v-title { font-size: 15px; font-weight: 700; margin: 0 0 4px; color: var(--text); }
+    .lp-step-v-desc { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.55; }
+    .lp-step-v-done .lp-step-v-title { color: var(--muted-2); }
+    .lp-step-v-done .lp-step-v-desc { color: var(--muted-2); }
+    .lp-step-v-desc strong { color: var(--text); }
+    @media (max-width: 480px) {
+      .lp-card-block { padding: 28px 18px !important; }
+      .lp-step-v { gap: 12px; }
+      .lp-step-v-dot { width: 36px; height: 36px; font-size: 15px; }
+      .lp-steps-v::before { left: 17px; }
+    }
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     (function(){var t=localStorage.getItem('fb_theme');if(!t){t=window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';}document.documentElement.dataset.theme=t;})();
@@ -28,51 +180,62 @@
 
   <main>
     <section class="lp-section" style="min-height:60vh;display:flex;align-items:center;">
-      <div class="lp-section-inner" style="text-align:center;max-width:600px;">
+      <div class="lp-section-inner" style="max-width:620px;margin:0 auto;">
 
-        <div style="width:80px;height:80px;border-radius:50%;background:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:32px;">✓</div>
+        <div class="lp-card">
+          <div class="lp-card-block" style="padding:40px 36px;">
 
-        <h2 style="font-size:30px;font-weight:800;margin:0 0 12px;color:var(--text);">Inscription réussie&nbsp;!</h2>
-        <p style="font-size:16px;color:var(--muted);line-height:1.7;margin:0 0 32px;">
-          Votre compte a été créé avec succès.
-        </p>
+            <div style="text-align:center;margin-bottom:32px;">
+              <div style="width:72px;height:72px;border-radius:50%;background:var(--success);display:inline-flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:20px;color:#fff;">✓</div>
+              <h2 style="font-size:28px;font-weight:800;margin:0 0 8px;color:var(--text);">Inscription réussie&nbsp;!</h2>
+              <p style="font-size:15px;color:var(--muted);margin:0;">Votre compte a été créé avec succès.</p>
+            </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:32px;">
-          <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;text-align:center;">
-            <div style="font-size:28px;margin-bottom:8px;">📝</div>
-            <div style="font-size:13px;color:var(--text);font-weight:600;">1. Compte créé</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:4px;">Votre profil est enregistré</div>
+            <div class="lp-steps-v">
+
+              <div class="lp-step-v lp-step-v-done">
+                <div class="lp-step-v-dot lp-step-v-dot-done">✓</div>
+                <div class="lp-step-v-body">
+                  <div class="lp-step-v-title">Compte créé</div>
+                  <div class="lp-step-v-desc">Votre profil est enregistré et prêt à être activé.</div>
+                </div>
+              </div>
+
+              <div class="lp-step-v">
+                <div class="lp-step-v-dot">2</div>
+                <div class="lp-step-v-body">
+                  <div class="lp-step-v-title">Effectuez le paiement</div>
+                  <div class="lp-step-v-desc" id="step2Price"></div>
+                  <div id="paymentMethodsList" style="margin-top:12px;"></div>
+                </div>
+              </div>
+
+              <div class="lp-step-v">
+                <div class="lp-step-v-dot">3</div>
+                <div class="lp-step-v-body">
+                  <div class="lp-step-v-title">Envoyez votre preuve de paiement</div>
+                  <div class="lp-step-v-desc">Prenez une capture ou une photo du paiement, puis envoyez-la via WhatsApp.</div>
+                  <div id="whatsappCta" style="margin-top:10px;"></div>
+                </div>
+              </div>
+
+              <div class="lp-step-v">
+                <div class="lp-step-v-dot">4</div>
+                <div class="lp-step-v-body">
+                  <div class="lp-step-v-title" id="step4Title"></div>
+                  <div class="lp-step-v-desc">Une fois votre paiement vérifié, connectez-vous et accédez à toutes les fonctionnalités de facturation.</div>
+                </div>
+              </div>
+
+            </div>
+
           </div>
-          <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;text-align:center;">
-            <div style="font-size:28px;margin-bottom:8px;">📱</div>
-            <div style="font-size:13px;color:var(--text);font-weight:600;">2. Validation</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:4px;">Contact WhatsApp</div>
-          </div>
-          <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;text-align:center;">
-            <div style="font-size:28px;margin-bottom:8px;">🚀</div>
-            <div style="font-size:13px;color:var(--text);font-weight:600;">3. Accès activé</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:4px;">Plateforme débloquée</div>
-          </div>
-        </div>
-
-        <div style="background:var(--panel);border:1px solid var(--accent);border-radius:var(--radius-lg);padding:32px;text-align:left;margin-bottom:32px;">
-          <p style="font-size:15px;color:var(--text);line-height:1.8;margin:0;">
-            <strong>📱 Notre équipe va vous contacter prochainement sur WhatsApp</strong> afin de confirmer votre inscription et d'activer votre accès à vie.
-          </p>
-          <p style="font-size:14px;color:var(--muted);line-height:1.7;margin:16px 0 0;">
-            Une fois votre compte activé, vous pourrez vous connecter et accéder immédiatement à toutes les fonctionnalités de facturation.
-          </p>
-        </div>
-
-        <div style="margin-top:40px;text-align:left;max-width:500px;margin-left:auto;margin-right:auto;">
-          <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;text-align:center;">💳 Paiement de votre accès</h3>
-          <div id="paymentMethodsList" style="margin-bottom:20px;"></div>
-          <div id="paymentInfo" style="text-align:center;font-size:13px;color:var(--muted);"></div>
         </div>
 
         <div style="margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
           <a href="../" class="btn btn-accent btn-lg">Retour à l'accueil</a>
         </div>
+
       </div>
     </section>
   </main>
@@ -90,33 +253,80 @@
     <p>&copy; <span id="footerYear">2026</span> INVOOFFICE. Tous droits réservés.</p>
   </footer>
   <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
-  <script type="module">
-    import SUPABASE_CONFIG from '../supabase/config/supabase-config.js';
-    const supabase = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-    const { data: methods } = await supabase.from('payment_methods').select('name,bank,rib,account_number,instructions').eq('is_active', true).order('sort_order');
-    const { data: settings } = await supabase.from('platform_settings').select('lifetime_price,payment_instructions,validation_time,whatsapp_support,email_support').eq('id', 1).maybeSingle();
-    const price = settings ? (settings.lifetime_price / 100) : 200;
-    const list = document.getElementById('paymentMethodsList');
-    if (methods && methods.length > 0) {
-      list.innerHTML = methods.map(m => `
-        <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;">
-          <strong style="font-size:14px;">${esc(m.name)}</strong>
-          ${m.bank ? `<div style="font-size:13px;color:var(--muted);margin-top:4px;">Banque : ${esc(m.bank)}</div>` : ''}
-          ${m.rib ? `<div style="font-size:13px;color:var(--muted);">RIB : ${esc(m.rib)}</div>` : ''}
-          ${m.account_number ? `<div style="font-size:13px;color:var(--muted);">Numéro : ${esc(m.account_number)}</div>` : ''}
-          ${m.instructions ? `<div style="font-size:12px;color:var(--muted-2);margin-top:6px;">${esc(m.instructions)}</div>` : ''}
-        </div>
-      `).join('');
+  <script>
+    (async function() {
+      var SUPABASE_URL = 'https://ufvwzpacgmfxfydacnwo.supabase.co';
+      var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmdnd6cGFjZ21meGZ5ZGFjbndvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NzIxMDEsImV4cCI6MjEwMTM0ODEwMX0.SE2VwBGbXF4UnQz15xUcrtcP62W4CgiqOd4wCsH11D8';
+      var client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      var resMethods = await client.from('payment_methods').select('name,beneficiary,bank,rib,iban,account_number,instructions').eq('is_active', true).order('sort_order');
+      var resSettings = await client.from('platform_settings').select('lifetime_price,validation_time,whatsapp_support,email_support').eq('id', 1).maybeSingle();
+      var methods = resMethods.data || [];
+      var settings = resSettings.data;
+      var price = settings ? (settings.lifetime_price / 100) : 200;
+      var list = document.getElementById('paymentMethodsList');
+
+      if (methods.length > 0) {
+        var icons = { '0': '🏦', '1': '📱', '2': '💳', '3': '🏧' };
+        list.innerHTML = methods.map(function(m, i) {
+          var icon = icons[i] || icons['0'];
+          var rows = '';
+          if (m.beneficiary) { rows += '<div class="pm-card-beneficiary">Bénéficiaire : ' + esc(m.beneficiary) + '</div>'; }
+          if (m.bank) { rows += buildRow('Banque', m.bank); }
+          if (m.rib) { rows += buildCopyRow('RIB', m.rib); }
+          if (m.iban) { rows += buildCopyRow('IBAN', m.iban); }
+          if (m.account_number) { rows += buildCopyRow('Numéro', m.account_number); }
+          return '<div class="pm-card">' +
+            '<div class="pm-card-header">' +
+              '<div class="pm-card-icon">' + icon + '</div>' +
+              '<div>' +
+                '<div class="pm-card-name">' + esc(m.name) + '</div>' +
+                rows +
+              '</div>' +
+            '</div>' +
+            (m.instructions ? '<div class="pm-card-instructions">' + esc(m.instructions) + '</div>' : '') +
+          '</div>';
+        }).join('');
+      } else {
+        list.innerHTML = '<div class="pm-empty">Aucune méthode de paiement configurée.</div>';
+      }
+
+      var whatsappDiv = document.getElementById('whatsappCta');
+      if (settings && settings.whatsapp_support) {
+        var phone = settings.whatsapp_support.replace(/[\s\-\.\(\)]/g, '');
+        if (!phone.startsWith('+')) { phone = '+' + phone; }
+        var msg = encodeURIComponent("Bonjour, je viens de m'inscrire sur INVOOFFICE et j'ai effectué le paiement de " + price + " DH. Voici ma preuve de paiement.");
+        whatsappDiv.innerHTML = '<a href="https://wa.me/' + phone.replace('+', '') + '?text=' + msg + '" target="_blank" rel="noopener" class="btn-whatsapp">' +
+          '📱 Envoyer la preuve de paiement sur WhatsApp' +
+        '</a>';
+      }
+
+      document.getElementById('step2Price').innerHTML = '<strong>Prix : ' + price + ' DH</strong> — Paiement unique';
+
+      document.getElementById('step4Title').textContent = 'Validation et accès';
+      if (settings) {
+        document.getElementById('step4Title').textContent = 'Validation sous ' + esc(settings.validation_time || '24 à 48 heures') + ' — Accès débloqué';
+      }
+
+      function buildRow(label, value) {
+        return '<div class="pm-card-row"><span class="pm-card-label">' + esc(label) + '</span><span class="pm-card-value">' + esc(value) + '</span></div>';
+      }
+      function buildCopyRow(label, value) {
+        return '<div class="pm-card-row"><span class="pm-card-label">' + esc(label) + '</span><span class="pm-card-value">' + esc(value) + '</span><button class="btn-copy" onclick="copyToClipboard(this,\'' + escAttr(value) + '\')">Copier</button></div>';
+      }
+      function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+      function escAttr(s) { return String(s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    })();
+    function copyToClipboard(btn, text) {
+      navigator.clipboard.writeText(text).then(function() {
+        btn.textContent = 'Copié ✓';
+        btn.classList.add('copied');
+        setTimeout(function() { btn.textContent = 'Copier'; btn.classList.remove('copied'); }, 2000);
+      }).catch(function() {
+        btn.textContent = 'Erreur';
+        setTimeout(function() { btn.textContent = 'Copier'; }, 2000);
+      });
     }
-    if (settings) {
-      document.getElementById('paymentInfo').innerHTML = `
-        <strong>Prix : ${price} DH</strong> — Paiement unique<br>
-        Validation sous ${esc(settings.validation_time || '24 à 48 heures')}<br>
-        ${settings.whatsapp_support ? `WhatsApp : ${esc(settings.whatsapp_support)}<br>` : ''}
-        ${settings.email_support ? `Email : ${esc(settings.email_support)}` : ''}
-      `;
-    }
-    function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   </script>
 </body>
 </html>

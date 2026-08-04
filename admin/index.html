@@ -32,7 +32,11 @@
         <p>INVOOFFICE</p>
       </div>
     </div>
-    <nav class="nav-actions" aria-label="Navigation admin">
+    <div class="admin-nav-mobile">
+      <span style="font-size:13px;color:var(--muted);" id="currentSectionLabel">Tableau de bord</span>
+      <button class="btn btn-ghost" id="hamburgerToggle" aria-label="Menu">☰</button>
+    </div>
+    <nav class="nav-actions" aria-label="Navigation admin" id="adminNav">
       <button class="btn" id="navDashboard" data-view="dashboard">Tableau de bord</button>
       <button class="btn" id="navUsers" data-view="users">Utilisateurs</button>
       <button class="btn" id="navPayments" data-view="payments">Paiements</button>

@@ -32,6 +32,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('userSearch').addEventListener('input', () => loadUsersTable());
   window.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModals(); });
 
+  // Hamburger menu toggle
+  var hamburger = document.getElementById('hamburgerToggle');
+  var adminNav = document.getElementById('adminNav');
+  if (hamburger && adminNav) {
+    hamburger.addEventListener('click', function() {
+      adminNav.classList.toggle('open');
+    });
+    document.addEventListener('click', function(e) {
+      if (!adminNav.contains(e.target) && e.target !== hamburger) {
+        adminNav.classList.remove('open');
+      }
+    });
+  }
+
   showView('dashboard');
 });
 
@@ -41,6 +55,12 @@ function showView(name) {
   document.querySelectorAll('#adminApp .btn').forEach(b => b.classList.remove('active'));
   const navBtn = document.getElementById('nav' + name.charAt(0).toUpperCase() + name.slice(1));
   if (navBtn) navBtn.classList.add('active');
+
+  var labels = { dashboard: 'Tableau de bord', users: 'Utilisateurs', payments: 'Paiements', methods: 'Méthodes', logs: 'Journal', settings: 'Paramètres' };
+  var labelEl = document.getElementById('currentSectionLabel');
+  if (labelEl) labelEl.textContent = labels[name] || name;
+  var adminNav = document.getElementById('adminNav');
+  if (adminNav) adminNav.classList.remove('open');
 
   switch (name) {
     case 'dashboard': loadStats(); break;
