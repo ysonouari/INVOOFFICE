@@ -16,9 +16,6 @@ export async function signIn(email, password) {
     if (error.message.includes('Invalid login credentials')) {
       return { success: false, error: 'Email ou mot de passe incorrect.' };
     }
-    if (error.message.includes('Email not confirmed')) {
-      return { success: false, error: 'Veuillez confirmer votre email avant de vous connecter.' };
-    }
     return { success: false, error: error.message };
   }
 
