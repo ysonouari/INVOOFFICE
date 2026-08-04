@@ -6,6 +6,71 @@ import { initSupabase } from '../auth/supabase-client.js';
 import { signUp } from '../auth/signup.js';
 import { signIn, getAccessMessage } from '../auth/signin.js';
 
+/* ── Rate limiter ── */
+const RATE_LIMITS = { 3: 15, 5: 60 };
+const RATE_RESET_MS = 5 * 60 * 1000;
+
+const rateState = { failures: 0, lastFailure: 0, timer: null, resetTimer: null };
+
+function getLockoutSeconds() {
+  for (const [threshold, seconds] of Object.entries(RATE_LIMITS).reverse()) {
+    if (rateState.failures >= +threshold) return seconds;
+  }
+  return 0;
+}
+
+function getRemainingLockout() {
+  const lockout = getLockoutSeconds();
+  if (!lockout) return 0;
+  const elapsed = (Date.now() - rateState.lastFailure) / 1000;
+  return elapsed >= lockout ? 0 : Math.ceil(lockout - elapsed);
+}
+
+function recordFailure() {
+  rateState.failures++;
+  rateState.lastFailure = Date.now();
+  scheduleRateReset();
+}
+
+function resetRate() {
+  rateState.failures = 0;
+  rateState.lastFailure = 0;
+  clearTimeout(rateState.timer);
+  clearTimeout(rateState.resetTimer);
+}
+
+function scheduleRateReset() {
+  clearTimeout(rateState.resetTimer);
+  rateState.resetTimer = setTimeout(resetRate, RATE_RESET_MS);
+}
+
+function startCountdown(btn) {
+  clearTimeout(rateState.timer);
+  const tick = () => {
+    const remaining = getRemainingLockout();
+    if (remaining <= 0) {
+      btn.disabled = false;
+      btn.textContent = 'Se connecter';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = `Réessayez dans ${remaining}s`;
+    rateState.timer = setTimeout(tick, 1000);
+  };
+  tick();
+}
+
+/* ── Honeypot ── */
+function isHoneypotFilled() {
+  const hp = document.getElementById('signinWebsite');
+  return hp && hp.value.trim().length > 0;
+}
+
+function clearHoneypot() {
+  const hp = document.getElementById('signinWebsite');
+  if (hp) hp.value = '';
+}
+
 const modals = {
   signup: document.getElementById('signupOverlay'),
   signin: document.getElementById('signinOverlay'),
@@ -104,6 +169,20 @@ document.getElementById('signinForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   clearErrors('signinForm');
 
+  /* Honeypot */
+  if (isHoneypotFilled()) {
+    clearHoneypot();
+    showError('signinGlobalError', 'Email ou mot de passe incorrect.');
+    return;
+  }
+
+  /* Rate limit */
+  const remaining = getRemainingLockout();
+  if (remaining > 0) {
+    showError('signinGlobalError', `Trop de tentatives. Réessayez dans ${remaining} secondes.`);
+    return;
+  }
+
   const btn = document.getElementById('signinSubmit');
   setLoading(btn, true);
 
@@ -114,10 +193,15 @@ document.getElementById('signinForm').addEventListener('submit', async (e) => {
     );
 
     if (!result.success) {
+      recordFailure();
+      const lockout = getLockoutSeconds();
+      if (lockout) startCountdown(btn);
       showError('signinGlobalError', result.error || 'Erreur de connexion.');
       return;
     }
 
+    resetRate();
+    clearHoneypot();
     hideAllModals();
 
     if (result.profile.role === 'admin') {
@@ -134,9 +218,12 @@ document.getElementById('signinForm').addEventListener('submit', async (e) => {
 
     window.location.href = '/app';
   } catch (err) {
+    recordFailure();
+    const lockout = getLockoutSeconds();
+    if (lockout) startCountdown(btn);
     showError('signinGlobalError', 'Erreur réseau. Vérifiez votre connexion.');
   } finally {
-    setLoading(btn, false);
+    if (!getRemainingLockout()) setLoading(btn, false);
   }
 });
 
@@ -146,7 +233,7 @@ document.querySelectorAll('[data-action="show-signup"]').forEach(btn => {
 });
 
 document.querySelectorAll('[data-action="show-signin"]').forEach(btn => {
-  btn.addEventListener('click', () => showModal('signin'));
+  btn.addEventListener('click', () => { clearHoneypot(); showModal('signin'); });
 });
 
 document.querySelectorAll('[data-action="close-signup"], [data-action="close-signin"], [data-action="close-blocked"]').forEach(btn => {
