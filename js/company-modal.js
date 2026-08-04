@@ -75,6 +75,8 @@ export async function openCompanyModal(){
   companyModalPrevFocus = document.activeElement;
   document.addEventListener('keydown', onCompanyModalKey);
   document.getElementById('companyModalOverlay').classList.add('open');
+  const modalEl = document.querySelector('#companyModalOverlay .modal');
+  if (modalEl) modalEl.scrollTop = 0;
   const closeBtn = document.querySelector('#companyModalOverlay .modal-close');
   if (closeBtn) setTimeout(() => closeBtn.focus(), 50);
   const info = document.getElementById('storageInfo');

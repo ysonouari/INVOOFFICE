@@ -27,7 +27,7 @@ const MIME = {
 // Rewrites identiques à vercel.json
 const REWRITES = {
   '/': '/landing.html',
-  '/app': '/index.html',
+  '/app': '/app.html',
   '/admin': '/admin/index.html',
   '/confirmation': '/confirmation/index.html',
 };

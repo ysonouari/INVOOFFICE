@@ -2,7 +2,7 @@ const CACHE_NAME = 'facturation-v2';
 
 const PRECACHE_URLS = [
   './',
-  'index.html',
+  'app.html',
   'landing.html',
   'admin/index.html',
   'confirmation/index.html',

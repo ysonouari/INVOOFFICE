@@ -298,6 +298,7 @@ table.lines input,table.lines select{
 .modal{
   background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);
   width:100%;max-width:760px;padding:24px;
+  max-height:calc(100vh - 48px);overflow-y:auto;
 }
 .modal-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;}
 .modal-head h3{margin:0 0 4px;font-size:17px;}
