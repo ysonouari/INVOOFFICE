@@ -1,7 +1,7 @@
-import { nextNumero } from './storage.js';
+import { nextNumero, isNumeroUnique } from './storage.js';
 import { addLine, recalcTotals, refreshNotesFromRegime } from './lines.js';
 import { refreshClientsSelect, onClientSelect, getClientById } from './client.js';
-import { renderHistory } from './history.js';
+import { renderHistory, getEditingDocId } from './history.js';
 
 export function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -20,12 +20,12 @@ export function onDocTypeChange(){
   const { display } = nextNumero(type);
   document.getElementById('docNumero').value = display;
   recalcTotals();
+  validateDocNumero();
 }
 
 export function resetForm(){
   document.getElementById('docType').value = 'facture';
   document.getElementById('docDate').valueAsDate = new Date();
-  document.getElementById('docStatus').value = 'final';
 
   document.getElementById('clientSelect').value = '';
   const preview = document.getElementById('clientPreview');
@@ -48,11 +48,11 @@ export function resetForm(){
   addLine();
 
   onDocTypeChange();
+  clearNumeroError();
 }
 
 export function initForm(){
   document.getElementById('docType').value = 'facture';
-  document.getElementById('docStatus').value = 'final';
   document.getElementById('docDate').valueAsDate = new Date();
   onDocTypeChange();
   addLine();
@@ -67,6 +67,42 @@ function parseFrenchDate(str){
   return new Date();
 }
 
+export function validateDocNumero() {
+  const type = document.getElementById('docType').value;
+  const input = document.getElementById('docNumero');
+  const numero = input.value.trim();
+  const editingId = getEditingDocId();
+  const errorEl = document.getElementById('docNumeroError');
+  const pdfBtn = document.querySelector('[data-action="generate-pdf"]');
+
+  if (!numero) {
+    clearNumeroError();
+    return true;
+  }
+
+  if (!isNumeroUnique(type, numero, editingId)) {
+    input.classList.add('input-error');
+    input.setAttribute('aria-invalid', 'true');
+    errorEl.textContent = i18next.t('form.numeroDuplicate');
+    errorEl.style.display = 'block';
+    pdfBtn.disabled = true;
+    return false;
+  }
+
+  clearNumeroError();
+  return true;
+}
+
+function clearNumeroError() {
+  const input = document.getElementById('docNumero');
+  const errorEl = document.getElementById('docNumeroError');
+  const pdfBtn = document.querySelector('[data-action="generate-pdf"]');
+  input.classList.remove('input-error');
+  input.removeAttribute('aria-invalid');
+  errorEl.style.display = 'none';
+  pdfBtn.disabled = false;
+}
+
 export function loadHistoryDocIntoForm(payload){
   resetForm();
   refreshClientsSelect();
@@ -76,14 +112,14 @@ export function loadHistoryDocIntoForm(payload){
   banner.style.display = 'block';
 
   document.getElementById('docType').value = payload.type;
-  document.getElementById('docStatus').value = payload.status || 'final';
   document.getElementById('docNumero').value = payload.numero;
   document.getElementById('docDate').valueAsDate = parseFrenchDate(payload.date);
 
   document.getElementById('conditions').value = payload.conditions || '';
   document.getElementById('modeReglement').value = payload.modeReglement || '';
-  document.getElementById('notes').value = payload.notes || '';
-  delete document.getElementById('notes').dataset.auto;
+  const notesEl = document.getElementById('notes');
+  notesEl.value = payload.notes || '';
+  delete notesEl.dataset.auto;
 
   const t = payload.totals;
   document.getElementById('remise').value = t.remisePct || 0;
@@ -111,4 +147,5 @@ export function loadHistoryDocIntoForm(payload){
   lines.forEach(l => addLine({ desig: l.desig || '', prix: l.prix || 0, qte: l.qte || 1 }));
 
   recalcTotals();
+  validateDocNumero();
 }

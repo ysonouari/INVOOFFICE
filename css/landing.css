@@ -616,34 +616,9 @@
 .lp-toast-error { border-color: color-mix(in srgb, var(--panel) 80%, var(--danger) 20%); }
 
 /* ---------- footer ---------- */
-.field-error {
-  display: none;
-  color: var(--danger);
-  font-size: 12px;
-  margin-top: 4px;
-}
 .lp-footer {
   border-top: 1px solid var(--border-soft);
   padding: 32px 20px 40px;
-}
-
-/* ---------- coming soon modal ---------- */
-.comming-soon-modal {
-  max-width: 400px;
-  text-align: center;
-}
-.comming-soon-body {
-  padding: 24px 0;
-}
-.comming-soon-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-.comming-soon-body p {
-  font-size: 14px;
-  color: var(--muted);
-  line-height: 1.6;
-  margin: 0;
 }
 
 /* ---------- responsive ---------- */
@@ -718,4 +693,28 @@
   .lp-cta-price { font-size: 26px; }
   .lp-card-block { padding: 24px 14px; }
   .lp-card-cta { padding: 24px 14px; }
+}
+
+/* ---------- shared page content ---------- */
+.content-page { max-width: 800px; margin: 0 auto; padding: 60px 20px 40px; }
+.content-page h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
+.content-page .subtitle { color: var(--muted); font-size: 15px; margin: 0 0 40px; line-height: 1.6; }
+.content-page h2 { font-size: 20px; font-weight: 600; margin: 40px 0 12px; color: var(--text); }
+.content-page p { color: var(--muted); font-size: 14.5px; line-height: 1.75; margin: 0 0 16px; }
+.content-page ul, .content-page ol { color: var(--muted); font-size: 14.5px; line-height: 1.75; margin: 0 0 16px; padding-left: 20px; }
+.content-page li { margin-bottom: 6px; }
+.content-page a { color: var(--accent-2); }
+.content-page a:hover { color: var(--accent-2-hover); }
+.content-page .nav-back { margin-bottom: 24px; }
+.content-page .nav-back a { color: var(--muted); text-decoration: none; font-size: 13px; }
+.content-page .nav-back a:hover { color: var(--text); }
+.content-page .cta-box { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-align: center; margin-top: 40px; }
+.content-page .cta-box p { margin: 0 0 16px; font-size: 15px; color: var(--text); }
+.content-page .cta-box a { display: inline-block; padding: 12px 24px; background: var(--accent-2); color: #fff; border-radius: var(--radius); text-decoration: none; font-weight: 600; font-size: 14px; }
+.content-page .faq-item { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 16px; margin-bottom: 8px; }
+.content-page .faq-item h3 { margin: 0 0 6px; font-size: 14.5px; }
+.content-page .faq-item p { margin: 0; font-size: 13.5px; color: var(--muted); line-height: 1.65; }
+@media (max-width: 480px) {
+  .content-page { padding: 40px 16px 30px; }
+  .content-page h1 { font-size: 24px; }
 }

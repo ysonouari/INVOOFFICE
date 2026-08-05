@@ -85,7 +85,7 @@
 
 <main class="blog-page">
 
-  <div class="nav-back"><a href="/">← Retour à l'application</a></div>
+  <div class="nav-back"><a href="/">← Retour à l'application</a> <button class="btn btn-ghost theme-btn" id="themeToggle" aria-label="Basculer le thème clair/sombre"></button></div>
 
   <h1>Blog INVOOFFICE</h1>
   <p class="subtitle">Guides, conseils et ressources pour les entrepreneurs marocains : facturation, devis, TVA, auto-entrepreneur, comptabilité et gestion d'entreprise.</p>
@@ -130,6 +130,7 @@
   <p>&copy; <span id="footerYear">2026</span> INVOOFFICE. Tous droits réservés.</p>
 </footer>
 <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
+<script type="module">import{initThemeToggle}from'../js/theme.js';initThemeToggle('themeToggle');</script>
 
 </body>
 </html>

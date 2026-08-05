@@ -1,5 +1,5 @@
 import { updateBrandLogo, openCompanyModal, closeCompanyModal, toggleTvaRate, syncColorFromHex, syncTableTextColorFromHex, onHeaderFileChange, saveCompanyForm } from './company-modal.js';
-import { showView, onDocTypeChange, initForm, resetForm, loadHistoryDocIntoForm } from './navigation.js';
+import { showView, onDocTypeChange, initForm, resetForm, loadHistoryDocIntoForm, validateDocNumero } from './navigation.js';
 import { addLine, removeLine, recalcTotals } from './lines.js';
 import { openClientModal, closeClientModal, openClientManagerModal, closeClientManagerModal, onClientSelect, saveClientForm, deleteClientById, refreshClientsSelect } from './client.js';
 import { generatePDF } from './pdf.js';
@@ -16,12 +16,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   var hamburger = document.getElementById('appHamburgerToggle');
   var appNav = document.getElementById('appNav');
   if (hamburger && appNav) {
+    function closeMobileMenu() {
+      appNav.classList.remove('open');
+    }
     hamburger.addEventListener('click', function() {
       appNav.classList.toggle('open');
     });
     document.addEventListener('click', function(e) {
+      if (!appNav.classList.contains('open')) return;
       if (!appNav.contains(e.target) && e.target !== hamburger) {
-        appNav.classList.remove('open');
+        closeMobileMenu();
+      }
+    });
+    appNav.addEventListener('click', function(e) {
+      if (e.target.closest('[data-nav-action]')) {
+        closeMobileMenu();
       }
     });
   }
@@ -87,6 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('navHistorique').addEventListener('click', () => showView('historique'));
 
   document.getElementById('docType').addEventListener('change', onDocTypeChange);
+  document.getElementById('docNumero').addEventListener('input', validateDocNumero);
   document.getElementById('clientSelect').addEventListener('change', onClientSelect);
   document.getElementById('remise').addEventListener('input', recalcTotals);
   document.getElementById('avance').addEventListener('input', recalcTotals);
@@ -95,25 +105,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.querySelector('[data-action="add-line"]').addEventListener('click', () => addLine());
   document.querySelector('[data-action="generate-pdf"]').addEventListener('click', generatePDF);
-  document.querySelectorAll('[data-action="close-modal"]').forEach(el => el.addEventListener('click', closeCompanyModal));
   document.querySelector('[data-action="save-company"]').addEventListener('click', saveCompanyForm);
   document.querySelector('[data-action="export-backup"]').addEventListener('click', exportBackup);
+  const backupInput = document.getElementById('backupFileInput');
   document.querySelector('[data-action="import-backup"]').addEventListener('click', () => {
-    document.getElementById('backupFileInput').click();
+    backupInput.click();
   });
-  document.getElementById('backupFileInput').addEventListener('change', (e) => {
+  backupInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) importBackup(file);
     e.target.value = '';
   });
 
   document.querySelector('[data-action="add-client"]').addEventListener('click', () => openClientModal(null));
-  document.querySelectorAll('[data-action="close-client-modal"]').forEach(el => el.addEventListener('click', closeClientModal));
   document.querySelector('[data-action="save-client"]').addEventListener('click', saveClientForm);
 
   document.querySelector('[data-action="manage-clients"]').addEventListener('click', openClientManagerModal);
   document.querySelector('[data-action="add-client-from-manager"]').addEventListener('click', () => { closeClientManagerModal(); openClientModal(null); });
-  document.querySelectorAll('[data-action="close-client-manager"]').forEach(el => el.addEventListener('click', closeClientManagerModal));
   document.getElementById('clientListWrap').addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
@@ -133,15 +141,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('cTableTextColorHex').value = e.target.value;
   });
 
-  document.getElementById('linesBody').addEventListener('input', (e) => {
+  const linesBody = document.getElementById('linesBody');
+  linesBody.addEventListener('input', (e) => {
     if (e.target.matches('.line-prix, .line-qte')) recalcTotals();
   });
-  document.getElementById('linesBody').addEventListener('click', (e) => {
+  linesBody.addEventListener('click', (e) => {
     const iconBtn = e.target.closest('.icon-btn');
     if (iconBtn) {
       const tr = iconBtn.closest('tr');
       if (tr) removeLine(tr.id);
     }
+  });
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    if (btn.dataset.action === 'close-modal') closeCompanyModal();
+    else if (btn.dataset.action === 'close-client-modal') closeClientModal();
+    else if (btn.dataset.action === 'close-client-manager') closeClientManagerModal();
   });
 
   document.getElementById('histTableWrap').addEventListener('click', (e) => {

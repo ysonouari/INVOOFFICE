@@ -5,23 +5,10 @@ import { getStorageEstimate } from './storage-quota.js';
 import { migrateHeaderFromCompany, saveHeaderImage, loadHeaderImage, deleteHeaderImage } from './opfs-storage.js';
 import { showAlertDialog } from './dialog.js';
 import { enforceDigitsOnly } from './utils.js';
+import { trapFocusInModal } from './modal-focus.js';
 
 let pendingHeaderImage = null;
 let companyModalPrevFocus = null;
-
-function trapFocusInModal(modal, e) {
-  if (e.key !== 'Tab') return;
-  const focusable = Array.from(modal.querySelectorAll('button,input,select,textarea,[tabindex]:not([tabindex="-1"])'))
-    .filter(el => !el.disabled && el.offsetParent !== null);
-  if (focusable.length === 0) return;
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  if (e.shiftKey) {
-    if (document.activeElement === first) { e.preventDefault(); last.focus(); }
-  } else {
-    if (document.activeElement === last) { e.preventDefault(); first.focus(); }
-  }
-}
 
 function onCompanyModalKey(e) {
   if (e.key === 'Escape') { closeCompanyModal(); return; }
@@ -153,7 +140,7 @@ export async function saveCompanyForm(){
   c.nom = document.getElementById('cNom').value;
   c.regimeTva = document.getElementById('cRegimeTva').value;
   c.contact = document.getElementById('cContact').value;
-  c.tvaTaux = parseFloat(document.getElementById('cTvaTaux').value) || 0;
+  c.tvaTaux = Math.max(0, parseFloat(document.getElementById('cTvaTaux').value) || 0);
   c.adresse = document.getElementById('cAdresse').value;
   c.ice = document.getElementById('cICE').value;
   c.if_ = document.getElementById('cIF').value;

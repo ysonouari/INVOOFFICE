@@ -185,3 +185,8 @@ export function nextNumero(type) {
   const key = type + '-' + year;
   return { display: `${prefix}-${year}-${String(n).padStart(4,'0')}`, key, n };
 }
+
+export function isNumeroUnique(type, numero, excludeDocId = null) {
+  if (!type || !numero) return true;
+  return !loadHistory().some(d => d.type === type && d.numero === numero && d.id !== excludeDocId);
+}

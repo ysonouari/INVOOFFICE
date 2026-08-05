@@ -1,12 +1,11 @@
 import { DOC_TYPES } from './config.js';
-import { loadCompany } from './storage.js';
+import { loadCompany, isNumeroUnique } from './storage.js';
 import { escapeHtml, currencySymbol, montantEnLettres, montantEnLettresAr, getContrastColor } from './utils.js';
 import { recalcTotals } from './lines.js';
 import { getSelectedClient } from './client.js';
-import { saveToHistory } from './history.js';
+import { saveToHistory, getEditingDocId } from './history.js';
 import { showAlertDialog } from './dialog.js';
 import { loadHeaderImage, savePdfFile } from './opfs-storage.js';
-import { shapeArabic } from './arabic-shaper.js';
 
 async function registerFontsForDoc(pdf) {
   const f = await import('./pdf-font.js');
@@ -94,10 +93,43 @@ function collectTextElements(pageEl) {
   return elements;
 }
 
+function getRegimeConfig(regime) {
+  if (regime === 'exoneree') {
+    return {
+      showHT: false,
+      showTVA: false,
+      totalLabel: 'pdf.total',
+      amountSuffix: '',
+    };
+  }
+  return {
+    showHT: true,
+    showTVA: true,
+    totalLabel: 'pdf.total_ttc',
+    amountSuffix: i18next.t('utils.ttc_suffix'),
+  };
+}
+
+function buildFooterLine(c) {
+  const footerParts = [
+    c.nom ? escapeHtml(c.nom) : '',
+    c.adresse ? escapeHtml(c.adresse) : '',
+    c.contact ? escapeHtml(c.contact) : '',
+  ].filter(Boolean).join(' \u2014 ');
+
+  const legalParts = [
+    c.ice ? `ICE: ${escapeHtml(c.ice)}` : '', c.if_ ? `IF: ${escapeHtml(c.if_)}` : '',
+    c.rc ? `RC: ${escapeHtml(c.rc)}` : '', c.tp ? `TP: ${escapeHtml(c.tp)}` : '', c.cnss ? `CNSS: ${escapeHtml(c.cnss)}` : '',
+  ].filter(Boolean).join(' \u2014 ');
+
+  return [footerParts, legalParts].filter(Boolean).join(' &nbsp;|&nbsp; ');
+}
+
 export function buildPdfHtml(payload, headerImageUrl){
   const c = payload.company;
   const cfg = DOC_TYPES[payload.type];
   const t = payload.totals;
+  const rc = getRegimeConfig(c.regimeTva);
 
   const fso = c.fontSizeOffset || 0;
   const fs = (base) => (base + fso) + 'px';
@@ -138,10 +170,10 @@ export function buildPdfHtml(payload, headerImageUrl){
   if(t.showPrices){
     totalsHtml = `
       <div class="pdf-totals"><table>
-        <tr><td class="lbl">${i18next.t('pdf.total_ht')}</td><td class="val">${t.totalHT_brut.toFixed(2)} ${currencySymbol()}</td></tr>
+        ${rc.showHT ? `<tr><td class="lbl">${i18next.t('pdf.total_ht')}</td><td class="val">${t.totalHT_brut.toFixed(2)} ${currencySymbol()}</td></tr>` : ''}
         ${t.remisePct>0 ? `<tr><td class="lbl">${i18next.t('pdf.remise', {pct: t.remisePct})}</td><td class="val">- ${t.remiseMontant.toFixed(2)} ${currencySymbol()}</td></tr>` : ''}
-        ${t.isExoneree ? '' : `<tr><td class="lbl">${i18next.t('pdf.tva', {rate: t.tvaTaux})}</td><td class="val">${t.tva.toFixed(2)} ${currencySymbol()}</td></tr>`}
-        <tr class="ttc"><td class="lbl">${i18next.t('pdf.total_ttc')}</td><td class="val">${t.totalTTC.toFixed(2)} ${currencySymbol()}</td></tr>
+        ${rc.showTVA ? `<tr><td class="lbl">${i18next.t('pdf.tva', {rate: t.tvaTaux})}</td><td class="val">${t.tva.toFixed(2)} ${currencySymbol()}</td></tr>` : ''}
+        <tr class="ttc"><td class="lbl">${i18next.t(rc.totalLabel)}</td><td class="val">${t.totalTTC.toFixed(2)} ${currencySymbol()}</td></tr>
         ${t.avance>0 ? `<tr><td class="lbl">${i18next.t('pdf.avance')}</td><td class="val">${t.avance.toFixed(2)} ${currencySymbol()}</td></tr>
         <tr class="ttc"><td class="lbl">${i18next.t('pdf.reste')}</td><td class="val">${t.reste.toFixed(2)} ${currencySymbol()}</td></tr>` : ''}
       </table></div>`;
@@ -149,20 +181,9 @@ export function buildPdfHtml(payload, headerImageUrl){
 
   const isRtl = i18next.language === 'ar';
 
-  const wordsHtml = t.showPrices ? `<div class="pdf-words">${i18next.t('pdf.words_prefix')} <b>${isRtl ? montantEnLettresAr(t.totalTTC) : montantEnLettres(t.totalTTC)}</b></div>` : '';
+  const wordsHtml = t.showPrices ? `<div class="pdf-words">${i18next.t('pdf.words_prefix')} <b>${isRtl ? montantEnLettresAr(t.totalTTC, rc.amountSuffix) : montantEnLettres(t.totalTTC, rc.amountSuffix)}</b></div>` : '';
 
-  const footerParts = [
-    c.nom ? escapeHtml(c.nom) : '',
-    c.adresse ? escapeHtml(c.adresse) : '',
-    c.contact ? escapeHtml(c.contact) : '',
-  ].filter(Boolean).join(' \u2014 ');
-
-  const legalParts = [
-    c.ice ? `ICE: ${c.ice}` : '', c.if_ ? `IF: ${c.if_}` : '',
-    c.rc ? `RC: ${c.rc}` : '', c.tp ? `TP: ${c.tp}` : '', c.cnss ? `CNSS: ${c.cnss}` : '',
-  ].filter(Boolean).join(' \u2014 ');
-
-  const footerLine = [footerParts, legalParts].filter(Boolean).join(' &nbsp;|&nbsp; ');
+  const footerLine = buildFooterLine(c);
 
   return `
   ${fontScaleStyle}
@@ -221,13 +242,12 @@ export function collectPayload(){
     tel: sel ? (sel.tel || '') : '',
     ice: sel ? (sel.ice || '') : '',
     adresse: sel ? (sel.adresse || '') : '',
-    ref: document.getElementById('clientRef') ? document.getElementById('clientRef').value : '',
+    ref: (cr => cr ? cr.value : '')(document.getElementById('clientRef')),
   };
   return {
     type,
     numero: document.getElementById('docNumero').value,
-    date: document.getElementById('docDate').value ? new Date(document.getElementById('docDate').value).toLocaleDateString('fr-FR') : '',
-    status: document.getElementById('docStatus').value,
+    date: (dv => dv ? new Date(dv).toLocaleDateString('fr-FR') : '')(document.getElementById('docDate').value),
     client,
     conditions: document.getElementById('conditions').value,
     modeReglement: document.getElementById('modeReglement').value,
@@ -237,24 +257,33 @@ export function collectPayload(){
   };
 }
 
-export async function generatePDF(){
-  const payload = collectPayload();
+async function validatePayload(payload){
   if(!payload.client.id){
     await showAlertDialog(i18next.t('pdf.alert_no_client'));
-    return;
+    return false;
   }
   if(payload.totals.lines.length === 0 || payload.totals.lines.every(l=>!l.desig)){
     await showAlertDialog(i18next.t('pdf.alert_no_lines'));
-    return;
+    return false;
   }
   if(payload.totals.lines.some(l => !(l.desig || '').trim())){
     await showAlertDialog(i18next.t('pdf.alert_empty_designation'));
-    return;
+    return false;
   }
   if(payload.totals.lines.some(l => l.qte <= 0)){
     await showAlertDialog(i18next.t('pdf.alert_zero_qty'));
-    return;
+    return false;
   }
+  if(!isNumeroUnique(payload.type, payload.numero, getEditingDocId())){
+    await showAlertDialog(i18next.t('form.numeroDuplicate'));
+    return false;
+  }
+  return true;
+}
+
+export async function generatePDF(){
+  const payload = collectPayload();
+  if (!await validatePayload(payload)) return;
 
   let headerBlob;
   try { headerBlob = await loadHeaderImage(); } catch (_) { headerBlob = null; }
@@ -347,11 +376,15 @@ export async function generatePDF(){
   try {
     const pdfBlob = pdf.output('blob');
     await savePdfFile(filename, pdfBlob);
-  } catch (_) {}
+  } catch (_) {
+    await showAlertDialog(i18next.t('pdf.alert_save_failed'));
+  }
 
   try {
     pdf.save(filename);
-  } catch(e) {}
+  } catch(e) {
+    await showAlertDialog(i18next.t('pdf.alert_save_failed'));
+  }
 
   if (headerUrl) URL.revokeObjectURL(headerUrl);
 

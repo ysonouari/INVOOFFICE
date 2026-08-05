@@ -49,7 +49,7 @@ export function recalcTotals(){
   const company = loadCompany();
   const docType = document.getElementById('docType').value;
   const showPrices = (DOC_TYPES[docType] || DOC_TYPES.devis).showTotalsDefault;
-  const remisePct = parseFloat(document.getElementById('remise').value) || 0;
+  const remisePct = Math.max(0, parseFloat(document.getElementById('remise').value) || 0);
   const avance = parseFloat(document.getElementById('avance').value) || 0;
 
   const totalHT_brut = round2(lines.reduce((s,l)=>s + l.total, 0));

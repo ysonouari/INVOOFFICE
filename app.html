@@ -30,6 +30,12 @@
 <link rel="alternate" hreflang="fr" href="https://www.invooffice.com/">
 <link rel="alternate" hreflang="x-default" href="https://www.invooffice.com/">
 
+<!-- CDN preconnect -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+
 <!-- Icons -->
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -45,11 +51,11 @@
 <link rel="stylesheet" href="css/fonts.css">
 
 <!-- LIBS (CDN) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/i18next/23.16.8/i18next.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/i18next-browser-languagedetector/8.0.2/i18nextBrowserLanguageDetector.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-De+l/Df7qym5QBDVocD3+gW1S7IjR3epf+6KbRDjB3FCCzM/LqVTwqckT6FhFar8" crossorigin="anonymous" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/i18next/23.16.8/i18next.min.js" integrity="sha384-ZB4j+Y4rqTlON+loxr/YKq9WV8qBuZOqKukqmQVgcZ0GFy93B7TMCSezcrRkfJF5" crossorigin="anonymous" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/i18next-browser-languagedetector/8.0.2/i18nextBrowserLanguageDetector.min.js" integrity="sha384-eSzah1KGuoffeWXz4wAf2QDpGYmDyB/JQgAXt3QEdOwRl8Uoss9wkAc8gCbe1laX" crossorigin="anonymous" defer></script>
 
 <!-- JSON-LD Structured Data -->
 <script type="application/ld+json">
@@ -95,14 +101,14 @@
       <button class="btn btn-ghost" id="appHamburgerToggle" aria-label="Menu">☰</button>
     </div>
     <nav class="nav-actions" aria-label="Navigation principale" id="appNav">
-      <button class="btn btn-primary" id="navNouveau"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span data-i18n="nav.newDoc">Nouveau Document</span></button>
-      <button class="btn" id="navInfos"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> <span data-i18n="nav.companyInfo">Mes Informations</span></button>
-      <button class="btn" id="navHistorique"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <span data-i18n="nav.history">Historique</span></button>
-      <button class="btn" id="langSwitcher" style="font-weight:700;" data-i18n="lang.label">FR</button>
-      <button class="btn" id="themeToggle" aria-label="Basculer le thème clair/sombre" aria-pressed="false" title="Basculer le thème clair/sombre"></button>
+      <button class="btn btn-primary" id="navNouveau" data-nav-action><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span data-i18n="nav.newDoc">Nouveau Document</span></button>
+      <button class="btn" id="navInfos" data-nav-action><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> <span data-i18n="nav.companyInfo">Mes Informations</span></button>
+      <button class="btn" id="navHistorique" data-nav-action><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <span data-i18n="nav.history">Historique</span></button>
+      <button class="btn" id="langSwitcher" data-nav-action style="font-weight:700;" data-i18n="lang.label">FR</button>
+      <button class="btn" id="themeToggle" data-nav-action aria-label="Basculer le thème clair/sombre" aria-pressed="false" title="Basculer le thème clair/sombre"></button>
       <span id="authUser" style="display:none;align-items:center;gap:10px;">
         <span id="authUserName" style="font-size:13px;font-weight:600;"></span>
-        <button class="btn btn-ghost" id="authLogout" style="font-size:12px;">Déconnexion</button>
+        <button class="btn btn-ghost" id="authLogout" data-nav-action style="font-size:12px;">Déconnexion</button>
       </span>
     </nav>
   </header>
@@ -124,20 +130,14 @@
           </select>
         </div>
         <div class="field">
-          <label for="docStatus" data-i18n="form.status">Statut</label>
-          <select id="docStatus">
-            <option value="brouillon" data-i18n="status.draft">Brouillon</option>
-            <option value="final" data-i18n="status.final">Final / Validé</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="docNumero" data-i18n="form.numero">Numéro de document</label>
-          <input type="text" id="docNumero">
-          <div class="hint" data-i18n="form.numeroHint">Généré automatiquement, modifiable.</div>
-        </div>
-        <div class="field">
           <label for="docDate" data-i18n="form.date">Date</label>
           <input type="date" id="docDate">
+        </div>
+        <div class="field field-span">
+          <label for="docNumero" data-i18n="form.numero">Numéro de document</label>
+          <input type="text" id="docNumero" aria-describedby="docNumeroHint docNumeroError">
+          <div class="hint" id="docNumeroHint" data-i18n="form.numeroHint">Généré automatiquement, modifiable.</div>
+          <div class="field-error" id="docNumeroError" style="display:none;" role="alert"></div>
         </div>
       </div>
     </div>

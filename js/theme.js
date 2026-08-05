@@ -10,3 +10,15 @@ export function toggleTheme() {
 export function getCurrentTheme() {
   return document.documentElement.dataset.theme || 'dark';
 }
+
+export function initThemeToggle(buttonId) {
+  const btn = document.getElementById(buttonId);
+  if (!btn) return;
+  const update = () => {
+    const isLight = getCurrentTheme() === 'light';
+    btn.textContent = isLight ? '🌙' : '☀️';
+    btn.setAttribute('aria-pressed', String(isLight));
+  };
+  update();
+  btn.addEventListener('click', () => { toggleTheme(); update(); });
+}

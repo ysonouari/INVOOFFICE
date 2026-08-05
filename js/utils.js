@@ -78,23 +78,23 @@ export function getContrastColor(hex){
   return (r*0.299 + g*0.587 + b*0.114) > 128 ? '#111111' : '#eef1f6';
 }
 
-export function montantEnLettres(totalTTC){
+export function montantEnLettres(totalTTC, suffix){
   if (totalTTC < 0) return 'Montant négatif — ' + (-totalTTC).toFixed(2) + ' ' + currencySymbol();
   const entier = Math.floor(totalTTC);
   const centimes = Math.round((totalTTC - entier) * 100);
   let txt = numberToWordsFR(entier) + ' ' + currencySymbol();
   if(centimes > 0) txt += ` et ${numberToWordsFR(centimes)} centime${centimes>1?'s':''}`;
-  return txt.charAt(0).toUpperCase() + txt.slice(1) + ' TTC.';
+  return txt.charAt(0).toUpperCase() + txt.slice(1) + (suffix !== undefined ? suffix : i18next.t('utils.ttc_suffix'));
 }
 
-export function montantEnLettresAr(totalTTC){
+export function montantEnLettresAr(totalTTC, suffix){
   const entier = Math.floor(totalTTC);
   const centimes = Math.round((totalTTC - entier) * 100);
   let txt = numberToWordsAr(entier) + ' ' + i18next.t('utils.currency');
   if(centimes > 0){
     txt += ' ' + i18next.t('utils.and') + ' ' + numberToWordsAr(centimes) + ' ' + (centimes > 1 ? i18next.t('utils.centimes') : i18next.t('utils.centime'));
   }
-  txt += i18next.t('utils.ttc_suffix');
+  txt += (suffix !== undefined ? suffix : i18next.t('utils.ttc_suffix'));
   return txt;
 }
 

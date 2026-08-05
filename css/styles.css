@@ -17,6 +17,7 @@
   --accent-disabled-text:var(--text);
   --accent-2:#3b6fe0;    /* boutons nav (Nouveau Document, etc.) */
   --accent-2-hover:#2f5fc7;
+  --toggle-track:var(--border-soft);
   --danger:#ef4444;
   --danger-hover:#dc2626;
   --radius:10px;
@@ -39,6 +40,7 @@
   --accent-soft:#ececfd;
   --accent-2:#2f5fc7;
   --accent-2-hover:#2550b0;
+  --toggle-track:var(--border-soft);
   --danger:#c53030;
   --danger-hover:#9b2c2c;
   --danger-bg:#fef2f2;
@@ -73,7 +75,6 @@
 :root[data-theme="light"] .btn-danger:hover{background:var(--danger-bg);border-color:var(--danger);}
 :root[data-theme="light"] .icon-btn:hover{background:var(--danger-bg);}
 :root[data-theme="light"] .app-footer a{color:var(--accent-2);}
-:root[data-theme="light"] label.toggle .track{background:var(--border-soft);}
 :root[data-theme="light"] .badge-devis{background:var(--badge-devis-bg);color:var(--badge-devis-text);}
 :root[data-theme="light"] .badge-facture{background:var(--badge-facture-bg);color:var(--badge-facture-text);}
 :root[data-theme="light"] .badge-bl{background:var(--badge-bl-bg);color:var(--badge-bl-text);}
@@ -201,6 +202,7 @@ textarea:focus{
 .grid-2{grid-template-columns:1fr 1fr;}
 .grid-3{grid-template-columns:1fr 1fr 1fr;}
 @media(max-width:720px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+.field-span{grid-column:1 / -1;}
 
 .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;font-weight:500;}
 .field input,.field select,.field textarea{
@@ -212,6 +214,8 @@ textarea:focus{
 input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1);}
 .field textarea{resize:vertical;min-height:64px;}
 .hint{color:var(--muted-2);font-size:11.5px;margin-top:5px;}
+.field input.input-error,.field select.input-error{border-color:var(--danger);}
+.field-error{display:none;color:var(--danger);font-size:12px;margin-top:5px;}
 
 select{
   -webkit-appearance:none;
@@ -314,7 +318,7 @@ table.lines input,table.lines select{
 label.toggle{display:inline-flex;align-items:center;gap:10px;cursor:pointer;}
 label.toggle input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
 label.toggle input:focus-visible + .track{outline:2px solid var(--accent-2);outline-offset:2px;}
-label.toggle .track{width:38px;height:21px;border-radius:20px;background:#2a3651;position:relative;transition:.15s;flex:none;}
+label.toggle .track{width:38px;height:21px;border-radius:20px;background:var(--toggle-track);position:relative;transition:.15s;flex:none;}
 label.toggle .track::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:2.5px;left:2.5px;transition:.15s;}
 label.toggle input:checked + .track{background:var(--accent-2);}
 label.toggle input:checked + .track::after{left:19.5px;}

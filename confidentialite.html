@@ -118,7 +118,7 @@
 
 <main class="content-page">
 
-  <div class="nav-back"><a href="/">← Retour à l'application</a></div>
+  <div class="nav-back"><a href="/">← Retour à l'application</a> <button class="btn btn-ghost theme-btn" id="themeToggle" aria-label="Basculer le thème clair/sombre"></button></div>
 
   <h1>Confidentialité et sécurité de vos données</h1>
   <p class="subtitle">La confidentialité n'est pas une option pour nous — elle fait partie de la conception même d'INVOOFFICE. Voici comment nous protégeons vos données.</p>
@@ -275,6 +275,7 @@
 </footer>
 
 <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
+<script type="module">import{initThemeToggle}from'./js/theme.js';initThemeToggle('themeToggle');</script>
 
 </body>
 </html>

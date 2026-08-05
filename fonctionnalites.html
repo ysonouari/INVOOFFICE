@@ -78,39 +78,25 @@
 </script>
 
 <style>
-  .content-page { max-width: 800px; margin: 0 auto; padding: 60px 20px 40px; }
-  .content-page h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
-  .content-page .subtitle { color: var(--muted); font-size: 15px; margin: 0 0 40px; line-height: 1.6; }
-  .content-page h2 { font-size: 20px; font-weight: 600; margin: 44px 0 14px; color: var(--text); border-bottom: 1px solid var(--border-soft); padding-bottom: 8px; }
+  .content-page h2 { margin: 44px 0 14px; border-bottom: 1px solid var(--border-soft); padding-bottom: 8px; }
   .content-page h3 { font-size: 16px; font-weight: 600; margin: 24px 0 6px; color: var(--text); }
-  .content-page p { color: var(--muted); font-size: 14.5px; line-height: 1.75; margin: 0 0 12px; }
-  .content-page ul { color: var(--muted); font-size: 14.5px; line-height: 1.75; margin: 0 0 12px; padding-left: 20px; }
+  .content-page p { margin: 0 0 12px; }
+  .content-page ul { margin: 0 0 12px; }
   .content-page ul li { margin-bottom: 4px; }
-  .content-page .nav-back { margin-bottom: 24px; }
-  .content-page .nav-back a { color: var(--muted); text-decoration: none; font-size: 13px; }
-  .content-page .nav-back a:hover { color: var(--text); }
-  .content-page a { color: var(--accent-2); text-decoration: underline; }
-  .content-page a:hover { color: var(--accent-2-hover); }
-  .content-page .cta-box { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-align: center; margin-top: 40px; }
-  .content-page .cta-box p { margin: 0 0 16px; font-size: 15px; color: var(--text); }
-  .content-page .cta-box a { display: inline-block; padding: 12px 24px; background: var(--accent-2); color: #fff; border-radius: var(--radius); text-decoration: none; font-weight: 600; font-size: 14px; }
-  .content-page .cta-box a:hover { background: var(--accent-2-hover); }
+  .content-page a { text-decoration: underline; }
+  .cta-box a:hover { background: var(--accent-2-hover); }
 
   .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin: 0 0 16px; }
   .card { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 16px; }
   .card h3 { margin: 0 0 6px; font-size: 15px; }
   .card p { margin: 0; font-size: 13.5px; }
 
-  .faq-item { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
-  .faq-item h3 { margin: 0 0 6px; font-size: 14.5px; }
-  .faq-item p { margin: 0; font-size: 13.5px; }
+  .faq-item { margin-bottom: 10px; }
 
   .inline-links { margin-top: 32px; padding: 16px; background: var(--panel-2); border-radius: var(--radius); font-size: 14px; color: var(--muted); text-align: center; }
   .inline-links a { margin: 0 10px; }
 
   @media(max-width: 480px) {
-    .content-page { padding: 40px 16px 30px; }
-    .content-page h1 { font-size: 24px; }
     .card-grid { grid-template-columns: 1fr; }
   }
 </style>
@@ -119,7 +105,7 @@
 
 <main class="content-page">
 
-  <div class="nav-back"><a href="/">← Retour à l'application</a></div>
+  <div class="nav-back"><a href="/">← Retour à l'application</a> <button class="btn btn-ghost theme-btn" id="themeToggle" aria-label="Basculer le thème clair/sombre"></button></div>
 
   <h1>Fonctionnalités d'INVOOFFICE</h1>
   <p class="subtitle">INVOOFFICE permet de créer rapidement des factures, devis, bons de livraison et avoirs professionnels en PDF, directement depuis votre navigateur, sans inscription.</p>
@@ -284,6 +270,7 @@
 </footer>
 
 <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
+<script type="module">import{initThemeToggle}from'./js/theme.js';initThemeToggle('themeToggle');</script>
 
 </body>
 </html>

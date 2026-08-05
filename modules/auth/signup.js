@@ -2,7 +2,7 @@
  * Inscription — Supabase Auth
  */
 import { getSupabase } from './supabase-client.js';
-import { isValidEmail, isValidPhone, isNotEmpty, minLength } from '../shared/validators.js';
+import { isValidEmail, isNotEmpty, minLength } from '../shared/validators.js';
 
 export async function signUp({ fullName, email, whatsapp, password, confirmPassword }) {
   const errors = {};

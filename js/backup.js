@@ -55,6 +55,11 @@ export async function exportBackup() {
 }
 
 export async function importBackup(file) {
+  if (file.size > 10 * 1024 * 1024) {
+    await showAlertDialog(i18next.t('backup.file_too_large'));
+    return;
+  }
+
   let payload;
   try {
     const text = await file.text();
@@ -72,8 +77,38 @@ export async function importBackup(file) {
     return;
   }
 
+  if (typeof payload.company.nom !== 'string' || typeof payload.company.regimeTva !== 'string') {
+    await showAlertDialog(i18next.t('backup.invalid_structure'));
+    return;
+  }
+
+  const numeros = new Set();
+  for (const doc of payload.history) {
+    if (!doc.type || !doc.numero || !doc.id) {
+      await showAlertDialog(i18next.t('backup.invalid_structure'));
+      return;
+    }
+    const key = doc.type + '\x00' + doc.numero;
+    if (numeros.has(key)) {
+      await showAlertDialog(i18next.t('backup.invalid_structure'));
+      return;
+    }
+    numeros.add(key);
+  }
+
+  for (const client of payload.clients) {
+    if (!client.id || typeof client.nom !== 'string') {
+      await showAlertDialog(i18next.t('backup.invalid_structure'));
+      return;
+    }
+  }
+
   const confirmed = await showConfirmDialog(i18next.t('backup.import_confirm'));
   if (!confirmed) return;
+
+  const prevCompany = loadCompany();
+  const prevHistory = loadHistory();
+  const prevClients = loadClients();
 
   saveCompany(payload.company);
   saveHistory(payload.history);
@@ -83,6 +118,9 @@ export async function importBackup(file) {
   const storedHistory = localStorage.getItem('fb_history');
   const storedClients = localStorage.getItem('fb_clients');
   if (!storedCompany || !storedHistory || !storedClients) {
+    saveCompany(prevCompany);
+    saveHistory(prevHistory);
+    saveClients(prevClients);
     await showAlertDialog(i18next.t('backup.import_failed'));
     return;
   }

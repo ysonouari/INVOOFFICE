@@ -76,7 +76,7 @@
 
 <main class="content-page">
 
-  <div class="nav-back"><a href="/">← Retour à l'application</a></div>
+  <div class="nav-back"><a href="/">← Retour à l'application</a> <button class="btn btn-ghost theme-btn" id="themeToggle" aria-label="Basculer le thème clair/sombre"></button></div>
 
   <h1>Conditions Générales d'Utilisation (CGU)</h1>
   <p class="subtitle">Les présentes Conditions Générales d'Utilisation définissent les règles d'accès et d'usage de l'application INVOOFFICE accessible via le site invoooffice.com.</p>
@@ -171,6 +171,7 @@
 </footer>
 
 <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
+<script type="module">import{initThemeToggle}from'./js/theme.js';initThemeToggle('themeToggle');</script>
 
 </body>
 </html>

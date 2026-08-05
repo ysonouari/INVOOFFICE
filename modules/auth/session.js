@@ -14,13 +14,6 @@ export async function getCurrentUser() {
   return session?.user || null;
 }
 
-export function onAuthChange(callback) {
-  const supabase = getSupabase();
-  return supabase.auth.onAuthStateChange((event, session) => {
-    callback(event, session);
-  });
-}
-
 export async function signOut() {
   const supabase = getSupabase();
   const { error } = await supabase.auth.signOut();

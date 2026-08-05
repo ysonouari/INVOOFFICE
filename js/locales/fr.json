@@ -24,15 +24,11 @@
     "bl": "Bon de livraison",
     "avoir": "Avoir"
   },
-  "status": {
-    "draft": "Brouillon",
-    "final": "Final / Validé"
-  },
   "form": {
     "docType": "Type de document",
-    "status": "Statut",
     "numero": "Numéro de document",
     "numeroHint": "Généré automatiquement, modifiable.",
+    "numeroDuplicate": "Ce numéro de document existe déjà. Veuillez choisir un autre numéro.",
     "date": "Date",
     "client_section": "Client",
     "client_select": "Sélectionner un client",
@@ -150,6 +146,7 @@
     "desc": "Sauvegarde des données structurées (société, historique, clients) et de l'image d'en-tête. Les PDF déjà générés ne sont pas inclus mais peuvent être réimprimés depuis l'historique.",
     "invalid_json": "Erreur : le fichier sélectionné n'est pas un JSON valide.",
     "invalid_structure": "Erreur : fichier de sauvegarde invalide ou corrompu. Aucune donnée n'a été modifiée.",
+    "file_too_large": "Le fichier est trop volumineux. Taille maximale : 10 Mo.",
     "import_confirm": "⚠️ L'import va REMPLACER toutes les données actuelles (société, historique, clients, image d'en-tête).\n\nLes PDF déjà générés ne sont pas inclus dans la sauvegarde et ne seront pas restaurés. Vous pourrez les réimprimer depuis l'historique après l'import.\n\nContinuer ?",
     "success": "Import terminé avec succès.",
     "import_failed": "Erreur : l'espace de stockage est insuffisant. Les données n'ont pas pu être importées complètement. Veuillez libérer de l'espace puis réessayer."
@@ -193,6 +190,7 @@
     "th_qty": "Qté",
     "th_total": "Total",
     "total_ht": "Total HT :",
+    "total": "Total :",
     "remise": "Remise ({pct}%) :",
     "tva": "TVA ({rate}%) :",
     "total_ttc": "Total TTC :",
@@ -203,7 +201,8 @@
     "alert_no_client": "Sélectionnez un client avant de générer le document.",
     "alert_no_lines": "Ajoutez au moins une ligne avant de générer le document.",
     "alert_empty_designation": "Une ou plusieurs lignes n'ont pas de désignation. Veuillez remplir toutes les désignations avant de générer le document.",
-    "alert_zero_qty": "Une ou plusieurs lignes ont une quantité nulle. Veuillez renseigner une quantité supérieure à zéro."
+    "alert_zero_qty": "Une ou plusieurs lignes ont une quantité nulle. Veuillez renseigner une quantité supérieure à zéro.",
+    "alert_save_failed": "Échec de l'enregistrement du PDF. Vérifiez l'espace de stockage disponible."
   },
   "lines": {
     "tva_exoneree": "Exonérée",

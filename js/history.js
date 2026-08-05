@@ -1,5 +1,5 @@
 import { DOC_TYPES } from './config.js';
-import { loadHistory, saveHistory } from './storage.js';
+import { loadHistory, saveHistory, isNumeroUnique } from './storage.js';
 import { escapeHtml, currencySymbol } from './utils.js';
 import { buildPdfHtml } from './pdf.js';
 import { ICONS } from './icons.js';
@@ -13,6 +13,10 @@ export function getEditingDocId() { return editingDocId; }
 export function clearEditingDocId() { editingDocId = null; }
 
 export async function saveToHistory(payload, filename){
+  if (!isNumeroUnique(payload.type, payload.numero, editingDocId)) {
+    await showAlertDialog(i18next.t('form.numeroDuplicate'));
+    return;
+  }
   const history = loadHistory();
   if (editingDocId) {
     const idx = history.findIndex(d => d.id === editingDocId);
@@ -24,7 +28,6 @@ export async function saveToHistory(payload, filename){
         date: payload.date,
         client: payload.client.nom,
         totalTTC: payload.totals.showPrices ? payload.totals.totalTTC : null,
-        status: payload.status,
         filename,
         payload,
       };
@@ -45,7 +48,6 @@ export async function saveToHistory(payload, filename){
     date: payload.date,
     client: payload.client.nom,
     totalTTC: payload.totals.showPrices ? payload.totals.totalTTC : null,
-    status: payload.status,
     createdAt: new Date().toISOString(),
     filename,
     payload,

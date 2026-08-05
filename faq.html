@@ -101,7 +101,7 @@
 
 <main class="content-page">
 
-  <div class="nav-back"><a href="/">← Retour à l'application</a></div>
+  <div class="nav-back"><a href="/">← Retour à l'application</a> <button class="btn btn-ghost theme-btn" id="themeToggle" aria-label="Basculer le thème clair/sombre"></button></div>
 
   <h1>Questions fréquentes</h1>
   <p class="subtitle">Trouvez rapidement une réponse à vos questions sur INVOOFFICE. Si vous ne trouvez pas ce que vous cherchez, <a href="/fonctionnalites.html">consultez nos fonctionnalités</a> ou <a href="/pourquoi-invooffice.html">découvrez pourquoi nous avons créé cet outil</a>.</p>
@@ -247,6 +247,7 @@
 </footer>
 
 <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
+<script type="module">import{initThemeToggle}from'./js/theme.js';initThemeToggle('themeToggle');</script>
 
 </body>
 </html>

@@ -120,6 +120,8 @@
 
 <main class="article-page">
 
+<button class="btn btn-ghost theme-btn" id="themeToggle" aria-label="Basculer le thème clair/sombre" style="float:right;"></button>
+
   <!-- BREADCRUMB -->
   <nav class="breadcrumb" aria-label="Fil d'Ariane">
     <a href="/">Accueil</a> <span>›</span>
@@ -186,6 +188,7 @@
   <p>&copy; <span id="footerYear">2026</span> INVOOFFICE. Tous droits réservés.</p>
 </footer>
 <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
+<script type="module">import{initThemeToggle}from'../js/theme.js';initThemeToggle('themeToggle');</script>
 
 </body>
 </html>

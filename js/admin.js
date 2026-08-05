@@ -3,7 +3,7 @@
  * Protégé par requireAdmin()
  */
 import { initSupabase } from '../modules/auth/supabase-client.js';
-import { requireAdmin, getStatusMessage } from '../modules/auth/guard.js';
+import { requireAdmin } from '../modules/auth/guard.js';
 import { signOut } from '../modules/auth/session.js';
 import { loadStats } from '../modules/admin/stats.js';
 import { loadUsersTable } from '../modules/admin/users-table.js';

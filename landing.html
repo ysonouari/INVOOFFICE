@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/landing.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-De+l/Df7qym5QBDVocD3+gW1S7IjR3epf+6KbRDjB3FCCzM/LqVTwqckT6FhFar8" crossorigin="anonymous"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -34,7 +34,7 @@
   }
   </script>
   <script>
-    (function(){var t=localStorage.getItem('fb_theme')||'dark';document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='light'?'#ffffff':'#121a2e';})();
+    (function(){var t=localStorage.getItem('fb_theme');if(!t){t=window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';}document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='light'?'#ffffff':'#121a2e';})();
   </script>
 </head>
 <body>
@@ -148,6 +148,7 @@
         <a href="#features">Tarif</a>
         <a href="#how-it-works">Fonctionnement</a>
         <a href="#faq">FAQ</a>
+        <button class="btn btn-ghost theme-btn" id="themeToggle" aria-label="Basculer le thème clair/sombre"></button>
         <button class="btn btn-ghost" data-action="show-signin">Connexion</button>
       </nav>
     </div>
@@ -158,7 +159,7 @@
       <div class="lp-hero-inner">
         <div class="lp-hero-text">
           <h2>Votre facturation,<br><span class="lp-hero-highlight">simplement.</span></h2>
-          <p>Créez des devis, factures, bons de livraison et avoirs en PDF. Conforme à la réglementation marocaine. Sans publicité, sans collecte de données.</p>
+          <p>Créez des devis, factures, bons de livraison et avoirs en PDF. Conforme à la réglementation marocaine. Accès illimité, sans collecte de données.</p>
           <div class="lp-hero-actions">
             <button class="btn btn-accent btn-lg" data-action="show-signup">Commencer maintenant</button>
             <button class="btn btn-ghost btn-lg" data-action="show-signin">Se connecter</button>
@@ -370,6 +371,7 @@
 
   <script type="module" src="modules/landing/faq.js"></script>
   <script type="module" src="modules/landing/auth-modals.js"></script>
+  <script type="module">import{initThemeToggle}from'./js/theme.js';initThemeToggle('themeToggle');</script>
   <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
 </body>
 </html>

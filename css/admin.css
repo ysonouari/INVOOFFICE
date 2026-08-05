@@ -56,7 +56,7 @@
   background: var(--panel);
   color: var(--muted);
   cursor: pointer;
-  transition: all .15s;
+  transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
 }
 .admin-filter-pill:hover { border-color: var(--accent-2); color: var(--text); }
 .admin-filter-pill.active {
@@ -212,41 +212,6 @@
   color: var(--muted);
   font-size: 14px;
 }
-
-/* ---------- spinner ---------- */
-.lp-spinner {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(255,255,255,.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: lp-spin .6s linear infinite;
-  vertical-align: middle;
-  margin-right: 6px;
-}
-@keyframes lp-spin { to { transform: rotate(360deg); } }
-
-/* ---------- toast notifications ---------- */
-.lp-toast {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px 20px;
-  font-size: 13px;
-  color: var(--text);
-  box-shadow: 0 8px 24px rgba(0,0,0,.3);
-  z-index: 9999;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity .25s, transform .25s;
-}
-.lp-toast.lp-toast-visible { opacity: 1; transform: translateY(0); }
-.lp-toast-success { border-color: var(--success-border); }
-.lp-toast-error { border-color: color-mix(in srgb, var(--panel) 80%, var(--danger) 20%); }
 
 /* ---------- app header (admin) ---------- */
 .app-header {
