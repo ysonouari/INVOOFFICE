@@ -409,6 +409,22 @@
 .lp-card-block {
   padding: 48px 52px;
 }
+.lp-card-demo {
+  border-top: 1px solid rgba(128,128,128,.07);
+}
+.lp-video-wrapper {
+  display: flex;
+  justify-content: center;
+}
+.lp-video {
+  width: 94%;
+  max-width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  display: block;
+  background: #000;
+}
+
 .lp-card-faq {
   border-top: 1px solid rgba(128,128,128,.07);
 }
@@ -654,6 +670,7 @@
   .lp-premium-heading { font-size: 26px; }
   .lp-card-block { padding: 40px 28px; }
   .lp-card-cta { padding: 36px 28px; }
+  .lp-video { width: 98%; }
 }
 
 @media (max-width: 640px) {
@@ -672,6 +689,7 @@
   .lp-header-inner { flex-wrap: wrap; gap: 10px; }
   .lp-nav { width: 100%; justify-content: flex-end; }
   .btn-lg { padding: 13px 24px; font-size: 14px; }
+  .lp-video { width: 100%; }
 }
 
 @media (max-width: 480px) {
