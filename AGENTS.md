@@ -21,7 +21,7 @@ Stack : JavaScript ES modules, Supabase (auth), html2canvas + jsPDF (PDF), local
 | **Auth** | Supabase | RLS, rate limiting client-side + honeypot |
 | **Stockage** | localStorage (source) + IndexedDB (miroir) + OPFS (PDF/images) | `fb_company`, `fb_history`, `fb_clients` |
 | **PDF** | html2canvas (capture) + jsPDF (assembly) | Double couche : JPEG fond + texte vectoriel invisible |
-| **PWA** | Service Worker | Cache-first assets, network-first CDN, precache 61 fichiers |
+| **PWA** | Service Worker | Cache-first assets, skip cross-origin (CDN loads natively), precache 61 fichiers |
 | **i18n** | i18next | FR/AR avec RTL |
 | **CSS** | Design tokens (variables) | Dark/light mode, pas de couleur hardcodée |
 | **Tests** | Playwright 1.61 | 116 specs, config dans `tests/playwright.config.ts` |

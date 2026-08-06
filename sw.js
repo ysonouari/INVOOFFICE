@@ -1,4 +1,4 @@
-const CACHE_NAME = 'facturation-v4';
+const CACHE_NAME = 'facturation-v5';
 
 const PRECACHE_URLS = [
   './',
@@ -60,9 +60,6 @@ const PRECACHE_URLS = [
   'modules/shared/validators.js',
 ];
 
-const CDN_ORIGIN = 'cdnjs.cloudflare.com';
-const CDN_TIMEOUT_MS = 4000;
-
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(
@@ -100,6 +97,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
+  if (url.origin !== self.location.origin) return;
+
   if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request)
@@ -109,48 +108,6 @@ self.addEventListener('fetch', (e) => {
           return response;
         })
         .catch(() => caches.match(e.request))
-    );
-    return;
-  }
-
-  if (url.hostname === CDN_ORIGIN) {
-    e.respondWith(
-      new Promise((resolve) => {
-        let resolved = false;
-        const timer = setTimeout(() => {
-          if (!resolved) {
-            resolved = true;
-            caches.match(e.request).then((cached) => {
-              if (cached) {
-                resolve(cached);
-              } else {
-                fetch(e.request).then(resolve).catch(() => resolve(new Response('', { status: 504 })));
-              }
-            });
-          }
-        }, CDN_TIMEOUT_MS);
-
-        fetch(e.request)
-          .then((response) => {
-            if (!resolved) {
-              resolved = true;
-              clearTimeout(timer);
-              const cloned = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(e.request, cloned));
-              resolve(response);
-            }
-          })
-          .catch(() => {
-            if (!resolved) {
-              resolved = true;
-              clearTimeout(timer);
-              caches.match(e.request).then((cached) => {
-                if (cached) resolve(cached);
-                else resolve(new Response('', { status: 504 }));
-              });
-            }
-          });
-      })
     );
     return;
   }
