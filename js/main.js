@@ -105,6 +105,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('histSearch').addEventListener('input', renderHistory);
 
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA' && document.getElementById('view-historique').classList.contains('active')) {
+      e.preventDefault();
+      const s = document.getElementById('histSearch');
+      if (s) s.focus();
+    }
+  });
+
   document.querySelector('[data-action="add-line"]').addEventListener('click', () => addLine());
   document.querySelector('[data-action="generate-pdf"]').addEventListener('click', generatePDF);
   document.querySelector('[data-action="save-company"]').addEventListener('click', saveCompanyForm);
