@@ -27,7 +27,7 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 }
 
 const ADMIN_EMAIL = 'admin@invooffice.com';
-const ADMIN_PASSWORD = 'invooffice2009@';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || (() => { console.error('❌ ADMIN_PASSWORD non défini dans .env.local'); process.exit(1); })();
 const ADMIN_NAME = 'Administrateur';
 
 async function createFullAdmin() {

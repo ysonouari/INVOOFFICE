@@ -96,7 +96,7 @@ export async function loadSettings() {
     saveBtn.textContent = 'Enregistrer';
 
     if (error) {
-      alert('Erreur: ' + error.message);
+      showToast('Erreur lors de la sauvegarde: ' + error.message, 'error');
       return;
     }
 

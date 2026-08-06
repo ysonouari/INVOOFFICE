@@ -20,6 +20,7 @@ const MIME = {
   '.ttf': 'font/ttf',
   '.woff2': 'font/woff2',
   '.ico': 'image/x-icon',
+  '.webmanifest': 'application/json',
   '.xml': 'application/xml; charset=utf-8',
   '.txt': 'text/plain; charset=utf-8',
 };
@@ -36,6 +37,10 @@ const server = http.createServer((req, res) => {
   let url = req.url.split('?')[0];
   if (url.endsWith('/') && url.length > 1) url = url.slice(0, -1);
 
+  // Bloquer l'accès aux fichiers .env et fichiers sensibles
+  const basename = url.split('/').pop() || '';
+  if (basename.startsWith('.env')) { res.writeHead(404); res.end('Not found'); return; }
+
   // Appliquer les rewrites
   let filePath = REWRITES[url] || url;
 
@@ -46,6 +51,13 @@ const server = http.createServer((req, res) => {
   // Servir le fichier
   const ext = path.extname(filePath);
   const contentType = MIME[ext] || 'application/octet-stream';
+  const headers = {
+    'Content-Type': contentType,
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  };
 
   fs.readFile(resolved, (err, data) => {
     if (err) {
@@ -54,16 +66,16 @@ const server = http.createServer((req, res) => {
         const indexFile = path.join(resolved, 'index.html');
         fs.readFile(indexFile, (err2, data2) => {
           if (err2) { res.writeHead(404); res.end('Not found'); return; }
-          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-          res.end(data2);
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY' });
+        res.end(data2);
         });
         return;
       }
       res.writeHead(500); res.end('Server error');
       return;
     }
-    res.writeHead(200, { 'Content-Type': contentType });
-    res.end(data);
+  res.writeHead(200, headers);
+  res.end(data);
   });
 });
 

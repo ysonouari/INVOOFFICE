@@ -1,4 +1,4 @@
-const CACHE_NAME = 'facturation-v3';
+const CACHE_NAME = 'facturation-v4';
 
 const PRECACHE_URLS = [
   './',
@@ -6,6 +6,11 @@ const PRECACHE_URLS = [
   'landing.html',
   'admin/index.html',
   'confirmation/index.html',
+  'faq.html',
+  'fonctionnalites.html',
+  'pourquoi-invooffice.html',
+  'cgu.html',
+  'confidentialite.html',
   'manifest.json',
   'css/styles.css',
   'css/rtl.css',
@@ -14,7 +19,6 @@ const PRECACHE_URLS = [
   'css/admin.css',
   'js/auth.js',
   'js/admin.js',
-  'js/arabic-shaper.js',
   'js/backup.js',
   'js/client.js',
   'js/company-modal.js',
@@ -79,18 +83,19 @@ self.addEventListener('message', (e) => {
 });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(self.clients.claim());
-    e.waitUntil(
-      caches.keys().then((keys) =>
-        Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-      )
-    );
-    e.waitUntil(
-      self.clients.matchAll({ type: 'window' }).then((clients) => {
-        clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED' }));
-      })
-    );
-  });
+  e.waitUntil(
+    self.clients.claim().then(() =>
+      Promise.all([
+        caches.keys().then((keys) =>
+          Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+        ),
+        self.clients.matchAll({ type: 'window' }).then((clients) => {
+          clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED' }));
+        }),
+      ])
+    )
+  );
+});
 
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
