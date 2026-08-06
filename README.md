@@ -1,5 +1,6 @@
 # INVOOFFICE
 
+> **État du projet** → voir [AGENTS.md](AGENTS.md) (source de vérité pour les agents IA)
 > Facturation intelligente pour entrepreneurs marocains — Devis, Factures, Bons de livraison, Avoirs en PDF. Conforme DGI. Accès à vie, sans abonnement.
 
 [![Tests](https://img.shields.io/badge/tests-106%2F106%20passing-brightgreen)](tests/)
