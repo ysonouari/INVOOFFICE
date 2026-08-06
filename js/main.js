@@ -12,6 +12,8 @@ import { ICONS } from './icons.js';
 import { checkAccessAndInit, logout } from './auth.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+  try {
+
   // Hamburger menu toggle
   var hamburger = document.getElementById('appHamburgerToggle');
   var appNav = document.getElementById('appNav');
@@ -176,6 +178,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   });
+
+  } catch (e) {
+    console.error('App init failed:', e);
+    var overlay = document.getElementById('appErrorOverlay');
+    if (overlay) overlay.style.display = 'flex';
+  }
 });
 
 if ('serviceWorker' in navigator) {

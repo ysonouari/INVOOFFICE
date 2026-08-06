@@ -9,6 +9,7 @@ import { trapFocusInModal } from './modal-focus.js';
 
 let pendingHeaderImage = null;
 let companyModalPrevFocus = null;
+let headerPreviewUrls = [];
 
 function onCompanyModalKey(e) {
   if (e.key === 'Escape') { closeCompanyModal(); return; }
@@ -21,7 +22,13 @@ enforceDigitsOnly('cRC', 10);
 enforceDigitsOnly('cTP', 8);
 enforceDigitsOnly('cCNSS', 8);
 
+function revokeHeaderPreviewUrls() {
+  for (const url of headerPreviewUrls) URL.revokeObjectURL(url);
+  headerPreviewUrls = [];
+}
+
 export async function openCompanyModal(){
+  revokeHeaderPreviewUrls();
   const c = loadCompany();
   document.getElementById('cDevise').value = c.devise || 'DH';
   document.getElementById('cNom').value = c.nom || '';
@@ -47,7 +54,9 @@ export async function openCompanyModal(){
     let blob;
     try { blob = await loadHeaderImage(); } catch (_) { blob = null; }
     if (blob) {
-      renderHeaderPreview(URL.createObjectURL(blob));
+      const url = URL.createObjectURL(blob);
+      headerPreviewUrls.push(url);
+      renderHeaderPreview(url);
     } else if (c.headerImage) {
       await migrateHeaderFromCompany(c);
       delete c.headerImage;
@@ -55,7 +64,9 @@ export async function openCompanyModal(){
       let migratedBlob;
       try { migratedBlob = await loadHeaderImage(); } catch (_) { migratedBlob = null; }
       if (migratedBlob) {
-        renderHeaderPreview(URL.createObjectURL(migratedBlob));
+        const url = URL.createObjectURL(migratedBlob);
+        headerPreviewUrls.push(url);
+        renderHeaderPreview(url);
       }
     }
   })();
@@ -91,6 +102,7 @@ export async function openCompanyModal(){
 }
 
 export function closeCompanyModal(){
+  revokeHeaderPreviewUrls();
   document.removeEventListener('keydown', onCompanyModalKey);
   document.getElementById('companyModalOverlay').classList.remove('open');
   if (companyModalPrevFocus && typeof companyModalPrevFocus.focus === 'function') {

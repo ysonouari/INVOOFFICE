@@ -36,8 +36,8 @@ export async function saveHeaderImage(blob) {
   const dir = await rootDir();
   const fh = await dir.getFileHandle(HEADER_FILE, { create: true });
   const w = await fh.createWritable();
-  await w.write(blob);
-  await w.close();
+  try { await w.write(blob); }
+  finally { await w.close(); }
 }
 
 export async function loadHeaderImage() {
@@ -61,8 +61,8 @@ export async function savePdfFile(filename, blob) {
   const dir = await pdfDir();
   const fh = await dir.getFileHandle(filename, { create: true });
   const w = await fh.createWritable();
-  await w.write(blob);
-  await w.close();
+  try { await w.write(blob); }
+  finally { await w.close(); }
 }
 
 export async function loadPdfFile(filename) {

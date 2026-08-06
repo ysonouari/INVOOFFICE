@@ -281,15 +281,22 @@ async function validatePayload(payload){
   return true;
 }
 
+let generating = false;
+
 export async function generatePDF(){
+  if (generating) return;
+  generating = true;
+  let stage = null;
+  let headerUrl = null;
+  try {
   const payload = collectPayload();
   if (!await validatePayload(payload)) return;
 
   let headerBlob;
   try { headerBlob = await loadHeaderImage(); } catch (_) { headerBlob = null; }
-  const headerUrl = headerBlob ? URL.createObjectURL(headerBlob) : null;
+  headerUrl = headerBlob ? URL.createObjectURL(headerBlob) : null;
 
-  const stage = document.getElementById('pdf-stage');
+  stage = document.getElementById('pdf-stage');
   stage.innerHTML = buildPdfHtml(payload, headerUrl);
   const pageEl = stage.querySelector('.pdf-page');
 
@@ -386,9 +393,11 @@ export async function generatePDF(){
     await showAlertDialog(i18next.t('pdf.alert_save_failed'));
   }
 
-  if (headerUrl) URL.revokeObjectURL(headerUrl);
-
   await saveToHistory(payload, filename);
 
-  stage.innerHTML = '';
+  } finally {
+    if (headerUrl) URL.revokeObjectURL(headerUrl);
+    if (stage) stage.innerHTML = '';
+    generating = false;
+  }
 }

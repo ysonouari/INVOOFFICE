@@ -33,3 +33,16 @@ desktop.ini
 
 # Deployment
 .vercel/
+
+# Test artifacts
+test-results/
+
+# Debug / temp scripts (root only)
+/debug-*.mjs
+/check-state.mjs
+/diagnose-*.mjs
+/verify-*.mjs
+/playwright-steps.mjs
+/playwright-test.js
+/*.spec.js
+/test-*.mjs

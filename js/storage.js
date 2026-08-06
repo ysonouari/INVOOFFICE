@@ -22,12 +22,21 @@ function openDB() {
 }
 
 function dbPut(key, value) {
-  if (!db) return;
-  try {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    tx.objectStore(STORE_NAME).put(value, key);
-    tx.onerror = () => console.warn('IndexedDB write failed for key:', key);
-  } catch (e) { console.warn('IndexedDB write exception:', e); }
+  if (!db) return Promise.resolve();
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => {
+        console.warn('IndexedDB write failed for key:', key);
+        resolve();
+      };
+    } catch (e) {
+      console.warn('IndexedDB write exception:', e);
+      resolve();
+    }
+  });
 }
 
 function dbGet(key) {
@@ -84,12 +93,12 @@ export async function initStorage() {
       if (gen !== startGen) break;
       const val = await dbGet(key);
       if (gen !== startGen) break;
-      if (val !== null && val !== undefined) {
+      if (val !== null && val !== undefined && cache[key] === null) {
         cache[key] = val;
         try { localStorage.setItem(lsKey(key), JSON.stringify(val)); }
         catch (e) { console.warn('localStorage write failed in initStorage for', key, e); }
       } else if (cache[key] !== null) {
-        dbPut(key, cache[key]);
+        dbPut(key, cache[key]).catch(() => {});
       }
     }
   } catch (_) {
@@ -121,7 +130,7 @@ export function saveCompany(c) {
   cache.company = c;
   try { localStorage.setItem(lsKey('company'), JSON.stringify(c)); }
   catch (e) { console.warn('localStorage quota exceeded for company:', e); }
-  dbPut('company', c);
+  dbPut('company', c).catch(() => {});
 }
 
 export function loadHistory() {
@@ -131,7 +140,7 @@ export function loadHistory() {
   if (migrateHistoryIds(cache.history)) {
     try { localStorage.setItem(lsKey('history'), JSON.stringify(cache.history)); }
     catch (e) { console.warn('localStorage write failed for history migration:', e); }
-    dbPut('history', cache.history);
+    dbPut('history', cache.history).catch(() => {});
   }
   return cache.history;
 }
@@ -141,7 +150,7 @@ export function saveHistory(h) {
   cache.history = h;
   try { localStorage.setItem(lsKey('history'), JSON.stringify(h)); }
   catch (e) { console.warn('localStorage quota exceeded for history:', e); }
-  dbPut('history', h);
+  dbPut('history', h).catch(() => {});
 }
 
 export function loadClients() {
@@ -164,7 +173,7 @@ export function saveClients(c) {
   cache.clients = c;
   try { localStorage.setItem(lsKey('clients'), JSON.stringify(c)); }
   catch (e) { console.warn('localStorage quota exceeded for clients:', e); }
-  dbPut('clients', c);
+  dbPut('clients', c).catch(() => {});
 }
 
 export function nextNumero(type) {

@@ -8,8 +8,14 @@
 const LANG_KEY = 'fb_lang';
 
 async function loadLocale(lng) {
-  const resp = await fetch(`js/locales/${lng}.json?v=${Date.now()}`);
-  return resp.json();
+  try {
+    const resp = await fetch(`js/locales/${lng}.json?v=${Date.now()}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return resp.json();
+  } catch (e) {
+    console.warn(`i18n: failed to load locale "${lng}" — falling back to empty`, e);
+    return {};
+  }
 }
 
 export async function initI18n() {
@@ -18,15 +24,25 @@ export async function initI18n() {
   for (const lng of ['fr', 'ar']) {
     resources[lng] = { translation: await loadLocale(lng) };
   }
-  await i18next
-    .use(i18nextBrowserLanguageDetector)
-    .init({
-      lng: saved || undefined,
+  try {
+    await i18next
+      .use(i18nextBrowserLanguageDetector)
+      .init({
+        lng: saved || undefined,
+        fallbackLng: 'fr',
+        interpolation: { escapeValue: false, prefix: '{', suffix: '}' },
+        detection: { order: ['navigator', 'htmlTag'] },
+        resources,
+      });
+  } catch (e) {
+    console.warn('i18n: i18next.init failed — falling back to bare minimum', e);
+    await i18next.init({
+      lng: 'fr',
       fallbackLng: 'fr',
       interpolation: { escapeValue: false, prefix: '{', suffix: '}' },
-      detection: { order: ['navigator', 'htmlTag'] },
-      resources,
+      resources: {},
     });
+  }
   applyTranslations();
 }
 

@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "sb-ufvwzpacgmfxfydacnwo-auth-token",
+          "value": "{\"access_token\":\"eyJhbGciOiJFUzI1NiIsImtpZCI6IjA4MWRlMzI3LTBlNzQtNDgwYi1iZWMyLWI0ZDNlZjFiYmYxYiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3Vmdnd6cGFjZ21meGZ5ZGFjbndvLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJjMzNkYjllMi1mOTIwLTQyZDctODEzMy0zY2MzYWI2MTJiNmEiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzg2MDQzMDQ2LCJpYXQiOjE3ODYwMzk0NDYsImVtYWlsIjoieXMxb25vdWFyaUBnbWFpbC5jb20iLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7ImVtYWlsIjoieXMxb25vdWFyaUBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZnVsbF9uYW1lIjoiT25vdWFyaSIsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwic3ViIjoiYzMzZGI5ZTItZjkyMC00MmQ3LTgxMzMtM2NjM2FiNjEyYjZhIiwid2hhdHNhcHAiOiIrMjEyNjMwMjMwODAzIn0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3ODYwMzk0NDZ9XSwic2Vzc2lvbl9pZCI6ImI0MDE4ZDA1LWI3YTYtNDUwMS05Y2UzLTY0YTBhZTg0MTFjYSIsImlzX2Fub255bW91cyI6ZmFsc2V9.LlMxmGMeL2A7lgOFhJJ3AAbUKriCxHUa581l6yrAltTjG9txtT8aFV6hhKbudY_LQ51BAR-nNlsOdmHFFSFWNA\",\"token_type\":\"bearer\",\"expires_in\":3600,\"expires_at\":1786043046,\"refresh_token\":\"bodxftelmhwl\",\"user\":{\"id\":\"c33db9e2-f920-42d7-8133-3cc3ab612b6a\",\"aud\":\"authenticated\",\"role\":\"authenticated\",\"email\":\"ys1onouari@gmail.com\",\"email_confirmed_at\":\"2026-08-05T16:01:59.803132Z\",\"phone\":\"\",\"confirmed_at\":\"2026-08-05T16:01:59.803132Z\",\"last_sign_in_at\":\"2026-08-06T18:04:06.885495224Z\",\"app_metadata\":{\"provider\":\"email\",\"providers\":[\"email\"]},\"user_metadata\":{\"email\":\"ys1onouari@gmail.com\",\"email_verified\":true,\"full_name\":\"Onouari\",\"phone_verified\":false,\"sub\":\"c33db9e2-f920-42d7-8133-3cc3ab612b6a\",\"whatsapp\":\"+212630230803\"},\"identities\":[{\"identity_id\":\"078b99c4-f858-48ca-ace9-3003d2f7d7b0\",\"id\":\"c33db9e2-f920-42d7-8133-3cc3ab612b6a\",\"user_id\":\"c33db9e2-f920-42d7-8133-3cc3ab612b6a\",\"identity_data\":{\"email\":\"ys1onouari@gmail.com\",\"email_verified\":false,\"full_name\":\"Onouari\",\"phone_verified\":false,\"sub\":\"c33db9e2-f920-42d7-8133-3cc3ab612b6a\",\"whatsapp\":\"+212630230803\"},\"provider\":\"email\",\"last_sign_in_at\":\"2026-08-05T16:01:59.797488Z\",\"created_at\":\"2026-08-05T16:01:59.797526Z\",\"updated_at\":\"2026-08-05T16:01:59.797526Z\",\"email\":\"ys1onouari@gmail.com\"}],\"created_at\":\"2026-08-05T16:01:59.781178Z\",\"updated_at\":\"2026-08-06T18:04:06.906046Z\",\"is_anonymous\":false},\"weak_password\":null}"
+        }
+      ]
+    }
+  ]
+}

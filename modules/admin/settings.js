@@ -3,6 +3,7 @@
  * Paramètres de la plateforme stockés dans Supabase
  */
 import { getSupabase } from '../auth/supabase-client.js';
+import { showToast } from '../shared/ui.js';
 
 const DEFAULTS = {
   platform_name: 'INVOOFFICE',

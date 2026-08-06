@@ -7,6 +7,12 @@ import { loadPdfFile, loadHeaderImage, deletePdfFile } from './opfs-storage.js';
 import { showAlertDialog, showConfirmDialog } from './dialog.js';
 
 let editingDocId = null;
+let historyLock = Promise.resolve();
+
+function withHistoryLock(fn) {
+  historyLock = historyLock.then(fn, fn);
+  return historyLock;
+}
 
 export function setEditingDocId(id) { editingDocId = id; }
 export function getEditingDocId() { return editingDocId; }
@@ -17,42 +23,44 @@ export async function saveToHistory(payload, filename){
     await showAlertDialog(i18next.t('form.numeroDuplicate'));
     return;
   }
-  const history = loadHistory();
-  if (editingDocId) {
-    const idx = history.findIndex(d => d.id === editingDocId);
-    if (idx >= 0) {
-      history[idx] = {
-        ...history[idx],
-        type: payload.type,
-        numero: payload.numero,
-        date: payload.date,
-        client: payload.client.nom,
-        totalTTC: payload.totals.showPrices ? payload.totals.totalTTC : null,
-        filename,
-        payload,
-      };
-      saveHistory(history);
+  return withHistoryLock(async () => {
+    const history = loadHistory();
+    if (editingDocId) {
+      const idx = history.findIndex(d => d.id === editingDocId);
+      if (idx >= 0) {
+        history[idx] = {
+          ...history[idx],
+          type: payload.type,
+          numero: payload.numero,
+          date: payload.date,
+          client: payload.client.nom,
+          totalTTC: payload.totals.showPrices ? payload.totals.totalTTC : null,
+          filename,
+          payload,
+        };
+        saveHistory(history);
+        editingDocId = null;
+        clearEditingBanner();
+        return;
+      }
       editingDocId = null;
       clearEditingBanner();
+      await showAlertDialog(i18next.t('history.orphan_alert'));
       return;
     }
-    await showAlertDialog(i18next.t('history.orphan_alert'));
-    editingDocId = null;
-    clearEditingBanner();
-    return;
-  }
-  history.unshift({
-    id: 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
-    type: payload.type,
-    numero: payload.numero,
-    date: payload.date,
-    client: payload.client.nom,
-    totalTTC: payload.totals.showPrices ? payload.totals.totalTTC : null,
-    createdAt: new Date().toISOString(),
-    filename,
-    payload,
+    history.unshift({
+      id: 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
+      type: payload.type,
+      numero: payload.numero,
+      date: payload.date,
+      client: payload.client.nom,
+      totalTTC: payload.totals.showPrices ? payload.totals.totalTTC : null,
+      createdAt: new Date().toISOString(),
+      filename,
+      payload,
+    });
+    saveHistory(history);
   });
-  saveHistory(history);
 }
 
 function clearEditingBanner() {
@@ -146,12 +154,14 @@ export function getHistoryDoc(id){
 
 export async function deleteHistoryDoc(id){
   if(!await showConfirmDialog(i18next.t('history.confirm_delete'))) return;
-  const history = loadHistory();
-  const doc = history.find(d=>d.id === id);
-  saveHistory(history.filter(d=>d.id !== id));
-  if (doc) {
-    const filename = doc.filename || (doc.numero + '.pdf');
-    deletePdfFile(filename).catch(() => {});
-  }
-  renderHistory();
+  return withHistoryLock(async () => {
+    const history = loadHistory();
+    const doc = history.find(d=>d.id === id);
+    saveHistory(history.filter(d=>d.id !== id));
+    if (doc) {
+      const filename = doc.filename || (doc.numero + '.pdf');
+      deletePdfFile(filename).catch(() => {});
+    }
+    renderHistory();
+  });
 }
