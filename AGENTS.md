@@ -32,7 +32,7 @@ Stack : JavaScript ES modules, Supabase (auth), html2canvas + jsPDF (PDF), local
 
 | Métrique | Valeur | Source |
 |---|---|---|
-| **Tests Playwright** | **116/116 passent** | Dernier run complet (ajout 10 tests historique) |
+| **Tests Playwright** | **121/121 passent** | Dernier run complet (ajout 10 tests historique + correction toggle headerActive) |
 | **Bugs P0** | **0** | Tous corrigés (cf. `docs/audit/P0_FIX_REPORT.md`) |
 | **Bugs P1** | **3** mineurs : duplication `esc()` admin, import mort `signOut`, export mort `renderClientList` | `docs/audit/EXCELLENCE_AUDIT.md` |
 | **Score global** | **8.5/10** | Dernier audit d'excellence |

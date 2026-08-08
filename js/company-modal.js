@@ -77,6 +77,20 @@ export async function openCompanyModal(){
   document.getElementById('companyModalOverlay').classList.add('open');
   const modalEl = document.querySelector('#companyModalOverlay .modal');
   if (modalEl) modalEl.scrollTop = 0;
+  document.getElementById('companyModalOverlay').addEventListener('pointerdown', (e) => {
+    const label = e.target.closest('label.toggle');
+    if (label && label.getAttribute('for') === 'cHeaderActive') {
+      const md = document.querySelector('#companyModalOverlay .modal');
+      if (md) md.dataset.toggleSaveScroll = String(md.scrollTop);
+    }
+  }, true);
+  document.getElementById('cHeaderActive').addEventListener('focus', () => {
+    const md = document.querySelector('#companyModalOverlay .modal');
+    if (md && md.dataset.toggleSaveScroll !== undefined) {
+      md.scrollTop = Number(md.dataset.toggleSaveScroll);
+      delete md.dataset.toggleSaveScroll;
+    }
+  });
   const closeBtn = document.querySelector('#companyModalOverlay .modal-close');
   if (closeBtn) setTimeout(() => closeBtn.focus(), 50);
   const info = document.getElementById('storageInfo');
