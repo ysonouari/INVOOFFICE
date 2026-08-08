@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('footerYear').textContent = new Date().getFullYear();
 
   document.getElementById('langSwitcher').addEventListener('click', async () => {
-    const next = getCurrentLang() === 'fr' ? 'ar' : 'fr';
+    const next = getCurrentLang() === 'ar' ? 'fr' : 'ar';
     await setLang(next);
     document.documentElement.lang = next;
     document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr';
