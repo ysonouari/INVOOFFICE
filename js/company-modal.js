@@ -8,6 +8,7 @@ import { enforceDigitsOnly } from './utils.js';
 import { trapFocusInModal } from './modal-focus.js';
 
 let pendingHeaderImage = null;
+let pendingHeaderFile = null;
 let companyModalPrevFocus = null;
 let headerPreviewUrls = [];
 
@@ -130,6 +131,7 @@ export function syncTableTextColorFromHex(){
 export function onHeaderFileChange(e){
   const file = e.target.files[0];
   if(!file) return;
+  pendingHeaderFile = file;
   const reader = new FileReader();
   reader.onload = ev=>{
     pendingHeaderImage = ev.target.result;
@@ -171,18 +173,17 @@ export async function saveCompanyForm(){
   c.pdfQuality = parseInt(document.getElementById('cPdfScale').value) || 2;
   c.headerActive = document.getElementById('cHeaderActive').checked;
   saveCompany(c);
-  if (pendingHeaderImage) {
+  if (pendingHeaderFile) {
     (async () => {
       try {
-        const resp = await fetch(pendingHeaderImage);
-        const blob = await resp.blob();
-        await saveHeaderImage(blob);
+        await saveHeaderImage(pendingHeaderFile);
       } catch (_) {}
     })();
   } else if (!c.headerActive) {
     deleteHeaderImage().catch(() => {});
   }
   pendingHeaderImage = null;
+  pendingHeaderFile = null;
   updateBrandLogo();
   refreshNotesFromRegime();
   recalcTotals();

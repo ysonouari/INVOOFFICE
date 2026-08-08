@@ -25,8 +25,19 @@ async function pdfDir() {
 export async function migrateHeaderFromCompany(company) {
   if (!company.headerImage) return false;
   try {
-    const resp = await fetch(company.headerImage);
-    const blob = await resp.blob();
+    let blob;
+    if (company.headerImage.startsWith('data:')) {
+      const m = company.headerImage.match(/^data:([^;]+);base64,(.+)$/);
+      if (!m) return false;
+      const bytes = atob(m[2]);
+      const ab = new ArrayBuffer(bytes.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < bytes.length; i++) ia[i] = bytes.charCodeAt(i);
+      blob = new Blob([ab], { type: m[1] });
+    } else {
+      const resp = await fetch(company.headerImage);
+      blob = await resp.blob();
+    }
     await saveHeaderImage(blob);
     return true;
   } catch (_) { return false; }
