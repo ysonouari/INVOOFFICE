@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Confidentialité des données — INVOOFFICE</title>
-<meta name="description" content="Comment INVOOFFICE protège vos données. Génération locale des documents, stockage dans votre navigateur, aucun transfert vers nos serveurs. Aucun compte requis.">
+  <title>Confidentialité des données — INVOOFFICE</title>
+  <meta name="description" content="Comment INVOOFFICE traite vos données. Génération des documents dans votre navigateur, stockage local privilégié, sauvegarde et export à votre main.">
 <link rel="canonical" href="https://www.invooffice.com/confidentialite.html">
 <meta name="robots" content="index, follow">
 
-<meta property="og:title" content="Confidentialité des données — INVOOFFICE">
-<meta property="og:description" content="Comment INVOOFFICE protège vos données. Génération locale, stockage navigateur, aucun transfert.">
+  <meta property="og:title" content="Confidentialité des données — INVOOFFICE">
+  <meta property="og:description" content="Comment INVOOFFICE traite vos données. Génération locale, stockage navigateur, sauvegarde à votre main.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://www.invooffice.com/confidentialite.html">
 <meta property="og:image" content="https://www.invooffice.com/icons/icon-512.png">
@@ -19,8 +19,8 @@
 <meta property="og:site_name" content="INVOOFFICE">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Confidentialité des données — INVOOFFICE">
-<meta name="twitter:description" content="Comment INVOOFFICE protège vos données. Génération locale, stockage navigateur, aucun transfert.">
+  <meta name="twitter:title" content="Confidentialité des données — INVOOFFICE">
+  <meta name="twitter:description" content="Comment INVOOFFICE traite vos données. Génération locale, stockage navigateur.">
 <meta name="twitter:image" content="https://www.invooffice.com/icons/icon-512.png">
 
 <link rel="alternate" hreflang="fr" href="https://www.invooffice.com/confidentialite.html">
@@ -38,46 +38,54 @@
 <link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/landing.css">
 
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "Mes documents quittent-ils mon ordinateur ?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Non. La génération du PDF se fait entièrement dans votre navigateur. Le contenu de vos documents (client, lignes, montants) n'est jamais transmis à nos serveurs."
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Mes documents sont-ils transmis à un serveur ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "La génération du PDF se fait entièrement dans votre navigateur. Le contenu de vos documents de facturation est traité localement sur votre appareil."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Puis-je supprimer toutes mes données ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Oui, à tout moment. Ouvrez les outils de développement (F12), allez dans Stockage local, et supprimez les entrées commençant par fb_. Vous pouvez également vider les données de navigation de votre navigateur."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Où sont stockées mes données de facturation ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Vos données de facturation (clients, historique, informations d'entreprise) sont conservées localement dans le stockage de votre navigateur. Vous pouvez les exporter à tout moment pour les sauvegarder ou les transférer sur un autre appareil."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Puis-je utiliser INVOOFFICE hors ligne ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Oui. Une fois l'application chargée dans votre navigateur, vous pouvez créer et gérer vos documents même sans connexion Internet."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Dois-je créer un compte pour utiliser INVOOFFICE ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Oui. Vous devez créer un compte pour accéder à INVOOFFICE. Après le paiement unique de 200 DH et la validation par notre équipe, votre compte est activé et vous bénéficiez d'un accès à vie."
+        }
       }
-    },
-    {
-      "@type": "Question",
-      "name": "Puis-je supprimer toutes mes données ?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Oui, à tout moment. Ouvrez les outils de développement (F12), allez dans Stockage local, et supprimez les entrées commençant par fb_. Vous pouvez également vider les données de navigation de votre navigateur."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Puis-je utiliser INVOOFFICE sans créer de compte ?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Oui. Aucun compte n'est nécessaire. Vous n'avez pas besoin de vous inscrire, de fournir un email ou de créer un mot de passe."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Mes documents sont-ils enregistrés sur Internet ?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Non. Vos documents sont stockés uniquement dans le stockage local de votre navigateur (LocalStorage et IndexedDB). Ils ne sont jamais envoyés à nos serveurs ni sauvegardés sur Internet."
-      }
-    }
-  ]
-}
-</script>
+    ]
+  }
+  </script>
 
 <style>
   .content-page { max-width: 800px; margin: 0 auto; padding: 60px 20px 40px; }
@@ -120,12 +128,12 @@
 
   <div class="nav-back"><a href="/">← Retour à l'application</a> <button class="btn btn-ghost theme-btn" id="themeToggle" aria-label="Basculer le thème clair/sombre"></button></div>
 
-  <h1>Confidentialité et sécurité de vos données</h1>
-  <p class="subtitle">La confidentialité n'est pas une option pour nous — elle fait partie de la conception même d'INVOOFFICE. Voici comment nous protégeons vos données.</p>
+  <h1>Comment vos données sont traitées dans INVOOFFICE</h1>
+  <p class="subtitle">INVOOFFICE est conçu pour traiter vos documents de facturation localement, dans votre navigateur. Voici comment cela fonctionne et où vos données sont conservées.</p>
 
   <h2>Notre philosophie</h2>
-  <p>Nous pensons que vos documents commerciaux — factures, devis, avoirs — sont des données sensibles. Ils contiennent le nom de vos clients, vos tarifs, le détail de vos prestations. Ces informations vous appartiennent, et nous n'avons aucune raison légitime d'y accéder.</p>
-  <p>C'est pourquoi INVOOFFICE a été conçu dès le départ pour fonctionner sans jamais envoyer vos données vers un serveur distant. La génération des documents, le stockage des informations, tout se passe dans votre navigateur.</p>
+  <p>Vos documents de facturation — devis, factures, avoirs, bons de livraison — contiennent des informations importantes : le nom de vos clients, vos tarifs, le détail de vos prestations. Ces informations vous appartiennent.</p>
+  <p>INVOOFFICE a été conçu pour que la génération de vos documents et le stockage de vos données de facturation s'effectuent localement sur votre appareil, sans dépendre d'un serveur distant pour ces opérations.</p>
 
   <h2>Comment fonctionne INVOOFFICE</h2>
   <p>Quand vous créez un document avec INVOOFFICE, voici ce qui se passe :</p>
@@ -134,9 +142,9 @@
     <li>Quand vous cliquez sur « Générer le document PDF », l'application construit le document au format HTML.</li>
     <li>La bibliothèque html2canvas capture ce rendu et le transforme en image.</li>
     <li>La bibliothèque jsPDF convertit cette image en fichier PDF.</li>
-    <li>Le PDF est téléchargé directement sur votre ordinateur.</li>
+    <li>Le PDF est téléchargé sur votre appareil.</li>
   </ol>
-  <p><strong>Tout ce processus s'exécute dans votre navigateur.</strong> À aucun moment le contenu de votre document — le nom du client, les lignes de facturation, les montants — n'est transmis à nos serveurs.</p>
+  <p><strong>Ce processus s'exécute entièrement dans votre navigateur.</strong> Le contenu de vos documents de facturation — client, lignes, montants — est traité localement sur votre appareil.</p>
 
   <h2>Où sont stockées vos données</h2>
   <p>INVOOFFICE utilise deux mécanismes de stockage intégrés à votre navigateur :</p>
@@ -153,7 +161,7 @@
   <h3>L'IndexedDB</h3>
   <p>Une base de données plus avancée, également intégrée au navigateur. Elle est utilisée comme miroir de sauvegarde du LocalStorage, pour plus de fiabilité.</p>
 
-  <p>Ces données sont stockées <strong>sur votre appareil</strong>, dans votre navigateur. Elles ne sont accessibles que par le site invoooffice.com, et uniquement dans le navigateur que vous utilisez.</p>
+  <p>Ces données sont conservées <strong>sur votre appareil</strong>, dans le navigateur que vous utilisez. Elles ne sont accessibles que par le site invoooffice.com, depuis ce navigateur.</p>
 
   <h3>Comment supprimer vos données</h3>
   <p>Vous pouvez à tout moment supprimer l'intégralité de vos données locales :</p>
@@ -165,17 +173,17 @@
     <li>Vous pouvez également vider complètement les données de navigation de votre navigateur.</li>
   </ul>
 
-  <h2>Pourquoi aucun compte n'est nécessaire</h2>
-  <p>La plupart des outils de facturation vous demandent de créer un compte parce qu'ils stockent vos données sur leurs serveurs. Ils ont besoin de vous identifier pour savoir quelles données sont les vôtres.</p>
-  <p>INVOOFFICE n'a pas de serveur de données. Vos données sont stockées dans votre navigateur. Nous n'avons pas besoin de vous identifier — parce que nous n'avons rien à vous associer. L'absence de compte n'est pas une fonctionnalité optionnelle : c'est une conséquence directe de notre architecture.</p>
+  <h2>À propos du stockage local</h2>
+  <p>Pour utiliser INVOOFFICE, vous devez créer un compte. Après votre inscription, vous effectuez le paiement unique de 200 DH et notre équipe active votre compte. Vous bénéficiez ensuite d'un accès à vie, sans abonnement.</p>
+  <p>La gestion de votre compte (identifiants, statut d'activation) est la partie qui nécessite un serveur. En revanche, pour la création et la gestion de vos documents, l'application privilégie un traitement local :</p>
   <ul>
-    <li><strong>Simplicité</strong> : vous arrivez, vous créez, vous repartez.</li>
-    <li><strong>Rapidité</strong> : pas d'écran d'inscription, pas de validation d'email.</li>
-    <li><strong>Confidentialité</strong> : pas d'adresse email collectée, pas de mot de passe stocké.</li>
+    <li><strong>La génération des PDF</strong> s'effectue dans votre navigateur, sans envoi du contenu de vos documents vers un serveur distant.</li>
+    <li><strong>Le stockage de vos données de facturation</strong> (clients, historique, informations d'entreprise) se fait localement, sur votre appareil.</li>
+    <li>Vous pouvez à tout moment <strong>exporter une sauvegarde</strong> de vos données pour les conserver ou les transférer.</li>
   </ul>
 
   <h2>Comparaison</h2>
-  <p>Voici comment INVOOFFICE se compare à une application SaaS de facturation classique :</p>
+  <p>Voici comment l'architecture d'INVOOFFICE se distingue d'une application de facturation SaaS classique :</p>
 
   <table class="compare-table">
     <thead>
@@ -187,18 +195,13 @@
     </thead>
     <tbody>
       <tr>
-        <td>Compte obligatoire</td>
-        <td>Non</td>
-        <td>Oui</td>
-      </tr>
-      <tr>
         <td>Abonnement</td>
-        <td>Paiement unique, sans abonnement</td>
-        <td>Payant (mensuel ou annuel)</td>
+        <td>Paiement unique de 200 DH, accès à vie</td>
+        <td>Généralement mensuel ou annuel</td>
       </tr>
       <tr>
         <td>Stockage des documents</td>
-        <td>Sur votre appareil uniquement</td>
+        <td>Sur votre appareil</td>
         <td>Sur les serveurs du fournisseur</td>
       </tr>
       <tr>
@@ -207,40 +210,45 @@
         <td>Sur les serveurs du fournisseur</td>
       </tr>
       <tr>
-        <td>Accès à vos données</td>
-        <td>Vous seul</td>
-        <td>Vous + le fournisseur</td>
+        <td>Export de vos données</td>
+        <td>Fichier JSON téléchargeable</td>
+        <td>Variable selon le fournisseur</td>
       </tr>
       <tr>
-        <td>Collecte de données</td>
-        <td>Aucune</td>
-        <td>Email, IP, usage</td>
+        <td>Fonctionnement hors ligne</td>
+        <td>Oui</td>
+        <td>Non</td>
       </tr>
     </tbody>
   </table>
 
-  <p>Ce tableau compare des différences techniques factuelles, sans citer de concurrents. Il reflète l'architecture d'INVOOFFICE par rapport au fonctionnement standard d'un logiciel de facturation en tant que service.</p>
+  <p>Ce tableau illustre les différences d'architecture entre INVOOFFICE et le fonctionnement standard d'un logiciel de facturation en tant que service, sans citer de concurrents.</p>
 
   <h2>Questions fréquentes</h2>
 
   <div class="faq-item">
-    <h3>Mes documents quittent-ils mon ordinateur ?</h3>
-    <p>Non. La génération du PDF se fait entièrement dans votre navigateur. Le contenu de vos documents n'est jamais transmis à nos serveurs.</p>
+    <h3>Mes documents sont-ils transmis à un serveur ?</h3>
+    <p>La génération du PDF se fait entièrement dans votre navigateur. Le contenu de vos documents de facturation est traité localement sur votre appareil.</p>
   </div>
 
   <div class="faq-item">
     <h3>Puis-je supprimer toutes mes données ?</h3>
-    <p>Oui, à tout moment. Vous pouvez supprimer les données directement depuis les outils de développement de votre navigateur (F12 > Stockage local > supprimer les entrées fb_), ou en vidant les données de navigation.</p>
+    <p>Oui, à tout moment. Vous pouvez supprimer les données depuis les outils de développement de votre navigateur (F12 > Stockage local > supprimer les entrées fb_), ou en vidant les données de navigation.</p>
   </div>
 
   <div class="faq-item">
-    <h3>Puis-je utiliser INVOOFFICE sans créer de compte ?</h3>
-    <p>Oui, c'est même le principe. Aucun compte n'est requis. Vous n'avez pas besoin de vous inscrire ni de fournir une adresse email.</p>
+    <h3>Où sont stockées mes données de facturation ?</h3>
+    <p>Vos données de facturation (clients, historique, informations d'entreprise) sont conservées localement dans le stockage de votre navigateur. Vous pouvez les exporter à tout moment pour les sauvegarder ou les transférer sur un autre appareil.</p>
   </div>
 
   <div class="faq-item">
-    <h3>Mes documents sont-ils enregistrés sur Internet ?</h3>
-    <p>Non. Vos documents sont stockés uniquement dans votre navigateur. Ils ne sont jamais envoyés à nos serveurs ni sauvegardés sur Internet. Si vous changez d'ordinateur, utilisez la fonction « Exporter une sauvegarde » pour transférer vos données.</p>
+    <h3>Puis-je utiliser INVOOFFICE hors ligne ?</h3>
+    <p>Oui. Une fois l'application chargée dans votre navigateur, vous pouvez créer et gérer vos documents même sans connexion Internet. Vos données restent accessibles sur votre appareil.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Dois-je créer un compte pour utiliser INVOOFFICE ?</h3>
+    <p>Oui. Vous devez créer un compte pour accéder à INVOOFFICE. Après l'inscription, vous effectuez le paiement unique de 200 DH. Une fois votre paiement validé par notre équipe, votre compte est activé et vous bénéficiez d'un accès à vie, sans abonnement.</p>
   </div>
 
 
@@ -250,8 +258,8 @@
 <div class="lp-card-block lp-card-cta" id="cta">
   <div class="lp-cta-row">
     <div>
-      <h2>Prêt à simplifier votre facturation ?</h2>
-      <p>Paiement unique · Accès à vie · Support inclus</p>
+      <h2>Prêt à créer vos documents simplement ?</h2>
+      <p>200 DH · Paiement unique · Accès à vie · Support inclus</p>
     </div>
     <div class="lp-cta-right">
       <div class="lp-cta-price">200 <span>DH</span></div>

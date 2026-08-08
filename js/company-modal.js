@@ -104,6 +104,7 @@ export async function openCompanyModal(){
 }
 
 export function closeCompanyModal(){
+  renderHeaderPreview(null);
   revokeHeaderPreviewUrls();
   document.removeEventListener('keydown', onCompanyModalKey);
   document.getElementById('companyModalOverlay').classList.remove('open');
