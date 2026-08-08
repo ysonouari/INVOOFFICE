@@ -47,6 +47,7 @@ export async function openCompanyModal(){
   document.getElementById('cTableTextColorHex').value = c.tableTextColor || '#333333';
   document.getElementById('cMargeHaut').value = c.margeHaut ?? 3;
   document.getElementById('cFontSizeOffset').value = c.fontSizeOffset ?? 0;
+  document.getElementById('cPdfScale').value = c.pdfQuality ?? 2;
   document.getElementById('cHeaderActive').checked = !!c.headerActive;
   toggleTvaRate();
   renderHeaderPreview(null);
@@ -167,6 +168,7 @@ export async function saveCompanyForm(){
   c.tableTextColor = document.getElementById('cTableTextColorHex').value;
   c.margeHaut = parseFloat(document.getElementById('cMargeHaut').value) || 0;
   c.fontSizeOffset = parseInt(document.getElementById('cFontSizeOffset').value) || 0;
+  c.pdfQuality = parseInt(document.getElementById('cPdfScale').value) || 2;
   c.headerActive = document.getElementById('cHeaderActive').checked;
   saveCompany(c);
   if (pendingHeaderImage) {

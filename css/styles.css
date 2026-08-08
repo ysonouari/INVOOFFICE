@@ -181,6 +181,7 @@ textarea:focus{
 .btn-primary:hover{background:var(--accent-2-hover);}
 .btn-accent{background:var(--accent);border-color:var(--accent);color:#fff;}
 .btn-accent:hover{background:var(--accent-hover);}
+:root[data-theme="light"] .btn-accent:hover{background:var(--btn-hover-bg);border-color:var(--btn-hover-border);color:var(--text);}
 .btn-ghost{background:transparent;}
 .btn-danger{background:transparent;color:var(--danger);border-color:#3a1f24;}
 .btn-danger:hover{background:#231116;border-color:var(--danger);}

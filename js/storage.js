@@ -118,7 +118,7 @@ export function loadCompany() {
     devise:'DH', regimeTva:'normal', tvaTaux:20,
     ice:'', if_:'', rc:'', tp:'', cnss:'',
     tableColor:'#eef1f6', tableTextColor:'#333333', margeHaut:3,
-    fontSizeOffset:0,
+    fontSizeOffset:0, pdfQuality:2,
     headerImage:'', headerActive:false,
   };
   cache.company = def;

@@ -80,7 +80,7 @@
   gap: 12px;
   flex-wrap: wrap;
 }
-.lp-hero-actions .btn-accent { transition: transform .2s, box-shadow .2s; }
+.lp-hero-actions .btn-accent { transition: transform .2s, box-shadow .2s, background .2s, border-color .2s, color .2s; }
 .lp-hero-actions .btn-accent:hover {
   transform: translateY(-1px) scale(1.02);
   box-shadow: 0 4px 16px var(--shadow-accent-lg);
@@ -586,6 +586,11 @@
   background: rgba(255,255,255,.92);
   transform: translateY(-1px) scale(1.03);
   box-shadow: 0 6px 24px rgba(0,0,0,.2);
+}
+:root[data-theme="light"] .lp-card-cta .btn-accent:hover {
+  background: rgba(255,255,255,.92);
+  color: var(--accent);
+  border-color: rgba(255,255,255,.92);
 }
 .lp-card-cta .btn-ghost { color: #fff; border-color: rgba(255,255,255,.25); transition: background .2s, border-color .2s; }
 .lp-card-cta .btn-ghost:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.4); }

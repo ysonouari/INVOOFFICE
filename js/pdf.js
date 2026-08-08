@@ -7,7 +7,7 @@ import { saveToHistory, getEditingDocId } from './history.js';
 import { showAlertDialog } from './dialog.js';
 import { loadHeaderImage, savePdfFile } from './opfs-storage.js';
 
-async function registerFontsForDoc(pdf) {
+export async function registerFontsForDoc(pdf) {
   const f = await import('./pdf-font.js');
   pdf.addFileToVFS('Tajawal-Regular.ttf', f.TAJAWAL_REGULAR_B64);
   pdf.addFileToVFS('Tajawal-Bold.ttf', f.TAJAWAL_BOLD_B64);
@@ -33,7 +33,7 @@ const TEXT_CONTAINER_SELECTORS = [
   '.pdf-footer',
 ];
 
-function collectTextElements(pageEl) {
+export function collectTextElements(pageEl) {
   const pageRect = pageEl.getBoundingClientRect();
   const elements = [];
   const seen = new Set();
@@ -91,6 +91,64 @@ function collectTextElements(pageEl) {
   }
 
   return elements;
+}
+
+export function prepareTextElements(pageEl) {
+  const textElements = collectTextElements(pageEl);
+  const pageRect = pageEl.getBoundingClientRect();
+  const pxToMm = 210 / pageRect.width;
+
+  for (const el of textElements) {
+    el.x_mm = el.x * pxToMm;
+    el.y_mm = el.y * pxToMm;
+    el.w_mm = el.width * pxToMm;
+    el.h_mm = el.height * pxToMm;
+    el.fontSizePt = el.fontSize * 0.75;
+  }
+
+  return textElements;
+}
+
+export function writePageTextOverlay(pdf, textElements, pageIndex, pageHeight, isRtl) {
+  pdf.setTextColor(255, 255, 255);
+  pdf.internal.write('3 Tr');
+  const pageTop = pageIndex * pageHeight;
+  const pageBottom = (pageIndex + 1) * pageHeight;
+
+  for (const el of textElements) {
+    const elTop = el.y_mm;
+    const elBottom = el.y_mm + el.h_mm;
+    if (elBottom < pageTop + 1 || elTop > pageBottom - 1) continue;
+
+    const pdfY = el.y_mm - pageTop;
+    const pdfX = el.x_mm;
+
+    let variant = 'normal';
+    if (el.fontWeight >= 900) variant = '900';
+    else if (el.fontWeight >= 800) variant = '800';
+    else if (el.fontWeight >= 700) variant = 'bold';
+    pdf.setFont('Tajawal', variant);
+    pdf.setFontSize(Math.max(el.fontSizePt, 1));
+
+    const align = el.textAlign;
+    const useRtl = isRtl || el.direction === 'rtl';
+
+    let x;
+    if (align === 'right') {
+      x = pdfX + el.w_mm;
+    } else if (align === 'center') {
+      x = pdfX + el.w_mm / 2;
+    } else {
+      x = pdfX;
+    }
+
+    pdf.text(el.text, x, pdfY, {
+      align: align,
+      maxWidth: align === 'left' ? el.w_mm : undefined,
+      isRTL: useRtl,
+    });
+  }
+  pdf.internal.write('0 Tr');
 }
 
 function getRegimeConfig(regime) {
@@ -303,19 +361,10 @@ export async function generatePDF(){
   await document.fonts.ready;
   await new Promise(r=>setTimeout(r, 150));
 
-  const textElements = collectTextElements(pageEl);
-  const pageRect = pageEl.getBoundingClientRect();
-  const pxToMm = 210 / pageRect.width;
+  const textElements = prepareTextElements(pageEl);
 
-  for (const el of textElements) {
-    el.x_mm = el.x * pxToMm;
-    el.y_mm = el.y * pxToMm;
-    el.w_mm = el.width * pxToMm;
-    el.h_mm = el.height * pxToMm;
-    el.fontSizePt = el.fontSize * 0.75;
-  }
-
-  const canvas = await html2canvas(pageEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+  const scale = payload.company.pdfQuality || 2;
+  const canvas = await html2canvas(pageEl, { scale, useCORS: true, backgroundColor: '#ffffff' });
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = 210, pageHeight = 297;
@@ -330,52 +379,8 @@ export async function generatePDF(){
 
   for (let p = 0; p < totalPages; p++) {
     if (p > 0) pdf.addPage();
-
-    if (p > 0) {
-      pdf.addImage(imgData, 'JPEG', 0, -(p * pageHeight), imgWidth, imgHeight);
-    } else {
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
-    }
-
-    pdf.setTextColor(255, 255, 255);
-    pdf.internal.write('3 Tr');
-    const pageTop = p * pageHeight;
-    const pageBottom = (p + 1) * pageHeight;
-
-    for (const el of textElements) {
-      const elTop = el.y_mm;
-      const elBottom = el.y_mm + el.h_mm;
-      if (elBottom < pageTop + 1 || elTop > pageBottom - 1) continue;
-
-      const pdfY = el.y_mm - pageTop;
-      const pdfX = el.x_mm;
-
-      let variant = 'normal';
-      if (el.fontWeight >= 900) variant = '900';
-      else if (el.fontWeight >= 800) variant = '800';
-      else if (el.fontWeight >= 700) variant = 'bold';
-      pdf.setFont('Tajawal', variant);
-      pdf.setFontSize(Math.max(el.fontSizePt, 1));
-
-      const align = el.textAlign;
-      const useRtl = isRtl || el.direction === 'rtl';
-
-      let x;
-      if (align === 'right') {
-        x = pdfX + el.w_mm;
-      } else if (align === 'center') {
-        x = pdfX + el.w_mm / 2;
-      } else {
-        x = pdfX;
-      }
-
-      pdf.text(el.text, x, pdfY, {
-        align: align,
-        maxWidth: align === 'left' ? el.w_mm : undefined,
-        isRTL: useRtl,
-      });
-    }
-    pdf.internal.write('0 Tr');
+    pdf.addImage(imgData, 'JPEG', 0, -(p * pageHeight), imgWidth, imgHeight);
+    writePageTextOverlay(pdf, textElements, p, pageHeight, isRtl);
   }
 
   const filename = `${payload.numero}.pdf`;

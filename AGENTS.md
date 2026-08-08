@@ -28,7 +28,7 @@ Stack : JavaScript ES modules, Supabase (auth), html2canvas + jsPDF (PDF), local
 
 ---
 
-## État actuel réel (2026-08-06)
+## État actuel réel (2026-08-08)
 
 | Métrique | Valeur | Source |
 |---|---|---|
@@ -37,23 +37,26 @@ Stack : JavaScript ES modules, Supabase (auth), html2canvas + jsPDF (PDF), local
 | **Bugs P1** | **3** mineurs : duplication `esc()` admin, import mort `signOut`, export mort `renderClientList` | `docs/audit/EXCELLENCE_AUDIT.md` |
 | **Score global** | **8.5/10** | Dernier audit d'excellence |
 | **npm audit** | 0 vulnérabilité | |
-| **Fichiers parasites** | 0 | Nettoyage RC effectué |
+| **Métriques PDF** | Scale 2 (192 DPI) / Scale 3 (288 DPI), overlay invisible searchable, `generatePDF()` + `reprintHistoryDoc()` unifiés | `docs/audit/DECISION_VECTOR_TEXT_AR.md` |
 
 ---
 
 ## Règles "NE PAS CASSER"
 
 ### PDF
+- **Phase PDF stabilisée** — Ne pas modifier le pipeline sans nouvelle étude (cf. `docs/audit/DECISION_VECTOR_TEXT_AR.md`)
 - **Tolérance pagination** : `> 0.5` mm (pas `> 0`) — évite les pages blanches intempestives causées par les arrondis html2canvas
-- **Scale html2canvas** : `2` (~192 DPI) — ne pas changer sans mesurer l'impact poids/qualité
-- **Polices** : Tajawal en base64 dans `js/pdf-font.js` (311 KB), enregistrées via VFS jsPDF
-- **Mode BL** : `showTotalsDefault: false` → masque colonnes prix/total et bloc totaux
+- **Qualité PDF** : `company.pdfQuality` — `2` = Standard (~192 DPI, défaut), `3` = Qualité Pro (~288 DPI). Configurable dans "Mes Informations" > "Qualité du PDF"
+- **Polices** : Tajawal en base64 dans `js/pdf-font.js` (4 variantes), enregistrées via VFS jsPDF
+- **Overlay texte** : utilisé par `generatePDF()` **et** `reprintHistoryDoc()` via les helpers communs `prepareTextElements()` + `writePageTextOverlay()`
+- **Mode BL** : `showTotalsDefault: true`
 - **Mode exonéré** : `getRegimeConfig('exoneree')` → pas de HT ni TVA
 - **`#pdf-stage`** : positionné à `left:-99999px` (LTR) ou `right:-99999px` (RTL)
 
 ### Storage
 - **localStorage = source de vérité**, IndexedDB = backup. Ne pas inverser
 - **Clés** : `fb_company`, `fb_history`, `fb_clients`, `fb_lang`, `fb_theme`
+- **`fb_company.pdfQuality`** : `2` (défaut) ou `3` — résolution d'export PDF
 - **OPFS** : `facturation/pdfs/` et `facturation/header.png`
 - **Mutex historique** : `withHistoryLock()` sérialise les écritures — ne pas contourner
 

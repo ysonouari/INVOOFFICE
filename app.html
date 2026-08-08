@@ -188,8 +188,16 @@
             <input type="text" id="conditions" list="conditionsList" placeholder="Ex: Paiement à 30 jours" data-i18n-placeholder="form.conditions_placeholder">
             <datalist id="conditionsList">
               <option value="Paiement comptant" data-i18n="payment_options.cash">
+              <option value="Paiement à réception" data-i18n="payment_options.on_receipt">
+              <option value="Paiement à 15 jours" data-i18n="payment_options.15days">
               <option value="Paiement à 30 jours" data-i18n="payment_options.30days">
-              <option value="Paiement à 50% à la commande, solde à la livraison" data-i18n="payment_options.50deposit">
+              <option value="Paiement à 30 jours fin de mois" data-i18n="payment_options.30days_eom">
+              <option value="Paiement à 45 jours" data-i18n="payment_options.45days">
+              <option value="Paiement à 60 jours" data-i18n="payment_options.60days">
+              <option value="Acompte de 30% à la commande, solde à la livraison" data-i18n="payment_options.30deposit">
+              <option value="Acompte de 50% à la commande, solde à la livraison" data-i18n="payment_options.50deposit">
+              <option value="Paiement avant livraison" data-i18n="payment_options.before_delivery">
+              <option value="Paiement à la livraison" data-i18n="payment_options.on_delivery">
             </datalist>
           </div>
           <div class="field">
@@ -347,10 +355,18 @@
        <div class="field">
          <label for="cFontSizeOffset" data-i18n="company.font_size_offset">Taille globale des polices du PDF</label>
          <input type="number" id="cFontSizeOffset" value="0" min="-3" max="3" step="1">
-         <div class="hint" data-i18n="company.font_size_offset_hint">Augmente ou diminue toutes les tailles de police du PDF en conservant leurs proportions. -3 = plus petit, 0 = normal, +3 = plus grand.</div>
-       </div>
-       <div class="field" style="grid-column:1/-1;">
-        <label for="headerFileInput" data-i18n="company.header_add">Ajouter un en-tête (fond de page)</label>
+          <div class="hint" data-i18n="company.font_size_offset_hint">Augmente ou diminue toutes les tailles de police du PDF en conservant leurs proportions. -3 = plus petit, 0 = normal, +3 = plus grand.</div>
+        </div>
+        <div class="field">
+          <label for="cPdfScale" data-i18n="company.pdf_scale">Qualité du PDF</label>
+          <select id="cPdfScale">
+            <option value="2" data-i18n="company.pdf_scale_standard">Standard (~192 DPI)</option>
+            <option value="3" data-i18n="company.pdf_scale_high">Qualité Pro (~288 DPI)</option>
+          </select>
+          <div class="hint" data-i18n="company.pdf_scale_hint">La qualité Pro produit des PDF plus nets (zoom, impression laser) mais plus lourds et plus lents à générer.</div>
+        </div>
+        <div class="field" style="grid-column:1/-1;">
+         <label for="headerFileInput" data-i18n="company.header_add">Ajouter un en-tête (fond de page)</label>
         <label class="upload-box" id="uploadBox" for="headerFileInput">
           <span id="uploadPreviewSlot"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Cliquer pour ajouter une image (fond de page)</span>
         </label>

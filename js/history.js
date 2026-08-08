@@ -1,7 +1,7 @@
 import { DOC_TYPES } from './config.js';
 import { loadHistory, saveHistory, isNumeroUnique } from './storage.js';
 import { escapeHtml, currencySymbol } from './utils.js';
-import { buildPdfHtml } from './pdf.js';
+import { buildPdfHtml, registerFontsForDoc, prepareTextElements, writePageTextOverlay } from './pdf.js';
 import { ICONS } from './icons.js';
 import { loadPdfFile, loadHeaderImage, deletePdfFile } from './opfs-storage.js';
 import { showAlertDialog, showConfirmDialog } from './dialog.js';
@@ -401,20 +401,26 @@ export async function reprintHistoryDoc(id){
   const stage = document.getElementById('pdf-stage');
   stage.innerHTML = buildPdfHtml(doc.payload, headerUrl || doc.payload.company.headerImage);
   const pageEl = stage.querySelector('.pdf-page');
+  await document.fonts.ready;
   await new Promise(r=>setTimeout(r, 150));
-  const canvas = await html2canvas(pageEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+
+  const scale = (doc.payload.company && doc.payload.company.pdfQuality) || 2;
+  const canvas = await html2canvas(pageEl, { scale, useCORS: true, backgroundColor: '#ffffff' });
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p','mm','a4');
-  const imgWidth = 210, imgHeight = canvas.height * imgWidth / canvas.width;
-  let heightLeft = imgHeight, position = 0;
+  const imgWidth = 210, pageHeight = 297;
+  const imgHeight = canvas.height * imgWidth / canvas.width;
   const imgData = canvas.toDataURL('image/jpeg', 0.95);
-  pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-  heightLeft -= 297;
-  while(heightLeft > 0.5){
-    position = heightLeft - imgHeight;
-    pdf.addPage();
-    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-    heightLeft -= 297;
+
+  await registerFontsForDoc(pdf);
+  const textElements = prepareTextElements(pageEl);
+  const totalPages = Math.max(1, Math.ceil((imgHeight - 0.5) / pageHeight));
+  const isRtl = i18next.language === 'ar';
+
+  for (let p = 0; p < totalPages; p++) {
+    if (p > 0) pdf.addPage();
+    pdf.addImage(imgData, 'JPEG', 0, -(p * pageHeight), imgWidth, imgHeight);
+    writePageTextOverlay(pdf, textElements, p, pageHeight, isRtl);
   }
   pdf.save(filename);
   stage.innerHTML = '';
