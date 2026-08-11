@@ -98,7 +98,10 @@
           <option value="deactivate">Désactivation</option>
           <option value="grant_access">Attribution accès</option>
           <option value="revoke_access">Retrait accès</option>
-          <option value="mark_paid">Paiement validé</option>
+          <option value="mark_paid">Paiement créé</option>
+          <option value="validate_payment">Paiement confirmé</option>
+          <option value="update_payment">Paiement modifié</option>
+          <option value="refund_payment">Paiement remboursé</option>
           <option value="edit_profile">Modification profil</option>
           <option value="change_role">Changement rôle</option>
           <option value="delete_user">Suppression</option>
@@ -138,6 +141,18 @@
       <button class="btn" id="confirmCancel">Annuler</button>
       <button class="btn btn-danger" id="confirmOk">Confirmer</button>
     </div>
+  </div>
+</div>
+
+<!-- Payment detail modal (View / Edit) -->
+<div id="paymentDetailOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="paymentDetailTitle">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-head">
+      <h2 id="paymentDetailTitle">Détail du paiement</h2>
+      <button class="icon-btn" data-action="close-payment-detail">&times;</button>
+    </div>
+    <div id="paymentDetailContent"></div>
+    <div class="modal-actions" id="paymentDetailActions" style="display:none;"></div>
   </div>
 </div>
 

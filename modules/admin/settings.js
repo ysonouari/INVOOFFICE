@@ -93,11 +93,24 @@ export async function loadSettings() {
       .from('platform_settings')
       .upsert({ id: 1, ...newSettings }, { onConflict: 'id' });
 
+    if (error) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Enregistrer';
+      showToast('Erreur lors de la sauvegarde: ' + error.message, 'error');
+      return;
+    }
+
+    const { error: planError } = await supabase
+      .from('plans')
+      .update({ price: newSettings.lifetime_price })
+      .eq('is_lifetime', true)
+      .eq('is_active', true);
+
     saveBtn.disabled = false;
     saveBtn.textContent = 'Enregistrer';
 
-    if (error) {
-      showToast('Erreur lors de la sauvegarde: ' + error.message, 'error');
+    if (planError) {
+      showToast('Paramètres sauvegardés mais erreur sync plans: ' + planError.message, 'error');
       return;
     }
 

@@ -6,13 +6,23 @@ import { getSupabase } from '../auth/supabase-client.js';
 import { formatDate } from './stats.js';
 
 export async function loadLogs() {
-  const supabase = getSupabase();
-  const { data } = await supabase
-    .from('admin_logs')
-    .select('admin_id,target_user_id,action,details,created_at')
-    .order('created_at', { ascending: false })
-    .limit(100);
-  renderLogs(data || []);
+  const container = document.getElementById('logsTable');
+  container.innerHTML = '<p class="admin-empty">Chargement du journal...</p>';
+
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('admin_logs')
+      .select('admin_id,target_user_id,action,details,created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+    renderLogs(data || []);
+  } catch (err) {
+    console.error('Admin logs load error:', err);
+    container.innerHTML = '<p class="admin-empty" style="color:var(--danger);">Impossible de charger le journal.</p>';
+  }
 }
 
 function renderLogs(logs) {
@@ -45,7 +55,9 @@ function renderFiltered(logs) {
   const actions = {
     activate: 'Activation', deactivate: 'Désactivation',
     grant_access: 'Attribution accès', revoke_access: 'Retrait accès',
-    mark_paid: 'Paiement validé', edit_profile: 'Modification profil',
+    mark_paid: 'Paiement créé', validate_payment: 'Paiement confirmé',
+    update_payment: 'Paiement modifié', refund_payment: 'Paiement remboursé',
+    edit_profile: 'Modification profil',
     change_role: 'Changement rôle', delete_user: 'Suppression'
   };
 

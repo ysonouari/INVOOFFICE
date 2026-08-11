@@ -76,7 +76,9 @@ async function loadRecentActivity() {
   const actions = {
     activate: 'Activation', deactivate: 'Désactivation',
     grant_access: 'Attribution accès', revoke_access: 'Retrait accès',
-    mark_paid: 'Paiement validé', edit_profile: 'Modification profil',
+    mark_paid: 'Paiement créé', validate_payment: 'Paiement confirmé',
+    update_payment: 'Paiement modifié', refund_payment: 'Paiement remboursé',
+    edit_profile: 'Modification profil',
     change_role: 'Changement rôle', delete_user: 'Suppression'
   };
 

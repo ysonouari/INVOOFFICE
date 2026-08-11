@@ -28,10 +28,11 @@ Stack : JavaScript ES modules, Supabase (auth), html2canvas + jsPDF (PDF), local
 
 ---
 
-## État actuel réel (2026-08-08)
+## État actuel réel (2026-08-12)
 
 | Métrique | Valeur | Source |
 |---|---|---|
+| **Prix officiel** | **300 DH** (paiement unique, accès à vie) | |
 | **Tests Playwright** | **121/121 passent** | Dernier run complet (ajout 10 tests historique + correction toggle headerActive) |
 | **Bugs P0** | **0** | Tous corrigés (cf. `docs/audit/P0_FIX_REPORT.md`) |
 | **Bugs P1** | **3** mineurs : duplication `esc()` admin, import mort `signOut`, export mort `renderClientList` | `docs/audit/EXCELLENCE_AUDIT.md` |

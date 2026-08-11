@@ -7,11 +7,15 @@ import { showToast } from '../shared/ui.js';
 
 function log(action, targetId, details = {}) {
   const supabase = getSupabase();
-  supabase.from('admin_logs').insert({
-    action,
-    target_user_id: targetId,
-    details
-  }).then(({ error }) => { if (error) console.warn('Log error:', error); });
+  supabase.auth.getUser().then(({ data: { user } }) => {
+    if (!user) { console.warn('Log skipped: no authenticated user'); return; }
+    supabase.from('admin_logs').insert({
+      admin_id: user.id,
+      action,
+      target_user_id: targetId,
+      details
+    }).then(({ error }) => { if (error) console.warn('Log error:', error); });
+  });
 }
 
 export async function activateUser(userId, name) {
@@ -49,14 +53,14 @@ export async function revokeAccess(userId, name) {
 
 export async function markAsPaid(userId, name) {
   const supabase = getSupabase();
-  const { data: plans } = await supabase.from('plans').select('id,price').eq('is_active', true).limit(1);
-  if (!plans || plans.length === 0) return;
+  const { data: settings } = await supabase.from('platform_settings').select('lifetime_price').eq('id', 1).maybeSingle();
+  const amount = settings ? settings.lifetime_price : 30000;
   await supabase.from('payments').insert({
-    user_id: userId, amount: plans[0].price, currency: 'MAD',
+    user_id: userId, amount, currency: 'MAD',
     status: 'completed', payment_method: 'manual', paid_at: new Date().toISOString(),
     reference: 'ADMIN-' + Date.now()
   });
-  log('mark_paid', userId, { target_name: name, summary: `Paiement validé pour ${name} (${plans[0].price / 100} MAD)` });
+  log('mark_paid', userId, { target_name: name, summary: `Paiement validé pour ${name} (${amount / 100} MAD)` });
   showToast(`Paiement de ${name} validé`, 'success');
 }
 
@@ -71,4 +75,40 @@ export async function deleteUser(userId, name) {
   const supabase = getSupabase();
   log('delete_user', userId, { target_name: name, summary: `Utilisateur supprimé: ${name}` });
   await supabase.from('profiles').delete().eq('id', userId);
+}
+
+export async function updatePayment(paymentId, userId, changes, prevValues) {
+  const supabase = getSupabase();
+  const payload = { updated_at: new Date().toISOString(), ...changes };
+  const { error } = await supabase.from('payments').update(payload).eq('id', paymentId);
+  if (error) throw error;
+  log('update_payment', userId, {
+    payment_id: paymentId,
+    summary: `Paiement modifié`,
+    changes: payload,
+    previous: prevValues
+  });
+}
+
+export async function validatePayment(paymentId, userId, name) {
+  const supabase = getSupabase();
+  const payload = { status: 'completed', paid_at: new Date().toISOString() };
+  const { error } = await supabase.from('payments').update(payload).eq('id', paymentId);
+  if (error) throw error;
+  log('validate_payment', userId, {
+    payment_id: paymentId,
+    target_name: name,
+    summary: `Paiement validé (${name})`
+  });
+}
+
+export async function refundPayment(paymentId, userId, name, amount) {
+  const supabase = getSupabase();
+  const { error } = await supabase.from('payments').update({ status: 'refunded' }).eq('id', paymentId);
+  if (error) throw error;
+  log('refund_payment', userId, {
+    payment_id: paymentId,
+    target_name: name,
+    summary: `Paiement remboursé (${name}, ${amount / 100} MAD)`
+  });
 }
