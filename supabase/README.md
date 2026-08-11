@@ -18,7 +18,7 @@ supabase/
 │   └── 005_admin_logs.sql      ← Table admin_logs
 │
 ├── seed/                       ← Données initiales
-│   ├── 001_plans.sql           ← Plan "Accès à vie — 200 DH"
+│   ├── 001_plans.sql           ← Plan "Accès à vie — 300 DH"
 │   └── 002_admin_user.sql      ← Instructions création admin
 │
 ├── policies/

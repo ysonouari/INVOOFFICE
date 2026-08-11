@@ -31,5 +31,5 @@ CREATE INDEX IF NOT EXISTS idx_payments_status ON public.payments(status);
 CREATE INDEX IF NOT EXISTS idx_payments_date ON public.payments(created_at DESC);
 
 COMMENT ON TABLE public.payments IS 'Historique des paiements';
-COMMENT ON COLUMN public.payments.amount IS 'Montant en centimes (20000 = 200 MAD)';
+COMMENT ON COLUMN public.payments.amount IS 'Montant en centimes (30000 = 300 MAD)';
 COMMENT ON COLUMN public.payments.payment_method IS 'manual, online, wire_transfer, cash';

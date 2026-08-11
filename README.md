@@ -16,7 +16,7 @@
 - **Aucun serveur backend** : tout fonctionne dans votre navigateur
 - **Données locales** : vos informations restent sur votre appareil (localStorage + IndexedDB + OPFS)
 - **PDF vectoriel** : texte sélectionnable et recherchable, polices intégrées
-- **Paiement unique** : 200 DH, accès à vie, pas d'abonnement
+- **Paiement unique** : 300 DH, accès à vie, pas d'abonnement
 
 ---
 

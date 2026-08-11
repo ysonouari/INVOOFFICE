@@ -23,7 +23,7 @@
  * @property {string} id - UUID, PK
  * @property {string} name - Nom du plan
  * @property {string|null} description - Description
- * @property {number} price - Prix en centimes (20000 = 200 MAD)
+ * @property {number} price - Prix en centimes (30000 = 300 MAD)
  * @property {string} currency - Devise (MAD)
  * @property {boolean} is_lifetime - TRUE = accès à vie
  * @property {boolean} is_active - Plan actif

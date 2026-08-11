@@ -265,7 +265,7 @@
       var resSettings = await client.from('platform_settings').select('lifetime_price,validation_time,whatsapp_support,email_support').eq('id', 1).maybeSingle();
       var methods = resMethods.data || [];
       var settings = resSettings.data;
-      var price = settings ? (settings.lifetime_price / 100) : 200;
+      var price = settings ? (settings.lifetime_price / 100) : 300;
       var list = document.getElementById('paymentMethodsList');
 
       if (methods.length > 0) {

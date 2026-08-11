@@ -30,7 +30,7 @@ supabase/
 │   ├── 004_payments.sql            ← Table payments
 │   └── 005_admin_logs.sql          ← Table admin_logs
 ├── seed/
-│   ├── 001_plans.sql               ← Plan "Accès à vie — 200 DH"
+│   ├── 001_plans.sql               ← Plan "Accès à vie — 300 DH"
 │   └── 002_admin_user.sql          ← Instructions création admin
 ├── policies/
 │   └── rls_policies.sql            ← 11 politiques RLS
@@ -157,7 +157,7 @@ auth.users (1) ──── (1) public.profiles
 
 | Seed | Contenu | Statut |
 |---|---|---|
-| `001_plans.sql` | Plan "Accès à vie — 200 DH" | ✅ Prêt |
+| `001_plans.sql` | Plan "Accès à vie — 300 DH" | ✅ Prêt |
 | `002_admin_user.sql` | Instructions création admin | ✅ Prêt (via dashboard ou script) |
 
 ---

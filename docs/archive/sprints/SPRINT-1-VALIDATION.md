@@ -9,7 +9,7 @@
 
 ## 1. Résumé
 
-Création d'une Landing Page professionnelle pour INVOOFFICE. La page présente l'application, ses fonctionnalités, le tarif (200 DH — accès à vie) et une FAQ. Les boutons d'inscription et de connexion affichent une modale "Bientôt disponible" en attendant le Sprint 2.
+Création d'une Landing Page professionnelle pour INVOOFFICE. La page présente l'application, ses fonctionnalités, le tarif (300 DH — accès à vie) et une FAQ. Les boutons d'inscription et de connexion affichent une modale "Bientôt disponible" en attendant le Sprint 2.
 
 **Aucun fichier de l'application existante modifié.**
 
@@ -44,7 +44,7 @@ Aucun.
 | Hero | `hero` | Titre "Votre facturation, simplement", description, boutons Commencer/Connexion, mockup application |
 | Fonctionnalités | `features` | 8 cartes : Devis, Factures, BL, Avoirs, Clients, PDF, Hors-ligne, Conforme Maroc |
 | Pourquoi | `why` | 6 avantages : Simple, Rapide, Moderne, Hors-ligne, Sécurisé, Gain de temps |
-| Tarif | `pricing` | Carte premium "Accès à vie — 200 DH" avec 7 avantages |
+| Tarif | `pricing` | Carte premium "Accès à vie — 300 DH" avec 7 avantages |
 | FAQ | `faq` | 5 questions en accordéon : Fonctionnement, Sécurité, Mobile, Conformité, Achat |
 | CTA | `cta` | Appel à l'action final avec boutons Créer mon compte / Se connecter |
 | Footer | `lp-footer` | Navigation secondaire (identique aux autres pages) |

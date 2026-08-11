@@ -7,7 +7,7 @@ import { showToast } from '../shared/ui.js';
 
 const DEFAULTS = {
   platform_name: 'INVOOFFICE',
-  lifetime_price: 20000,
+  lifetime_price: 30000,
   currency: 'MAD',
   whatsapp_support: '',
   email_support: 'contact@invooffice.com',

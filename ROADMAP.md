@@ -37,7 +37,7 @@ Cloud      gardes                ications
 - [ ] Hero avec logo, slogan, description, CTA
 - [ ] Grille de 6 fonctionnalités (devis, factures, BL, clients, PDF, historique)
 - [ ] Section "Pourquoi INVOOFFICE" (6 avantages)
-- [ ] Bloc tarif unique : "Accès à vie — 200 DH"
+- [ ] Bloc tarif unique : "Accès à vie — 300 DH"
 - [ ] FAQ (3 questions : fonctionnement, sécurité, compatibilité)
 - [ ] CTA final
 - [ ] Modale d'inscription (nom, email, WhatsApp, mot de passe)
