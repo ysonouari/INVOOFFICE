@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.documentElement.dir = i18next.language === 'ar' ? 'rtl' : 'ltr';
   updateBrandLogo();
   initForm();
+  document.getElementById('view-nouveau').classList.add('active');
   document.getElementById('footerYear').textContent = new Date().getFullYear();
 
   document.getElementById('langSwitcher').addEventListener('click', async () => {
