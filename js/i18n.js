@@ -20,10 +20,14 @@ async function loadLocale(lng) {
 
 export async function initI18n() {
   const saved = localStorage.getItem(LANG_KEY);
-  const resources = {};
-  for (const lng of ['fr', 'ar']) {
-    resources[lng] = { translation: await loadLocale(lng) };
-  }
+  const [fr, ar] = await Promise.all([
+    loadLocale('fr'),
+    loadLocale('ar'),
+  ]);
+  const resources = {
+    fr: { translation: fr },
+    ar: { translation: ar },
+  };
   try {
     await i18next
       .use(i18nextBrowserLanguageDetector)

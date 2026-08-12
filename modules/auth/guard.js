@@ -13,11 +13,21 @@ export async function requireAuth() {
 
   const supabase = getSupabase();
 
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('role, status, full_name')
-    .eq('id', user.id)
-    .single();
+  const [profRes, subsRes] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('role, status, full_name')
+      .eq('id', user.id)
+      .single(),
+    supabase
+      .from('subscriptions')
+      .select('status')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .maybeSingle(),
+  ]);
+
+  const { data: profile, error } = profRes;
 
   if (error || !profile) {
     await signOut();
@@ -30,12 +40,7 @@ export async function requireAuth() {
     return null;
   }
 
-  const { data: subs } = await supabase
-    .from('subscriptions')
-    .select('status')
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .maybeSingle();
+  const { data: subs } = subsRes;
 
   const hasAccess = !!subs;
 

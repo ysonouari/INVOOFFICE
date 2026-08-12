@@ -11,6 +11,17 @@ import { toggleTheme, getCurrentTheme } from './theme.js';
 import { ICONS } from './icons.js';
 import { checkAccessAndInit, logout } from './auth.js';
 
+const INIT_TIMEOUT_MS = 15000;
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('INIT_TIMEOUT')), ms);
+    }),
+  ]);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   try {
 
@@ -37,10 +48,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Auth guard
-  const auth = await checkAccessAndInit();
+  // Auth guard + storage + i18n (independants, lances en parallele)
+  const [auth] = await withTimeout(
+    Promise.all([
+      checkAccessAndInit(),
+      initStorage(),
+      initI18n(),
+    ]),
+    INIT_TIMEOUT_MS
+  );
   if (!auth || auth.blocked) {
     if (auth && auth.blocked) {
+      document.getElementById('appLoading').classList.add('hidden');
       document.getElementById('authBlockedMessage').textContent = auth.message;
       document.getElementById('authBlockedOverlay').style.display = 'flex';
       document.getElementById('authBlockedLogout').addEventListener('click', logout);
@@ -56,13 +75,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   document.getElementById('authLogout').addEventListener('click', logout);
 
-  await initStorage();
-  await initI18n();
   document.documentElement.lang = i18next.language;
   document.documentElement.dir = i18next.language === 'ar' ? 'rtl' : 'ltr';
   updateBrandLogo();
   initForm();
   document.getElementById('view-nouveau').classList.add('active');
+  document.getElementById('appLoading').classList.add('hidden');
   document.getElementById('footerYear').textContent = new Date().getFullYear();
 
   document.getElementById('langSwitcher').addEventListener('click', async () => {
@@ -190,6 +208,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   } catch (e) {
     console.error('App init failed:', e);
+    var appLoading = document.getElementById('appLoading');
+    if (appLoading) appLoading.classList.add('hidden');
     var overlay = document.getElementById('appErrorOverlay');
     if (overlay) overlay.style.display = 'flex';
   }
