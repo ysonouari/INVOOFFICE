@@ -209,33 +209,33 @@ function renderSummaryRow(filteredDocs, allDocs) {
   const card = (label, value, muted) =>
     `<div class="hist-stat-card"><div class="hist-stat-label">${label}</div><div class="hist-stat-value${muted?' hist-stat-muted':''}">${value}</div></div>`;
   return `<div class="hist-summary" role="status" aria-live="polite">
-    ${card(i18next.t('history.col_total'), cnt)}
     ${card(i18next.t('docTypes.facture'), byType['facture'] || 0)}
     ${card(i18next.t('docTypes.devis'), byType['devis'] || 0)}
     ${card(i18next.t('docTypes.bl'), byType['bl'] || 0)}
     ${card(i18next.t('docTypes.avoir'), byType['avoir'] || 0)}
-    ${card('Total TTC', sumTTC.toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' ' + currencySymbol())}
-    ${card('Moyenne', avg.toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' ' + currencySymbol(), true)}
-    ${card('Max', maxTTC.toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' ' + currencySymbol(), true)}
-    ${lastDoc ? card('Dernier', escapeHtml(lastDoc.numero), true) : ''}
+    ${card(i18next.t('history.col_total'), sumTTC.toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' ' + currencySymbol())}
+    ${card(i18next.t('history.stat_average'), avg.toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' ' + currencySymbol(), true)}
+    ${card(i18next.t('history.stat_max'), maxTTC.toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' ' + currencySymbol(), true)}
+    ${lastDoc ? card(i18next.t('history.stat_last'), escapeHtml(lastDoc.numero), true) : ''}
   </div>`;
 }
 
 function renderPaginationInfo(filteredCount, start, end) {
-  return `<div class="hist-pagination-info">Affichage ${start}–${end} sur ${filteredCount} document${filteredCount>1?'s':''}</div>`;
+  const key = filteredCount > 1 ? 'history.pagination_info_plural' : 'history.pagination_info';
+  return `<div class="hist-pagination-info">${i18next.t(key, { start, end, total: filteredCount })}</div>`;
 }
 
 function renderPageSizeSelect() {
   const opts = [10, 25, 50, 100];
-  const options = opts.map(n => `<option value="${n}"${historyState.perPage===n?' selected':''}>${n} par page</option>`).join('');
+  const options = opts.map(n => `<option value="${n}"${historyState.perPage===n?' selected':''}>${i18next.t('history.per_page', { n })}</option>`).join('');
   return `<select class="hist-page-size" aria-label="Nombre de documents par page">${options}</select>`;
 }
 
 function renderPagination(totalPages, currentPage) {
   if (totalPages <= 1) return '';
   const btns = [];
-  btns.push(`<button${currentPage===1?' disabled':''} class="hist-page-first" aria-label="Première page" title="Première page">${ICONS['chevrons-left']}</button>`);
-  btns.push(`<button${currentPage===1?' disabled':''} class="hist-page-prev" aria-label="Page précédente" title="Page précédente">${ICONS['chevron-left']}</button>`);
+  btns.push(`<button${currentPage===1?' disabled':''} class="hist-page-first" aria-label="${i18next.t('history.pagination_first')}" title="${i18next.t('history.pagination_first')}">${ICONS['chevrons-left']}</button>`);
+  btns.push(`<button${currentPage===1?' disabled':''} class="hist-page-prev" aria-label="${i18next.t('history.pagination_prev')}" title="${i18next.t('history.pagination_prev')}">${ICONS['chevron-left']}</button>`);
   const mid = [];
   const start = Math.max(1, currentPage - 2);
   const end = Math.min(totalPages, currentPage + 2);
@@ -243,9 +243,9 @@ function renderPagination(totalPages, currentPage) {
   for (let i = start; i <= end; i++) mid.push(`<button data-page="${i}"${i===currentPage?' class="active" aria-current="page"':''}>${i}</button>`);
   if (end < totalPages) { if (end < totalPages - 1) mid.push('<span class="hist-ellipsis">…</span>'); mid.push(`<button data-page="${totalPages}">${totalPages}</button>`); }
   btns.push(...mid);
-  btns.push(`<button${currentPage===totalPages?' disabled':''} class="hist-page-next" aria-label="Page suivante" title="Page suivante">${ICONS['chevron-right']}</button>`);
-  btns.push(`<button${currentPage===totalPages?' disabled':''} class="hist-page-last" aria-label="Dernière page" title="Dernière page">${ICONS['chevrons-right']}</button>`);
-  return `<nav class="hist-pagination" aria-label="Pagination" role="navigation">${btns.join('')}</nav>`;
+  btns.push(`<button${currentPage===totalPages?' disabled':''} class="hist-page-next" aria-label="${i18next.t('history.pagination_next')}" title="${i18next.t('history.pagination_next')}">${ICONS['chevron-right']}</button>`);
+  btns.push(`<button${currentPage===totalPages?' disabled':''} class="hist-page-last" aria-label="${i18next.t('history.pagination_last')}" title="${i18next.t('history.pagination_last')}">${ICONS['chevrons-right']}</button>`);
+  return `<nav class="hist-pagination" aria-label="${i18next.t('history.pagination_aria')}" role="navigation">${btns.join('')}</nav>`;
 }
 
 function renderTable(docs, rawQuery) {
@@ -260,13 +260,13 @@ function renderTable(docs, rawQuery) {
       <td class="hist-cell-date">${escapeHtml(d.date || '')}</td>
       <td class="hist-cell-amount">${d.totalTTC != null ? d.totalTTC.toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' ' + currencySymbol() : i18next.t('history.empty_total')}</td>
       <td class="hist-cell-actions">
-        <button class="btn btn-ghost hist-action-btn" data-action="edit" data-id="${d.id}" aria-label="${i18next.t('history.btn_edit')} ${escapeHtml(d.numero)}" title="Modifier">${ICONS.pencil}</button>
-        <button class="btn btn-ghost hist-action-btn" data-action="reprint" data-id="${d.id}" aria-label="${i18next.t('history.btn_pdf')} ${escapeHtml(d.numero)}" title="Réimprimer PDF">${ICONS['rotate-cw']}</button>
-        <button class="btn btn-danger hist-action-btn" data-action="delete" data-id="${d.id}" aria-label="${i18next.t('history.btn_delete')} ${escapeHtml(d.numero)}" title="Supprimer">${ICONS.x}</button>
+        <button class="btn btn-ghost hist-action-btn" data-action="edit" data-id="${d.id}" aria-label="${i18next.t('history.btn_edit')} ${escapeHtml(d.numero)}" title="${i18next.t('history.btn_edit')}">${ICONS.pencil}</button>
+        <button class="btn btn-ghost hist-action-btn" data-action="reprint" data-id="${d.id}" aria-label="${i18next.t('history.btn_pdf')} ${escapeHtml(d.numero)}" title="${i18next.t('history.btn_reprint')}">${ICONS['rotate-cw']}</button>
+        <button class="btn btn-danger hist-action-btn" data-action="delete" data-id="${d.id}" aria-label="${i18next.t('history.btn_delete')} ${escapeHtml(d.numero)}" title="${i18next.t('history.btn_delete')}">${ICONS.x}</button>
       </td>
     </tr>`).join('');
   return `<div class="hist-table-wrap"><table class="hist">
-    <thead><tr>${th('date','Date')}${th('numero','N°')}${th('client','Client')}${th('amount','Montant')}<th class="hist-th-type">${i18next.t('history.col_type')}</th><th></th></tr></thead>
+    <thead><tr>${th('date',i18next.t('history.col_date'))}${th('numero',i18next.t('history.col_numero'))}${th('client',i18next.t('history.col_client'))}${th('amount',i18next.t('history.col_amount'))}<th class="hist-th-type">${i18next.t('history.col_type')}</th><th></th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
 }
@@ -282,9 +282,9 @@ function renderCards(docs, rawQuery) {
       <div class="hist-card-bottom">
         <strong>${d.totalTTC != null ? d.totalTTC.toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' ' + currencySymbol() : i18next.t('history.empty_total')}</strong>
         <div class="hist-card-actions">
-          <button class="btn btn-ghost hist-action-btn" data-action="edit" data-id="${d.id}" aria-label="Modifier ${escapeHtml(d.numero)}" title="Modifier">${ICONS.pencil}</button>
-          <button class="btn btn-ghost hist-action-btn" data-action="reprint" data-id="${d.id}" aria-label="PDF ${escapeHtml(d.numero)}" title="Réimprimer PDF">${ICONS['rotate-cw']} PDF</button>
-          <button class="btn btn-danger hist-action-btn" data-action="delete" data-id="${d.id}" aria-label="Supprimer ${escapeHtml(d.numero)}" title="Supprimer">${ICONS.x}</button>
+          <button class="btn btn-ghost hist-action-btn" data-action="edit" data-id="${d.id}" aria-label="${i18next.t('history.btn_edit')} ${escapeHtml(d.numero)}" title="${i18next.t('history.btn_edit')}">${ICONS.pencil}</button>
+          <button class="btn btn-ghost hist-action-btn" data-action="reprint" data-id="${d.id}" aria-label="${i18next.t('history.btn_pdf')} ${escapeHtml(d.numero)}" title="${i18next.t('history.btn_reprint')}">${ICONS['rotate-cw']} PDF</button>
+          <button class="btn btn-danger hist-action-btn" data-action="delete" data-id="${d.id}" aria-label="${i18next.t('history.btn_delete')} ${escapeHtml(d.numero)}" title="${i18next.t('history.btn_delete')}">${ICONS.x}</button>
         </div>
       </div>
     </div>`).join('');
@@ -293,9 +293,9 @@ function renderCards(docs, rawQuery) {
 function renderEmptyState(hasSearch) {
   const svg = `<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>`;
   if (hasSearch) {
-    return `<div class="hist-empty" role="status">${svg}<p>Aucun résultat pour votre recherche.</p><p class="hist-empty-hint">Essayez d'autres mots-clés ou vérifiez l'orthographe.</p></div>`;
+    return `<div class="hist-empty" role="status">${svg}<p>${i18next.t('history.empty_search')}</p><p class="hist-empty-hint">${i18next.t('history.empty_search_hint')}</p></div>`;
   }
-  return `<div class="hist-empty" role="status">${svg}<p>Aucun document enregistré.</p><p class="hist-empty-hint">Créez votre premier document pour le voir apparaître ici.</p></div>`;
+  return `<div class="hist-empty" role="status">${svg}<p>${i18next.t('history.empty_state')}</p><p class="hist-empty-hint">${i18next.t('history.empty_state_hint')}</p></div>`;
 }
 
 export function renderHistory(){
