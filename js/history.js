@@ -1,9 +1,9 @@
 import { DOC_TYPES } from './config.js';
-import { loadHistory, saveHistory, isNumeroUnique } from './storage.js';
+import { loadHistory, saveHistory, loadCompany, saveCompany, isNumeroUnique } from './storage.js';
 import { escapeHtml, currencySymbol } from './utils.js';
 import { renderPagesToPdf } from './pdf.js';
 import { ICONS } from './icons.js';
-import { loadPdfFile, loadHeaderImage, deletePdfFile } from './opfs-storage.js';
+import { loadPdfFile, loadHeaderImage, deletePdfFile, migrateHeaderFromCompany } from './opfs-storage.js';
 import { showAlertDialog, showConfirmDialog } from './dialog.js';
 
 let editingDocId = null;
@@ -17,6 +17,45 @@ function withHistoryLock(fn) {
 export function setEditingDocId(id) { editingDocId = id; }
 export function getEditingDocId() { return editingDocId; }
 export function clearEditingDocId() { editingDocId = null; }
+
+function sanitizePayloadForHistory(payload) {
+  if (!payload || !payload.company || payload.company.headerImage === undefined) return payload;
+  const company = { ...payload.company };
+  delete company.headerImage;
+  return { ...payload, company };
+}
+
+export async function migrateHistoryHeader() {
+  const history = loadHistory();
+  const hasLegacy = history.some(d => d.payload && d.payload.company && d.payload.company.headerImage);
+  if (!hasLegacy) return { migrated: false, reason: 'no-legacy' };
+
+  let headerConfirmed = false;
+  try { headerConfirmed = !!(await loadHeaderImage()); } catch (_) { headerConfirmed = false; }
+
+  if (!headerConfirmed) {
+    const company = loadCompany();
+    if (company.headerImage) {
+      const ok = await migrateHeaderFromCompany(company);
+      if (ok) {
+        delete company.headerImage;
+        saveCompany(company);
+        try { headerConfirmed = !!(await loadHeaderImage()); } catch (_) { headerConfirmed = false; }
+      }
+    }
+  }
+
+  if (!headerConfirmed) return { migrated: false, reason: 'opfs-header-unconfirmed' };
+
+  const cleaned = history.map(d => {
+    if (!d.payload || !d.payload.company || d.payload.company.headerImage === undefined) return d;
+    const company = { ...d.payload.company };
+    delete company.headerImage;
+    return { ...d, payload: { ...d.payload, company } };
+  });
+  saveHistory(cleaned);
+  return { migrated: true, count: cleaned.length };
+}
 
 export async function saveToHistory(payload, filename){
   if (!isNumeroUnique(payload.type, payload.numero, editingDocId)) {
@@ -36,7 +75,7 @@ export async function saveToHistory(payload, filename){
           client: payload.client.nom,
           totalTTC: payload.totals.showPrices ? payload.totals.totalTTC : null,
           filename,
-          payload,
+          payload: sanitizePayloadForHistory(payload),
         };
         saveHistory(history);
         editingDocId = null;
@@ -57,7 +96,7 @@ export async function saveToHistory(payload, filename){
       totalTTC: payload.totals.showPrices ? payload.totals.totalTTC : null,
       createdAt: new Date().toISOString(),
       filename,
-      payload,
+      payload: sanitizePayloadForHistory(payload),
     });
     saveHistory(history);
   });

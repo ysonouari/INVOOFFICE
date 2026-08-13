@@ -3,7 +3,7 @@ import { showView, onDocTypeChange, initForm, resetForm, loadHistoryDocIntoForm,
 import { addLine, removeLine, recalcTotals } from './lines.js';
 import { openClientModal, closeClientModal, openClientManagerModal, closeClientManagerModal, onClientSelect, saveClientForm, deleteClientById, refreshClientsSelect } from './client.js';
 import { generatePDF } from './pdf.js';
-import { renderHistory, reprintHistoryDoc, deleteHistoryDoc, getHistoryDoc, setEditingDocId, clearEditingDocId } from './history.js';
+import { renderHistory, reprintHistoryDoc, deleteHistoryDoc, getHistoryDoc, setEditingDocId, clearEditingDocId, migrateHistoryHeader } from './history.js';
 import { initStorage } from './storage.js';
 import { exportBackup, importBackup } from './backup.js';
 import { initI18n, setLang, getCurrentLang } from './i18n.js';
@@ -66,6 +66,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     return;
   }
+
+  // Nettoyage du header dupliqué dans l'historique (garde-fou OPFS, non bloquant)
+  migrateHistoryHeader().catch(() => {});
 
   // Show user info
   const userEl = document.getElementById('authUser');
