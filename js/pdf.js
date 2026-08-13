@@ -203,10 +203,9 @@ export function buildPdfHtml(payload, headerImageUrl){
 </style>` : '';
 
   const img = headerImageUrl || c.headerImage || '';
-  const bgStyle = (c.headerActive && img)
-    ? `background-image:url('${img}');`
-    : '';
-  const paddingTop = (c.headerActive && img) ? `${c.margeHaut}cm` : '14mm';
+  const hasHeader = c.headerActive && !!img;
+  const bgStyle = hasHeader ? 'background:transparent;' : '';
+  const paddingTop = hasHeader ? `${c.margeHaut}cm` : '14mm';
 
   const thBg = c.tableColor || '#eef1f6';
   const thColor = c.tableTextColor || getContrastColor(thBg);
@@ -425,6 +424,80 @@ async function validatePayload(payload){
 
 let generating = false;
 
+function blobToDataUri(blob){
+  return new Promise((resolve) => {
+    const r = new FileReader();
+    r.onload = () => resolve(typeof r.result === 'string' ? r.result : null);
+    r.onerror = () => resolve(null);
+    r.readAsDataURL(blob);
+  });
+}
+
+async function headerToDataUri(src){
+  if (src instanceof Blob) return blobToDataUri(src);
+  if (typeof src !== 'string') return null;
+  if (src.startsWith('data:image')) return src;
+  if (src.startsWith('blob:') || src.startsWith('http://') || src.startsWith('https://')) {
+    try {
+      const resp = await fetch(src);
+      if (!resp.ok) return null;
+      return blobToDataUri(await resp.blob());
+    } catch (_) { return null; }
+  }
+  return null;
+}
+
+function headerFormat(dataUri){
+  if (/^data:image\/png/i.test(dataUri)) return 'PNG';
+  if (/^data:image\/jpe?g/i.test(dataUri)) return 'JPEG';
+  if (/^data:image\/webp/i.test(dataUri)) return 'WEBP';
+  return null;
+}
+
+function loadImageDims(src){
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+function dataUriToPng(src){
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } catch (_) { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+async function resolveHeaderImage(src, company){
+  if (!company.headerActive) return null;
+  let dataUri = await headerToDataUri(src);
+  if (!dataUri) dataUri = await headerToDataUri(company.headerImage || '');
+  if (!dataUri) return null;
+  const dims = await loadImageDims(dataUri);
+  if (!dims || !dims.width || !dims.height) return null;
+  let format = headerFormat(dataUri);
+  if (format !== 'PNG' && format !== 'JPEG') {
+    const png = await dataUriToPng(dataUri);
+    if (!png) return null;
+    dataUri = png;
+    format = 'PNG';
+  }
+  return { dataUri, format, width: dims.width, height: dims.height };
+}
+
 export async function renderPagesToPdf(payload, headerUrl){
   const f = buildPdfHtml(payload, headerUrl);
 
@@ -442,12 +515,25 @@ export async function renderPagesToPdf(payload, headerUrl){
 
   await registerFontsForDoc(pdf);
 
+  const header = await resolveHeaderImage(headerUrl, payload.company);
+  let headerPngFallback = null;
+
   for (let p = 0; p < pages.length; p++) {
     const textElements = prepareTextElements(pages[p]);
-    const canvas = await html2canvas(pages[p], { scale, useCORS: true, backgroundColor: '#ffffff' });
-    const imgData = canvas.toDataURL('image/jpeg', 0.95);
     if (p > 0) pdf.addPage();
-    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+    if (header) {
+      const wMm = 210;
+      const hMm = 210 * header.height / header.width;
+      try {
+        pdf.addImage(header.dataUri, header.format, 0, 0, wMm, hMm);
+      } catch (_) {
+        if (!headerPngFallback) headerPngFallback = await dataUriToPng(header.dataUri);
+        pdf.addImage(headerPngFallback, 'PNG', 0, 0, wMm, hMm);
+      }
+    }
+    const canvas = await html2canvas(pages[p], { scale, useCORS: true, backgroundColor: header ? null : '#ffffff' });
+    const imgData = header ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.95);
+    pdf.addImage(imgData, header ? 'PNG' : 'JPEG', 0, 0, 210, 297);
     writePageOverlay(pdf, textElements, isRtl);
     canvas.width = canvas.height = 0;
   }
@@ -458,16 +544,14 @@ export async function renderPagesToPdf(payload, headerUrl){
 export async function generatePDF(){
   if (generating) return;
   generating = true;
-  let headerUrl = null;
   try {
   const payload = collectPayload();
   if (!await validatePayload(payload)) return;
 
   let headerBlob;
   try { headerBlob = await loadHeaderImage(); } catch (_) { headerBlob = null; }
-  headerUrl = headerBlob ? URL.createObjectURL(headerBlob) : null;
 
-  const pdf = await renderPagesToPdf(payload, headerUrl);
+  const pdf = await renderPagesToPdf(payload, headerBlob);
 
   const filename = `${payload.numero}.pdf`;
 
@@ -487,7 +571,6 @@ export async function generatePDF(){
   await saveToHistory(payload, filename);
 
   } finally {
-    if (headerUrl) URL.revokeObjectURL(headerUrl);
     const stage = document.getElementById('pdf-stage');
     if (stage) stage.innerHTML = '';
     generating = false;

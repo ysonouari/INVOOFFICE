@@ -396,15 +396,13 @@ export async function reprintHistoryDoc(id){
 
   let headerBlob;
   try { headerBlob = await loadHeaderImage(); } catch (_) { headerBlob = null; }
-  const headerUrl = headerBlob ? URL.createObjectURL(headerBlob) : null;
 
   try {
-    const pdf = await renderPagesToPdf(doc.payload, headerUrl || doc.payload.company.headerImage);
+    const pdf = await renderPagesToPdf(doc.payload, headerBlob || doc.payload.company.headerImage);
     pdf.save(filename);
   } finally {
     const stage = document.getElementById('pdf-stage');
     if (stage) stage.innerHTML = '';
-    if (headerUrl) URL.revokeObjectURL(headerUrl);
   }
 }
 

@@ -51,6 +51,7 @@ Stack : JavaScript ES modules, Supabase (auth), html2canvas + jsPDF (PDF), local
 - **Bloc final insécable** : totaux + montant en lettres + conditions + note dans un nœud DOM unique `.pdf-final-block`, déplacé en tant que nœud (pas de manipulation de chaînes).
 - **Polices** : mesurer les hauteurs **après** `await document.fonts.ready` (Tajawal `font-display:swap`).
 - **Qualité PDF** : `company.pdfQuality` — `2` = Standard (~192 DPI, défaut), `3` = Qualité Pro (~288 DPI), `3.125` = Impression (300 DPI). Configurable dans "Mes Informations" > "Qualité du PDF"
+- **Fond A4 natif** : l'en-tête/background n'est **plus** peint en `background-image` + html2canvas (perte de résolution/JPEG). Il est injecté **nativement** par page via `pdf.addImage(dataUri, format, 0, 0, 210, 210*h/w)` (`resolveHeaderImage()` conserve la résolution native et le format PNG/JPEG d'origine ; fallback canvas→PNG pour WebP/autres). Le contenu est alors capturé en **PNG transparent** (`backgroundColor: null`) quand un header est actif, sinon en JPEG 0.95 (comportement inchangé).
 - **Polices** : Tajawal en base64 dans `js/pdf-font.js` (4 variantes), enregistrées via VFS jsPDF
 - **Overlay texte** : utilisé par `generatePDF()` **et** `reprintHistoryDoc()` via le helper commun `renderPagesToPdf()` (helpers internes `prepareTextElements()` + `writePageOverlay()`)
 - **Mode BL** : `showTotalsDefault: true`
