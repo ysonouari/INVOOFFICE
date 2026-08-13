@@ -60,7 +60,8 @@
     "remise": "Remise (%)",
     "remise_label": "Remise",
     "reste_a_payer": "Reste à payer",
-    "generate_pdf": "Générer le document PDF"
+    "generate_pdf": "Générer le document PDF",
+    "generating_pdf": "Génération du PDF en cours…"
   },
   "payment_options": {
     "cash": "Paiement comptant",

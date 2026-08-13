@@ -511,7 +511,7 @@ export async function renderPagesToPdf(payload, headerUrl){
   const scale = payload.company.pdfQuality || 2;
   const isRtl = i18next.language === 'ar';
   const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
 
   await registerFontsForDoc(pdf);
 
@@ -544,6 +544,16 @@ export async function renderPagesToPdf(payload, headerUrl){
 export async function generatePDF(){
   if (generating) return;
   generating = true;
+
+  const btn = document.querySelector('[data-action="generate-pdf"]');
+  let prevBtn = null;
+  if (btn) {
+    prevBtn = { disabled: btn.disabled, ariaBusy: btn.getAttribute('aria-busy'), html: btn.innerHTML };
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    btn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(127,127,127,.35);border-top-color:currentColor;border-radius:50%;animation:appspin .7s linear infinite;vertical-align:-2px;margin-right:8px;" aria-hidden="true"></span>' + i18next.t('form.generating_pdf');
+  }
+
   try {
   const payload = collectPayload();
   if (!await validatePayload(payload)) return;
@@ -573,6 +583,12 @@ export async function generatePDF(){
   } finally {
     const stage = document.getElementById('pdf-stage');
     if (stage) stage.innerHTML = '';
+    if (btn && prevBtn) {
+      btn.disabled = prevBtn.disabled;
+      if (prevBtn.ariaBusy) btn.setAttribute('aria-busy', prevBtn.ariaBusy);
+      else btn.removeAttribute('aria-busy');
+      btn.innerHTML = prevBtn.html;
+    }
     generating = false;
   }
 }

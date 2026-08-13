@@ -60,7 +60,8 @@
     "remise": "الخصم (%)",
     "remise_label": "الخصم",
     "reste_a_payer": "الباقي للدفع",
-    "generate_pdf": "إنشاء مستند PDF"
+    "generate_pdf": "إنشاء مستند PDF",
+    "generating_pdf": "جارٍ إنشاء ملف PDF…"
   },
   "payment_options": {
     "cash": "دفع نقداً",
