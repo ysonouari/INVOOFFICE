@@ -109,18 +109,12 @@ export function prepareTextElements(pageEl) {
   return textElements;
 }
 
-export function writePageTextOverlay(pdf, textElements, pageIndex, pageHeight, isRtl) {
+export function writePageOverlay(pdf, textElements, isRtl) {
   pdf.setTextColor(255, 255, 255);
   pdf.internal.write('3 Tr');
-  const pageTop = pageIndex * pageHeight;
-  const pageBottom = (pageIndex + 1) * pageHeight;
 
   for (const el of textElements) {
-    const elTop = el.y_mm;
-    const elBottom = el.y_mm + el.h_mm;
-    if (elBottom < pageTop + 1 || elTop > pageBottom - 1) continue;
-
-    const pdfY = el.y_mm - pageTop;
+    const pdfY = el.y_mm;
     const pdfX = el.x_mm;
 
     let variant = 'normal';
@@ -218,11 +212,11 @@ export function buildPdfHtml(payload, headerImageUrl){
   const thColor = c.tableTextColor || getContrastColor(thBg);
   const thStyle = `background:${thBg};color:${thColor};`;
 
-  let rowsHtml = t.lines.map(l=>`
+  const rowsHtml = t.lines.map(l=>`
     <tr>
       <td>${escapeHtml(l.desig)}</td>
       ${t.showPrices ? `<td class="num">${l.prix.toFixed(2)}</td><td class="num">${l.qte}</td><td class="num">${l.total.toFixed(2)}</td>` : `<td class="num">${l.qte}</td>`}
-    </tr>`).join('');
+    </tr>`);
 
   let totalsHtml = '';
   if(t.showPrices){
@@ -243,10 +237,13 @@ export function buildPdfHtml(payload, headerImageUrl){
 
   const footerLine = buildFooterLine(c);
 
-  return `
-  ${fontScaleStyle}
-  <div class="pdf-page" style="${bgStyle}padding-top:${paddingTop};" ${isRtl ? 'dir="rtl" lang="ar"' : 'dir="ltr" lang="fr"'}>
-    <div class="pdf-content">
+  const conditionsHtml = (payload.conditions || payload.modeReglement) ? `
+      <div class="pdf-conditions">
+        ${payload.conditions ? `<div><b>${i18next.t('pdf.label_conditions')}</b> ${escapeHtml(payload.conditions)}</div>` : ''}
+        ${payload.modeReglement ? `<div><b>${i18next.t('pdf.label_reglement')}</b> ${escapeHtml(payload.modeReglement)}</div>` : ''}
+      </div>` : '';
+
+  const headerBlockHtml = `
       <div class="doc-meta">
         <div><b>${i18next.t('pdf.label_numero')}</b> ${escapeHtml(payload.numero)}</div>
         <div><b>${i18next.t('pdf.label_date')}</b> ${escapeHtml(payload.date)}</div>
@@ -260,8 +257,9 @@ export function buildPdfHtml(payload, headerImageUrl){
         ${payload.client.adresse ? escapeHtml(payload.client.adresse) + '<br>' : ''}
         ${payload.client.tel ? escapeHtml(payload.client.tel) : ''}
       </div>
-      ${payload.client.ref ? `<div class="pdf-ref">${escapeHtml(payload.client.ref)}</div>` : ''}
+      ${payload.client.ref ? `<div class="pdf-ref">${escapeHtml(payload.client.ref)}</div>` : ''}`;
 
+  const tableStartHtml = `
       <table class="pdf-table">
         <colgroup>
           <col style="width:${t.showPrices ? '42%' : '75%'}">
@@ -273,21 +271,107 @@ export function buildPdfHtml(payload, headerImageUrl){
             ${t.showPrices ? `<th class="num" style="${thStyle}">${i18next.t('pdf.th_price')}</th><th class="num" style="${thStyle}">${i18next.t('pdf.th_qty')}</th><th class="num" style="${thStyle}">${i18next.t('pdf.th_total')}</th>` : `<th class="num" style="${thStyle}">${i18next.t('pdf.th_qty')}</th>`}
           </tr>
         </thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
+        <tbody></tbody>
+      </table>`;
 
-      ${totalsHtml}
-      ${wordsHtml}
+  const finalBlockHtml = totalsHtml + wordsHtml + conditionsHtml +
+    (payload.notes ? `<div class="pdf-note">${escapeHtml(payload.notes)}</div>` : '');
 
-      ${(payload.conditions || payload.modeReglement) ? `
-      <div class="pdf-conditions">
-        ${payload.conditions ? `<div><b>${i18next.t('pdf.label_conditions')}</b> ${escapeHtml(payload.conditions)}</div>` : ''}
-        ${payload.modeReglement ? `<div><b>${i18next.t('pdf.label_reglement')}</b> ${escapeHtml(payload.modeReglement)}</div>` : ''}
-      </div>` : ''}
-      ${payload.notes ? `<div class="pdf-note">${escapeHtml(payload.notes)}</div>` : ''}
-    </div>
-    <div class="pdf-footer">${footerLine}</div>
-  </div>`;
+  return {
+    styleHtml: fontScaleStyle,
+    headerBlockHtml,
+    tableStartHtml,
+    rowsHtml,
+    finalBlockHtml,
+    footerHtml: `<div class="pdf-footer">${footerLine}</div>`,
+    bgStyle,
+    paddingTop,
+    isRtl,
+  };
+}
+
+const MM_TO_PX = 96 / 25.4;
+const SAFETY_MM = 8;
+
+function contentEl(pageEl){
+  return pageEl.querySelector('.pdf-content');
+}
+
+function overflows(pageEl){
+  const c = contentEl(pageEl);
+  return c.scrollHeight > c.clientHeight;
+}
+
+function usableInnerHeight(pageEl){
+  return contentEl(pageEl).clientHeight - (SAFETY_MM * MM_TO_PX);
+}
+
+function newPage(f, stage){
+  const el = document.createElement('div');
+  el.className = 'pdf-page';
+  el.setAttribute('dir', f.isRtl ? 'rtl' : 'ltr');
+  el.setAttribute('lang', f.isRtl ? 'ar' : 'fr');
+  el.style.cssText = `${f.bgStyle}padding-top:${f.paddingTop};`;
+  el.innerHTML = '<div class="pdf-content"></div>' + f.footerHtml;
+  stage.appendChild(el);
+  return el;
+}
+
+function openTable(content, f){
+  content.insertAdjacentHTML('beforeend', f.tableStartHtml);
+  return content.querySelector('.pdf-table tbody');
+}
+
+function buildPages(f, stage){
+  const pages = [];
+  let page = newPage(f, stage);
+  let content = page.querySelector('.pdf-content');
+
+  content.insertAdjacentHTML('beforeend', f.headerBlockHtml);
+  let tBody = openTable(content, f);
+
+  let i = 0;
+  while (i < f.rowsHtml.length){
+    tBody.insertAdjacentHTML('beforeend', f.rowsHtml[i]);
+    if (overflows(page)){
+      if (tBody.lastElementChild) tBody.lastElementChild.remove();
+      if (tBody.children.length === 0){
+        tBody.insertAdjacentHTML('beforeend', f.rowsHtml[i]);
+        i++;
+      }
+      pages.push(page);
+      page = newPage(f, stage);
+      content = page.querySelector('.pdf-content');
+      tBody = openTable(content, f);
+      continue;
+    }
+    i++;
+  }
+
+  const finalBlock = document.createElement('div');
+  finalBlock.className = 'pdf-final-block';
+  finalBlock.innerHTML = f.finalBlockHtml;
+  content.appendChild(finalBlock);
+
+  let guard = 0;
+  while (overflows(page) && guard < 1000){
+    const trs = content.querySelectorAll('.pdf-table tbody tr');
+    if (trs.length <= 1) break;
+    if (finalBlock.offsetHeight > usableInnerHeight(page)) break;
+    finalBlock.remove();
+    const lastRow = trs[trs.length - 1];
+    lastRow.remove();
+    pages.push(page);
+    page = newPage(f, stage);
+    content = page.querySelector('.pdf-content');
+    tBody = openTable(content, f);
+    tBody.appendChild(lastRow);
+    content.appendChild(finalBlock);
+    guard++;
+  }
+
+  pages.push(page);
+  return pages;
 }
 
 export function collectPayload(){
@@ -341,10 +425,39 @@ async function validatePayload(payload){
 
 let generating = false;
 
+export async function renderPagesToPdf(payload, headerUrl){
+  const f = buildPdfHtml(payload, headerUrl);
+
+  await document.fonts.ready;
+  await new Promise(r=>setTimeout(r, 150));
+
+  const stage = document.getElementById('pdf-stage');
+  stage.innerHTML = f.styleHtml;
+  const pages = buildPages(f, stage);
+
+  const scale = payload.company.pdfQuality || 2;
+  const isRtl = i18next.language === 'ar';
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+
+  await registerFontsForDoc(pdf);
+
+  for (let p = 0; p < pages.length; p++) {
+    const textElements = prepareTextElements(pages[p]);
+    const canvas = await html2canvas(pages[p], { scale, useCORS: true, backgroundColor: '#ffffff' });
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    if (p > 0) pdf.addPage();
+    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+    writePageOverlay(pdf, textElements, isRtl);
+    canvas.width = canvas.height = 0;
+  }
+
+  return pdf;
+}
+
 export async function generatePDF(){
   if (generating) return;
   generating = true;
-  let stage = null;
   let headerUrl = null;
   try {
   const payload = collectPayload();
@@ -354,34 +467,7 @@ export async function generatePDF(){
   try { headerBlob = await loadHeaderImage(); } catch (_) { headerBlob = null; }
   headerUrl = headerBlob ? URL.createObjectURL(headerBlob) : null;
 
-  stage = document.getElementById('pdf-stage');
-  stage.innerHTML = buildPdfHtml(payload, headerUrl);
-  const pageEl = stage.querySelector('.pdf-page');
-
-  await document.fonts.ready;
-  await new Promise(r=>setTimeout(r, 150));
-
-  const textElements = prepareTextElements(pageEl);
-
-  const scale = payload.company.pdfQuality || 2;
-  const canvas = await html2canvas(pageEl, { scale, useCORS: true, backgroundColor: '#ffffff' });
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF('p', 'mm', 'a4');
-  const pageWidth = 210, pageHeight = 297;
-  const imgWidth = pageWidth;
-  const imgHeight = canvas.height * imgWidth / canvas.width;
-  const imgData = canvas.toDataURL('image/jpeg', 0.95);
-
-  await registerFontsForDoc(pdf);
-
-  const totalPages = Math.max(1, Math.ceil((imgHeight - 0.5) / pageHeight));
-  const isRtl = i18next.language === 'ar';
-
-  for (let p = 0; p < totalPages; p++) {
-    if (p > 0) pdf.addPage();
-    pdf.addImage(imgData, 'JPEG', 0, -(p * pageHeight), imgWidth, imgHeight);
-    writePageTextOverlay(pdf, textElements, p, pageHeight, isRtl);
-  }
+  const pdf = await renderPagesToPdf(payload, headerUrl);
 
   const filename = `${payload.numero}.pdf`;
 
@@ -402,6 +488,7 @@ export async function generatePDF(){
 
   } finally {
     if (headerUrl) URL.revokeObjectURL(headerUrl);
+    const stage = document.getElementById('pdf-stage');
     if (stage) stage.innerHTML = '';
     generating = false;
   }

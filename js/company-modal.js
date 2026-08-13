@@ -12,6 +12,39 @@ let pendingHeaderFile = null;
 let companyModalPrevFocus = null;
 let headerPreviewUrls = [];
 
+const TARGET_WIDTH = 2480;
+
+async function normalizeHeaderImage(file) {
+  let url = null;
+  try {
+    url = URL.createObjectURL(file);
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = url;
+    });
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    if (!w || !h) return file;
+    if (w >= TARGET_WIDTH) return file;
+    const targetHeight = Math.round(h * TARGET_WIDTH / w);
+    if (targetHeight > 6000) return file;
+    const canvas = document.createElement('canvas');
+    canvas.width = TARGET_WIDTH;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, TARGET_WIDTH, targetHeight);
+    return await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  } catch (_) {
+    return file;
+  } finally {
+    if (url) URL.revokeObjectURL(url);
+  }
+}
+
 function onCompanyModalKey(e) {
   if (e.key === 'Escape') { closeCompanyModal(); return; }
   trapFocusInModal(document.getElementById('companyModalOverlay'), e);
@@ -185,13 +218,13 @@ export async function saveCompanyForm(){
   c.tableTextColor = document.getElementById('cTableTextColorHex').value;
   c.margeHaut = parseFloat(document.getElementById('cMargeHaut').value) || 0;
   c.fontSizeOffset = parseInt(document.getElementById('cFontSizeOffset').value) || 0;
-  c.pdfQuality = parseInt(document.getElementById('cPdfScale').value) || 2;
+  c.pdfQuality = parseFloat(document.getElementById('cPdfScale').value) || 2;
   c.headerActive = document.getElementById('cHeaderActive').checked;
   saveCompany(c);
   if (pendingHeaderFile) {
     (async () => {
       try {
-        await saveHeaderImage(pendingHeaderFile);
+        await saveHeaderImage(await normalizeHeaderImage(pendingHeaderFile));
       } catch (_) {}
     })();
   } else if (!c.headerActive) {

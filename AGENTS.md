@@ -33,12 +33,12 @@ Stack : JavaScript ES modules, Supabase (auth), html2canvas + jsPDF (PDF), local
 | Métrique | Valeur | Source |
 |---|---|---|
 | **Prix officiel** | **300 DH** (paiement unique, accès à vie) | |
-| **Tests Playwright** | **121/121 passent** | Dernier run complet (ajout 10 tests historique + correction toggle headerActive) |
+| **Tests Playwright** | **117/117 passent** | Dernier run complet (pagination PDF réelle par page A4 + test multi-pages) |
 | **Bugs P0** | **0** | Tous corrigés (cf. `docs/audit/P0_FIX_REPORT.md`) |
 | **Bugs P1** | **3** mineurs : duplication `esc()` admin, import mort `signOut`, export mort `renderClientList` | `docs/audit/EXCELLENCE_AUDIT.md` |
 | **Score global** | **8.5/10** | Dernier audit d'excellence |
 | **npm audit** | 0 vulnérabilité | |
-| **Métriques PDF** | Scale 2 (192 DPI) / Scale 3 (288 DPI), overlay invisible searchable, `generatePDF()` + `reprintHistoryDoc()` unifiés | `docs/audit/DECISION_VECTOR_TEXT_AR.md` |
+| **Métriques PDF** | Scale 2 (192 DPI) / 3 (288 DPI) / 3.125 (300 DPI), pagination HTML réelle (1 `.pdf-page` = 1 page A4), overlay invisible searchable, `renderPagesToPdf()` unifie `generatePDF()` + `reprintHistoryDoc()` | `docs/audit/DECISION_VECTOR_TEXT_AR.md` |
 
 ---
 
@@ -46,10 +46,13 @@ Stack : JavaScript ES modules, Supabase (auth), html2canvas + jsPDF (PDF), local
 
 ### PDF
 - **Phase PDF stabilisée** — Ne pas modifier le pipeline sans nouvelle étude (cf. `docs/audit/DECISION_VECTOR_TEXT_AR.md`)
-- **Tolérance pagination** : `> 0.5` mm (pas `> 0`) — évite les pages blanches intempestives causées par les arrondis html2canvas
-- **Qualité PDF** : `company.pdfQuality` — `2` = Standard (~192 DPI, défaut), `3` = Qualité Pro (~288 DPI). Configurable dans "Mes Informations" > "Qualité du PDF"
+- **Pagination** : **1 `.pdf-page` HTML = 1 page A4** (hauteur fixe 297 mm, `overflow:hidden`). Le contenu est paginé **avant** html2canvas (`buildPages()`), chaque page porte son propre fond d'en-tête et son propre footer. html2canvas capture **page par page**, jsPDF reçoit **1 image = 1 page** (`addImage(img, 0, 0, 210, 297)`).
+- **Zone de sécurité footer** : `SAFETY_MM = 8` mm réservés avant le footer (via `padding-bottom:8mm` sur `.pdf-content`). Détection de débordement : `scrollHeight > clientHeight` (jamais soustraire la marge dans la comparaison — `scrollHeight` est borné inférieurement par `clientHeight`).
+- **Bloc final insécable** : totaux + montant en lettres + conditions + note dans un nœud DOM unique `.pdf-final-block`, déplacé en tant que nœud (pas de manipulation de chaînes).
+- **Polices** : mesurer les hauteurs **après** `await document.fonts.ready` (Tajawal `font-display:swap`).
+- **Qualité PDF** : `company.pdfQuality` — `2` = Standard (~192 DPI, défaut), `3` = Qualité Pro (~288 DPI), `3.125` = Impression (300 DPI). Configurable dans "Mes Informations" > "Qualité du PDF"
 - **Polices** : Tajawal en base64 dans `js/pdf-font.js` (4 variantes), enregistrées via VFS jsPDF
-- **Overlay texte** : utilisé par `generatePDF()` **et** `reprintHistoryDoc()` via les helpers communs `prepareTextElements()` + `writePageTextOverlay()`
+- **Overlay texte** : utilisé par `generatePDF()` **et** `reprintHistoryDoc()` via le helper commun `renderPagesToPdf()` (helpers internes `prepareTextElements()` + `writePageOverlay()`)
 - **Mode BL** : `showTotalsDefault: true`
 - **Mode exonéré** : `getRegimeConfig('exoneree')` → pas de HT ni TVA
 - **`#pdf-stage`** : positionné à `left:-99999px` (LTR) ou `right:-99999px` (RTL)
@@ -57,7 +60,7 @@ Stack : JavaScript ES modules, Supabase (auth), html2canvas + jsPDF (PDF), local
 ### Storage
 - **localStorage = source de vérité**, IndexedDB = backup. Ne pas inverser
 - **Clés** : `fb_company`, `fb_history`, `fb_clients`, `fb_lang`, `fb_theme`
-- **`fb_company.pdfQuality`** : `2` (défaut) ou `3` — résolution d'export PDF
+- **`fb_company.pdfQuality`** : `2` (défaut), `3` ou `3.125` — résolution d'export PDF (192/288/300 DPI)
 - **OPFS** : `facturation/pdfs/` et `facturation/header.png`
 - **Mutex historique** : `withHistoryLock()` sérialise les écritures — ne pas contourner
 
@@ -82,7 +85,7 @@ Stack : JavaScript ES modules, Supabase (auth), html2canvas + jsPDF (PDF), local
 ```bash
 npm install          # installer les dépendances
 npm start            # lancer le serveur (port 3000)
-npm test             # lancer les 116 tests Playwright
+npm test             # lancer les 117 tests Playwright
 npm run dev          # alias de start
 npx playwright test --config=tests/playwright.config.ts --headed  # mode debug
 ```
@@ -95,7 +98,7 @@ npx playwright test --config=tests/playwright.config.ts --headed  # mode debug
 js/           → 19 modules (cœur métier : pdf, storage, history, lines, client...)
 modules/      → auth, admin, landing, shared
 css/          → styles.css (design tokens), fonts.css, rtl.css
-tests/        → 27 specs Playwright (116 tests)
+tests/        → 28 specs Playwright (117 tests)
 docs/         → documentation technique
 docs/audit/   → audits (les plus récents font autorité)
 docs/archive/ → audits historiques (peuvent être périmés — vérifier la date)

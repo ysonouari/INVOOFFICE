@@ -152,6 +152,7 @@
     "pdf_scale": "Qualité du PDF",
     "pdf_scale_standard": "Standard (~192 DPI)",
     "pdf_scale_high": "Qualité Pro (~288 DPI)",
+    "pdf_scale_print": "Qualité Impression (300 DPI)",
     "pdf_scale_hint": "La qualité Pro produit des PDF plus nets (zoom, impression laser) mais plus lourds et plus lents à générer.",
     "header_add": "Ajouter un en-tête (fond de page)",
     "header_click": "Cliquer pour ajouter une image (fond de page)",

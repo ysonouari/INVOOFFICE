@@ -1,4 +1,4 @@
-const CACHE_NAME = 'facturation-v5';
+const CACHE_NAME = 'facturation-v6';
 
 const PRECACHE_URLS = [
   './',
