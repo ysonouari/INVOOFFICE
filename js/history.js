@@ -1,7 +1,7 @@
 import { DOC_TYPES } from './config.js';
-import { loadHistory, saveHistory, loadCompany, saveCompany, isNumeroUnique } from './storage.js';
+import { loadHistory, saveHistory, loadCompany, saveCompany, isNumeroUnique, nextNumero } from './storage.js';
 import { escapeHtml, currencySymbol } from './utils.js';
-import { renderPagesToPdf } from './pdf.js';
+import { renderPagesToPdf, generateAndSave, todayFr } from './pdf.js';
 import { ICONS } from './icons.js';
 import { loadPdfFile, loadHeaderImage, deletePdfFile, migrateHeaderFromCompany } from './opfs-storage.js';
 import { showAlertDialog, showConfirmDialog } from './dialog.js';
@@ -57,14 +57,14 @@ export async function migrateHistoryHeader() {
   return { migrated: true, count: cleaned.length };
 }
 
-export async function saveToHistory(payload, filename){
-  if (!isNumeroUnique(payload.type, payload.numero, editingDocId)) {
+export async function saveToHistory(payload, filename, { createOnly = false } = {}){
+  if (!isNumeroUnique(payload.type, payload.numero, createOnly ? null : editingDocId)) {
     await showAlertDialog(i18next.t('form.numeroDuplicate'));
     return;
   }
   return withHistoryLock(async () => {
     const history = loadHistory();
-    if (editingDocId) {
+    if (!createOnly && editingDocId) {
       const idx = history.findIndex(d => d.id === editingDocId);
       if (idx >= 0) {
         history[idx] = {
@@ -287,25 +287,38 @@ function renderPagination(totalPages, currentPage) {
   return `<nav class="hist-pagination" aria-label="${i18next.t('history.pagination_aria')}" role="navigation">${btns.join('')}</nav>`;
 }
 
+/* ============================================================
+   Actions row — boutons directs
+   ============================================================ */
+
+function renderActions(d) {
+  const num = escapeHtml(d.numero);
+  const convert = d.type === 'devis'
+    ? `<button class="btn btn-ghost hist-action-btn" data-action="convert" data-id="${d.id}" aria-label="${i18next.t('history.btn_convert')} ${num}" title="${i18next.t('history.btn_convert')}">${ICONS['arrow-right']}</button>`
+    : '';
+  return `
+    <button class="btn btn-ghost hist-action-btn" data-action="edit" data-id="${d.id}" aria-label="${i18next.t('history.btn_edit')} ${num}" title="${i18next.t('history.btn_edit')}">${ICONS.pencil}</button>
+    <button class="btn btn-ghost hist-action-btn" data-action="duplicate" data-id="${d.id}" aria-label="${i18next.t('history.btn_duplicate')} ${num}" title="${i18next.t('history.btn_duplicate')}">${ICONS.copy}</button>
+    ${convert}
+    <button class="btn btn-ghost hist-action-btn" data-action="reprint" data-id="${d.id}" aria-label="${i18next.t('history.btn_pdf')} ${num}" title="${i18next.t('history.btn_reprint')}">${ICONS['rotate-cw']}</button>
+    <button class="btn btn-danger hist-action-btn" data-action="delete" data-id="${d.id}" aria-label="${i18next.t('history.btn_delete')} ${num}" title="${i18next.t('history.btn_delete')}">${ICONS.x}</button>`;
+}
+
 function renderTable(docs, rawQuery) {
   const sortArrow = (col) => getSortArrow(col);
   const th = (col, label) =>
-    `<th class="hist-sortable" data-sort="${col}" role="columnheader" aria-sort="${historyState.sortBy.startsWith(col)?(historyState.sortBy.endsWith('desc')?'descending':'ascending'):'none'}" tabindex="0">${label}<span class="hist-sort-arrow">${sortArrow(col)}</span></th>`;
+    `<th class="hist-sortable hist-th-${col}" data-sort="${col}" role="columnheader" aria-sort="${historyState.sortBy.startsWith(col)?(historyState.sortBy.endsWith('desc')?'descending':'ascending'):'none'}" tabindex="0">${label}<span class="hist-sort-arrow">${sortArrow(col)}</span></th>`;
   const rows = docs.map(d => `
     <tr class="hist-row">
-      <td class="hist-cell-type"><span class="badge ${DOC_TYPES[d.type].badge}">${i18next.t('docTypes.' + DOC_TYPES[d.type].i18nKey)}</span></td>
+      <td class="hist-cell-date">${escapeHtml(d.date || '')}</td>
       <td class="hist-cell-numero">${highlightMatch(d.numero, rawQuery)}</td>
       <td class="hist-cell-client">${highlightMatch(d.client || '', rawQuery)}</td>
-      <td class="hist-cell-date">${escapeHtml(d.date || '')}</td>
       <td class="hist-cell-amount">${d.totalTTC != null ? d.totalTTC.toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' ' + currencySymbol() : i18next.t('history.empty_total')}</td>
-      <td class="hist-cell-actions">
-        <button class="btn btn-ghost hist-action-btn" data-action="edit" data-id="${d.id}" aria-label="${i18next.t('history.btn_edit')} ${escapeHtml(d.numero)}" title="${i18next.t('history.btn_edit')}">${ICONS.pencil}</button>
-        <button class="btn btn-ghost hist-action-btn" data-action="reprint" data-id="${d.id}" aria-label="${i18next.t('history.btn_pdf')} ${escapeHtml(d.numero)}" title="${i18next.t('history.btn_reprint')}">${ICONS['rotate-cw']}</button>
-        <button class="btn btn-danger hist-action-btn" data-action="delete" data-id="${d.id}" aria-label="${i18next.t('history.btn_delete')} ${escapeHtml(d.numero)}" title="${i18next.t('history.btn_delete')}">${ICONS.x}</button>
-      </td>
+      <td class="hist-cell-type"><span class="badge ${DOC_TYPES[d.type].badge}">${i18next.t('docTypes.' + DOC_TYPES[d.type].i18nKey)}</span></td>
+      <td class="hist-cell-actions">${renderActions(d)}</td>
     </tr>`).join('');
   return `<div class="hist-table-wrap"><table class="hist">
-    <thead><tr>${th('date',i18next.t('history.col_date'))}${th('numero',i18next.t('history.col_numero'))}${th('client',i18next.t('history.col_client'))}${th('amount',i18next.t('history.col_amount'))}<th class="hist-th-type">${i18next.t('history.col_type')}</th><th></th></tr></thead>
+    <thead><tr>${th('date',i18next.t('history.col_date'))}${th('numero',i18next.t('history.col_numero'))}${th('client',i18next.t('history.col_client'))}${th('amount',i18next.t('history.col_amount'))}<th class="hist-th-type">${i18next.t('history.col_type')}</th><th class="hist-th-actions"></th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
 }
@@ -320,11 +333,7 @@ function renderCards(docs, rawQuery) {
       <div class="hist-card-mid">${highlightMatch(d.client || '', rawQuery)} — ${escapeHtml(d.date || '')}</div>
       <div class="hist-card-bottom">
         <strong>${d.totalTTC != null ? d.totalTTC.toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' ' + currencySymbol() : i18next.t('history.empty_total')}</strong>
-        <div class="hist-card-actions">
-          <button class="btn btn-ghost hist-action-btn" data-action="edit" data-id="${d.id}" aria-label="${i18next.t('history.btn_edit')} ${escapeHtml(d.numero)}" title="${i18next.t('history.btn_edit')}">${ICONS.pencil}</button>
-          <button class="btn btn-ghost hist-action-btn" data-action="reprint" data-id="${d.id}" aria-label="${i18next.t('history.btn_pdf')} ${escapeHtml(d.numero)}" title="${i18next.t('history.btn_reprint')}">${ICONS['rotate-cw']} PDF</button>
-          <button class="btn btn-danger hist-action-btn" data-action="delete" data-id="${d.id}" aria-label="${i18next.t('history.btn_delete')} ${escapeHtml(d.numero)}" title="${i18next.t('history.btn_delete')}">${ICONS.x}</button>
-        </div>
+        <div class="hist-card-actions">${renderActions(d)}</div>
       </div>
     </div>`).join('');
 }
@@ -464,4 +473,32 @@ export async function deleteHistoryDoc(id){
     if (historyState.page > totalPages) historyState.page = totalPages;
     renderHistory();
   });
+}
+
+export async function duplicateHistoryDoc(id){
+  const doc = getHistoryDoc(id);
+  if (!doc) return;
+  const newPayload = structuredClone(doc.payload);
+  newPayload.numero = nextNumero(doc.payload.type).display;
+  newPayload.date = todayFr();
+  try {
+    await generateAndSave(newPayload, { mode: 'create', download: false });
+  } finally {
+    renderHistory();
+  }
+}
+
+export async function convertToInvoice(id){
+  const doc = getHistoryDoc(id);
+  if (!doc || doc.type !== 'devis') return;
+  if (!await showConfirmDialog(i18next.t('history.confirm_convert'))) return;
+  const newPayload = structuredClone(doc.payload);
+  newPayload.type = 'facture';
+  newPayload.numero = nextNumero('facture').display;
+  newPayload.date = todayFr();
+  try {
+    await generateAndSave(newPayload, { mode: 'create', download: false });
+  } finally {
+    renderHistory();
+  }
 }

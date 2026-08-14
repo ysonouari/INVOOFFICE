@@ -373,6 +373,14 @@ function buildPages(f, stage){
   return pages;
 }
 
+function formatFrDate(date) {
+  return date ? date.toLocaleDateString('fr-FR') : '';
+}
+
+export function todayFr() {
+  return formatFrDate(new Date());
+}
+
 export function collectPayload(){
   const type = document.getElementById('docType').value;
   const totals = recalcTotals();
@@ -388,7 +396,7 @@ export function collectPayload(){
   return {
     type,
     numero: document.getElementById('docNumero').value,
-    date: (dv => dv ? new Date(dv).toLocaleDateString('fr-FR') : '')(document.getElementById('docDate').value),
+    date: (dv => formatFrDate(dv ? new Date(dv) : null))(document.getElementById('docDate').value),
     client,
     conditions: document.getElementById('conditions').value,
     modeReglement: document.getElementById('modeReglement').value,
@@ -541,23 +549,7 @@ export async function renderPagesToPdf(payload, headerUrl){
   return pdf;
 }
 
-export async function generatePDF(){
-  if (generating) return;
-  generating = true;
-
-  const btn = document.querySelector('[data-action="generate-pdf"]');
-  let prevBtn = null;
-  if (btn) {
-    prevBtn = { disabled: btn.disabled, ariaBusy: btn.getAttribute('aria-busy'), html: btn.innerHTML };
-    btn.disabled = true;
-    btn.setAttribute('aria-busy', 'true');
-    btn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(127,127,127,.35);border-top-color:currentColor;border-radius:50%;animation:appspin .7s linear infinite;vertical-align:-2px;margin-right:8px;" aria-hidden="true"></span>' + i18next.t('form.generating_pdf');
-  }
-
-  try {
-  const payload = collectPayload();
-  if (!await validatePayload(payload)) return;
-
+export async function generateAndSave(payload, { mode = 'create', download = true } = {}) {
   let headerBlob;
   try { headerBlob = await loadHeaderImage(); } catch (_) { headerBlob = null; }
 
@@ -572,14 +564,36 @@ export async function generatePDF(){
     await showAlertDialog(i18next.t('pdf.alert_save_failed'));
   }
 
-  try {
-    pdf.save(filename);
-  } catch(e) {
-    await showAlertDialog(i18next.t('pdf.alert_save_failed'));
+  if (download) {
+    try {
+      pdf.save(filename);
+    } catch (e) {
+      await showAlertDialog(i18next.t('pdf.alert_save_failed'));
+    }
   }
 
-  await saveToHistory(payload, filename);
+  await saveToHistory(payload, filename, { createOnly: mode === 'create' });
+}
 
+export async function generatePDF(){
+  if (generating) return;
+  generating = true;
+
+  const btn = document.querySelector('[data-action="generate-pdf"]');
+  let prevBtn = null;
+  if (btn) {
+    prevBtn = { disabled: btn.disabled, ariaBusy: btn.getAttribute('aria-busy'), html: btn.innerHTML };
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    btn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(127,127,127,.35);border-top-color:currentColor;border-radius:50%;animation:appspin .7s linear infinite;vertical-align:-2px;margin-right:8px;" aria-hidden="true"></span>' + i18next.t('form.generating_pdf');
+  }
+
+  try {
+    const payload = collectPayload();
+    if (!await validatePayload(payload)) return;
+
+    const mode = getEditingDocId() ? 'edit' : 'create';
+    await generateAndSave(payload, { mode });
   } finally {
     const stage = document.getElementById('pdf-stage');
     if (stage) stage.innerHTML = '';

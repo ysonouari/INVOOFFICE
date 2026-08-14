@@ -182,6 +182,7 @@ textarea:focus{
 .btn-accent{background:var(--accent);border-color:var(--accent);color:#fff;}
 .btn-accent:hover{background:var(--accent-hover);}
 :root[data-theme="light"] .btn-accent:hover{background:var(--btn-hover-bg);border-color:var(--btn-hover-border);color:var(--text);}
+:root[data-theme="light"] #navNouveau:hover{background:var(--btn-hover-bg);border-color:var(--btn-hover-border);color:var(--text);}
 .btn-ghost{background:transparent;}
 .btn-danger{background:transparent;color:var(--danger);border-color:#3a1f24;}
 .btn-danger:hover{background:#231116;border-color:var(--danger);}
@@ -338,15 +339,24 @@ table.hist{width:100%;border-collapse:collapse;}
 table.hist th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--muted-2);padding:10px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
 table.hist td{padding:10px 8px;border-bottom:1px solid var(--border-soft);font-size:13.5px;}
 
-/* Column widths */
-.hist-cell-numero{font-variant-numeric:tabular-nums;width:160px;}
-.hist-cell-client{max-width:220px;overflow:hidden;text-overflow:ellipsis;}
-.hist-cell-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;width:130px;}
-.hist-cell-date{white-space:nowrap;width:100px;}
-.hist-cell-type{width:90px;}
-.hist-cell-actions{text-align:right;white-space:nowrap;width:120px;}
-.hist-action-btn{padding:6px 9px;min-width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;transition:background .15s;}
+/* Column widths + alignment */
+.hist-table-wrap th.hist-th-date{width:120px;text-align:left;}
+.hist-table-wrap th.hist-th-numero{width:170px;text-align:left;}
+.hist-table-wrap th.hist-th-client{text-align:left;max-width:220px;}
+.hist-table-wrap th.hist-th-amount{width:150px;text-align:right;}
+.hist-table-wrap th.hist-th-type{width:120px;text-align:center;}
+.hist-table-wrap th.hist-th-actions{width:230px;text-align:right;}
+
+.hist-cell-numero{font-variant-numeric:tabular-nums;width:170px;white-space:nowrap;text-align:left;}
+.hist-cell-client{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;max-width:220px;}
+.hist-cell-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;width:150px;}
+.hist-cell-date{white-space:nowrap;width:120px;text-align:left;}
+.hist-cell-type{width:120px;text-align:center;}
+.hist-cell-actions{text-align:right;white-space:nowrap;}
+.hist-action-btn{width:40px;height:40px;min-width:40px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;transition:background .15s,border-color .15s;}
+.hist-action-btn .icon{width:18px;height:18px;}
 .hist-action-btn:hover{background:var(--panel-2);}
+.hist-action-btn:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px;}
 
 /* Row hover */
 tr.hist-row{transition:background .15s;}
@@ -379,6 +389,7 @@ mark.hist-highlight{background:var(--accent-soft, #ececfd);color:var(--text);bor
 .hist-table-fade{opacity:0;transform:translateY(4px);transition:opacity .15s ease,transform .15s ease;}
 .hist-table-fade.visible{opacity:1;transform:translateY(0);}
 .hist-table-wrap{overflow-x:auto;}
+.hist-table-wrap table.hist{width:auto;max-width:100%;}
 
 .badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
 .badge-devis{background:#1d3a5f;color:#7db8ff;}
@@ -403,8 +414,8 @@ mark.hist-highlight{background:var(--accent-soft, #ececfd);color:var(--text);bor
 .hist-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
 .hist-card-mid{font-size:13px;color:var(--muted);margin:8px 0;}
 .hist-card-bottom{display:flex;justify-content:space-between;align-items:center;}
-.hist-card-actions{display:flex;gap:4px;}
-.hist-card .hist-action-btn{padding:8px 11px;min-height:40px;min-width:36px;}
+.hist-card-actions{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;}
+.hist-card .hist-action-btn{width:40px;height:40px;min-width:40px;}
 
 /* History empty state */
 .hist-empty{text-align:center;padding:56px 0 24px;}

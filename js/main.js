@@ -3,7 +3,7 @@ import { showView, onDocTypeChange, initForm, resetForm, loadHistoryDocIntoForm,
 import { addLine, removeLine, recalcTotals } from './lines.js';
 import { openClientModal, closeClientModal, openClientManagerModal, closeClientManagerModal, onClientSelect, saveClientForm, deleteClientById, refreshClientsSelect } from './client.js';
 import { generatePDF } from './pdf.js';
-import { renderHistory, reprintHistoryDoc, deleteHistoryDoc, getHistoryDoc, setEditingDocId, clearEditingDocId, migrateHistoryHeader } from './history.js';
+import { renderHistory, reprintHistoryDoc, deleteHistoryDoc, getHistoryDoc, setEditingDocId, clearEditingDocId, migrateHistoryHeader, duplicateHistoryDoc, convertToInvoice } from './history.js';
 import { initStorage } from './storage.js';
 import { exportBackup, importBackup } from './backup.js';
 import { initI18n, setLang, getCurrentLang } from './i18n.js';
@@ -199,6 +199,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const id = btn.dataset.id;
     if (btn.dataset.action === 'reprint') reprintHistoryDoc(id);
     if (btn.dataset.action === 'delete') deleteHistoryDoc(id);
+    if (btn.dataset.action === 'duplicate') duplicateHistoryDoc(id);
+    if (btn.dataset.action === 'convert') convertToInvoice(id);
     if (btn.dataset.action === 'edit') {
       const doc = getHistoryDoc(id);
       if (doc) {

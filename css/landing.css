@@ -595,6 +595,8 @@
 .lp-card-cta .btn-ghost { color: #fff; border-color: rgba(255,255,255,.25); transition: background .2s, border-color .2s; }
 .lp-card-cta .btn-ghost:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.4); }
 .lp-card-cta .btn-ghost:focus-visible { outline-color: #fff; }
+.lp-card-cta .btn.btn-whatsapp { background: #25D366; border-color: #25D366; color: #fff; }
+.lp-card-cta .btn.btn-whatsapp:hover { background: #20BD5A; border-color: #20BD5A; color: #fff; }
 
 @media (max-width: 640px) {
   .lp-card-block { padding: 32px 24px; }
