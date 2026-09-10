@@ -75,7 +75,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const prevId = tutorialOverlay.dataset.prevFocus;
     if (prevId) {
       const prev = document.getElementById(prevId);
-      if (prev) prev.focus();
+      if (prev && prev.offsetParent !== null) {
+        prev.focus();
+      } else {
+        const hamburger = document.getElementById('appHamburgerToggle');
+        if (hamburger && hamburger.offsetParent !== null) hamburger.focus();
+      }
     }
     delete tutorialOverlay.dataset.prevFocus;
   };
