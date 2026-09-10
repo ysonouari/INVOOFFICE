@@ -1,0 +1,26 @@
+-- ============================================================================
+-- SEED 002 : Compte administrateur
+-- Description  : Crée le compte admin initial
+-- ATTENTION    : Ce script doit être exécuté via l'API Supabase (pas en SQL direct)
+--                car auth.users nécessite le hashage du mot de passe.
+--
+-- Méthode 1 : Via le dashboard Supabase
+--    Authentication → Users → Add User → Create
+--    Email    : admin@invooffice.com
+--    Password : [défini manuellement]
+--
+-- Méthode 2 : Via l'API Admin (supabase/scripts/create-admin.js)
+--
+-- Méthode 3 : Via le CLI Supabase
+--    npx supabase auth admin create-user admin@invooffice.com
+-- ============================================================================
+
+-- Après création du compte via auth, exécuter :
+-- UPDATE public.profiles
+-- SET role = 'admin', status = 'active'
+-- WHERE email = 'admin@invooffice.com';
+
+-- Vérification
+-- SELECT p.id, p.email, p.role, p.status, p.created_at
+-- FROM public.profiles p
+-- WHERE p.role = 'admin';

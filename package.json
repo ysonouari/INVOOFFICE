@@ -1,0 +1,21 @@
+{
+  "name": "invooffice",
+  "version": "1.0.0",
+  "description": "INVOOFFICE — Facturation SaaS pour entrepreneurs marocains",
+  "private": true,
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "preview": "node server.js",
+    "test": "npx playwright test --config=tests/playwright.config.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.0",
+    "playwright": "^1.61.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "pdfjs-dist": "^4.10.38",
+    "pdfkit": "^0.19.1"
+  }
+}

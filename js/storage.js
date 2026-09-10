@@ -1,0 +1,263 @@
+import { DOC_TYPES } from './config.js';
+
+/* ---------- IndexedDB helpers ---------- */
+
+const DB_NAME = 'fb_app';
+const DB_VERSION = 1;
+const STORE_NAME = 'kv_store';
+const ALL_KEYS = ['company', 'history', 'clients'];
+
+let db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(STORE_NAME)) d.createObjectStore(STORE_NAME);
+    };
+    req.onsuccess = (e) => resolve(e.target.result);
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+function dbPut(key, value) {
+  if (!db) return Promise.resolve();
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => {
+        console.warn('IndexedDB write failed for key:', key);
+        resolve();
+      };
+    } catch (e) {
+      console.warn('IndexedDB write exception:', e);
+      resolve();
+    }
+  });
+}
+
+function dbGet(key) {
+  if (!db) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => { console.warn('IndexedDB read failed for key:', key); resolve(null); };
+    } catch (_) { resolve(null); }
+  });
+}
+
+// Marqueur « localStorage en retard » (R1) : vit dans le miroir IndexedDB pour
+// survivre au redémarrage, écrivable exactement quand localStorage ne l'est pas.
+function staleMarkerKey(key) { return '__ls_stale_' + key; }
+
+function dbGetStale(key) {
+  if (!db) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).get(staleMarkerKey(key));
+      req.onsuccess = () => resolve(!!req.result);
+      req.onerror = () => { console.warn('IndexedDB stale-marker read failed for key:', key); resolve(false); };
+    } catch (_) { resolve(false); }
+  });
+}
+
+function clearStale(key) {
+  if (!db) return Promise.resolve();
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).delete(staleMarkerKey(key));
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch (_) { resolve(); }
+  });
+}
+
+// Écriture miroir atomique : valeur + marqueur dans la même transaction.
+// localStorageOk=false => la donnée la plus récente n'est QUE dans le miroir.
+function mirrorSave(key, value, localStorageOk) {
+  if (!db) return Promise.resolve();
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      store.put(value, key);
+      if (localStorageOk) store.delete(staleMarkerKey(key));
+      else store.put(true, staleMarkerKey(key));
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => { console.warn('IndexedDB mirror write failed for key:', key); resolve(); };
+    } catch (e) { console.warn('IndexedDB mirror write exception:', e); resolve(); }
+  });
+}
+
+/* ---------- In-memory cache ---------- */
+
+const cache = { company: null, history: null, clients: null };
+let gen = 0;
+
+function lsKey(k) { return 'fb_' + k; }
+
+function migrateHistoryIds(arr) {
+  let changed = false;
+  arr.forEach(d => {
+    if (!d.id) {
+      d.id = 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2,9);
+      changed = true;
+    }
+  });
+  return changed;
+}
+
+function cacheFromLocalStorage() {
+  for (const key of ALL_KEYS) {
+    const raw = localStorage.getItem(lsKey(key));
+    if (raw) {
+      try { cache[key] = JSON.parse(raw); } catch (_) {}
+    }
+  }
+  if (cache.history && migrateHistoryIds(cache.history)) {
+    try { localStorage.setItem(lsKey('history'), JSON.stringify(cache.history)); }
+    catch (e) { console.warn('localStorage write failed (quota?):', e); }
+  }
+}
+
+/* ---------- Public API ---------- */
+
+export async function initStorage() {
+  cacheFromLocalStorage();
+  const startGen = gen;
+  try {
+    db = await openDB();
+    for (const key of ALL_KEYS) {
+      if (gen !== startGen) break;
+      const val = await dbGet(key);
+      if (gen !== startGen) break;
+      if (val !== null && val !== undefined) {
+        const stale = await dbGetStale(key);
+        if (gen !== startGen) break;
+        if (stale) {
+          // localStorage est en retard sur le miroir : la copie IDB fait foi
+          cache[key] = val;
+          let ok = false;
+          try { localStorage.setItem(lsKey(key), JSON.stringify(val)); ok = true; }
+          catch (e) { console.warn('localStorage restore failed in initStorage for', key, e); }
+          if (ok && gen === startGen) clearStale(key).catch(() => {});
+        } else if (cache[key] === null) {
+          cache[key] = val;
+          try { localStorage.setItem(lsKey(key), JSON.stringify(val)); }
+          catch (e) { console.warn('localStorage write failed in initStorage for', key, e); }
+        } else {
+          dbPut(key, cache[key]).catch(() => {});
+        }
+      } else if (cache[key] !== null) {
+        dbPut(key, cache[key]).catch(() => {});
+      }
+    }
+  } catch (_) {
+    db = null;
+  }
+}
+
+export function loadCompany() {
+  if (cache.company) return cache.company;
+  const raw = localStorage.getItem(lsKey('company'));
+  if (raw) {
+    cache.company = JSON.parse(raw);
+    return cache.company;
+  }
+  const def = {
+    nom:'', contact:'', adresse:'',
+    devise:'DH', regimeTva:'normal', tvaTaux:20,
+    ice:'', if_:'', rc:'', tp:'', cnss:'',
+    tableColor:'#eef1f6', tableTextColor:'#333333', margeHaut:3,
+    fontSizeOffset:0, pdfQuality:2,
+    headerImage:'', headerActive:false,
+  };
+  cache.company = def;
+  return def;
+}
+
+export function saveCompany(c) {
+  gen++;
+  cache.company = c;
+  let ok = false;
+  try { localStorage.setItem(lsKey('company'), JSON.stringify(c)); ok = true; }
+  catch (e) { console.warn('localStorage quota exceeded for company:', e); }
+  mirrorSave('company', c, ok).catch(() => {});
+}
+
+export function loadHistory() {
+  if (cache.history) return cache.history;
+  const raw = localStorage.getItem(lsKey('history'));
+  cache.history = raw ? JSON.parse(raw) : [];
+  if (migrateHistoryIds(cache.history)) {
+    let ok = false;
+    try { localStorage.setItem(lsKey('history'), JSON.stringify(cache.history)); ok = true; }
+    catch (e) { console.warn('localStorage write failed for history migration:', e); }
+    mirrorSave('history', cache.history, ok).catch(() => {});
+  }
+  return cache.history;
+}
+
+export function saveHistory(h) {
+  gen++;
+  cache.history = h;
+  let ok = false;
+  try { localStorage.setItem(lsKey('history'), JSON.stringify(h)); ok = true; }
+  catch (e) { console.warn('localStorage quota exceeded for history:', e); }
+  mirrorSave('history', h, ok).catch(() => {});
+}
+
+export function loadClients() {
+  if (!cache.clients) {
+    const raw = localStorage.getItem(lsKey('clients'));
+    cache.clients = raw ? JSON.parse(raw) : [];
+  }
+  let changed = false;
+  cache.clients = cache.clients.map(c => {
+    if (!c.id) { c.id = 'client_' + Date.now() + '_' + Math.random().toString(36).slice(2,9); changed = true; }
+    if (c.ice === undefined) { c.ice = ''; changed = true; }
+    return c;
+  });
+  if (changed) saveClients(cache.clients);
+  return cache.clients;
+}
+
+export function saveClients(c) {
+  gen++;
+  cache.clients = c;
+  let ok = false;
+  try { localStorage.setItem(lsKey('clients'), JSON.stringify(c)); ok = true; }
+  catch (e) { console.warn('localStorage quota exceeded for clients:', e); }
+  mirrorSave('clients', c, ok).catch(() => {});
+}
+
+export function nextNumero(type) {
+  const year = new Date().getFullYear();
+  const prefix = (DOC_TYPES[type] || DOC_TYPES.devis).prefix;
+  const history = loadHistory();
+  const re = new RegExp('^' + prefix + '-' + year + '-(\\d+)$');
+  let maxN = 0;
+  for (const doc of history) {
+    if (doc.type !== type) continue;
+    const m = doc.numero && doc.numero.match(re);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (n > maxN) maxN = n;
+    }
+  }
+  const n = maxN + 1;
+  const key = type + '-' + year;
+  return { display: `${prefix}-${year}-${String(n).padStart(4,'0')}`, key, n };
+}
+
+export function isNumeroUnique(type, numero, excludeDocId = null) {
+  if (!type || !numero) return true;
+  return !loadHistory().some(d => d.type === type && d.numero === numero && d.id !== excludeDocId);
+}

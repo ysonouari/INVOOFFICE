@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Disallow: /app
+Disallow: /admin
+Disallow: /confirmation
+
+Sitemap: https://www.invooffice.com/sitemap.xml

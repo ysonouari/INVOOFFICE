@@ -1,0 +1,83 @@
+# Documentation
+*.md
+!README.md
+!PROJECT_CONTEXT.md
+!ROADMAP.md
+!AGENTS.md
+!docs/
+
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment
+.env
+.env.local
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Editor config
+.vscode/
+.idea/
+.vs/
+*.suo
+*.user
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+~$*
+
+# Python (live-test tooling)
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Windows helper scripts (local-only, deployment uses npm/Vercel)
+*.bat
+*.cmd
+
+# Deployment
+.vercel/
+
+# Test artifacts — Playwright output
+test-results/
+playwright-report/
+blob-report/
+tests/.auth/
+coverage/
+.nyc_output/
+tests/live/chrome-profile/
+tests/live/chrome_profile/
+tests/live/screenshots/
+tests/live/artifacts/
+tests/live/__pycache__/
+tests/live/live_config.json
+*.trace.zip
+
+# Local scratch / working files
+/agents_head.txt
+/.last-run.json
+
+# Debug / temp scripts (root only)
+/debug-*.mjs
+/check-state.mjs
+/diagnose-*.mjs
+/verify-*.mjs
+/playwright-steps.mjs
+/playwright-test.js
+/*.spec.js
+/test-*.mjs

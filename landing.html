@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INVOOFFICE — Facturation pour auto-entrepreneurs et PME au Maroc | 300 DH à vie</title>
+  <meta name="description" content="Créez vos devis, factures, bons de livraison et avoirs en PDF. Logiciel de facturation pour auto-entrepreneurs et PME au Maroc. 300 DH, accès à vie.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://www.invooffice.com/">
+  <link rel="alternate" hreflang="fr" href="https://www.invooffice.com/">
+  <link rel="alternate" hreflang="x-default" href="https://www.invooffice.com/">
+  <meta property="og:title" content="INVOOFFICE — Facturation simple pour auto-entrepreneurs et PME au Maroc | 300 DH à vie">
+  <meta property="og:description" content="Créez facilement vos devis, factures et bons de livraison en PDF. Pour auto-entrepreneurs, freelances et PME au Maroc. Paiement unique 300 DH, accès à vie.">
+  <meta property="og:url" content="https://www.invooffice.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://www.invooffice.com/icons/og-image-1200x630.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="fr_MA">
+  <meta property="og:site_name" content="INVOOFFICE">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="INVOOFFICE — Facturation simple pour auto-entrepreneurs et PME au Maroc | 300 DH à vie">
+  <meta name="twitter:description" content="Créez facilement vos devis, factures et bons de livraison en PDF. Pour auto-entrepreneurs, freelances et PME au Maroc. 300 DH, accès à vie.">
+  <meta name="twitter:image" content="https://www.invooffice.com/icons/og-image-1200x630.png">
+  <meta name="theme-color" content="#121a2e">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/landing.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.1" integrity="sha384-ZM8CwwQOJp5puchJk/gzqVbkGOUMVxHQPIY7mDCclfX3C8u6+ZyCjOcwaMC8hbnQ" crossorigin="anonymous" defer></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "INVOOFFICE",
+    "url": "https://www.invooffice.com",
+    "inLanguage": "fr"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "INVOOFFICE",
+    "url": "https://www.invooffice.com",
+    "logo": "https://www.invooffice.com/icons/og-image-1200x630.png"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "INVOOFFICE",
+    "url": "https://www.invooffice.com",
+    "description": "Générateur de factures, devis, bons de livraison et avoirs en PDF. Paiement unique de 300 DH, accès à vie, sans abonnement.",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "All",
+    "inLanguage": "fr",
+    "offers": {
+      "@type": "Offer",
+      "price": "300",
+      "priceCurrency": "MAD",
+      "description": "Paiement unique, accès à vie, sans abonnement"
+    }
+  }
+  </script>
+  <script>
+    (function(){var t=localStorage.getItem('fb_theme');if(!t){t=window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';}document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='light'?'#ffffff':'#121a2e';})();
+  </script>
+</head>
+<body>
+  <div id="signupOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="signupTitle">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="signupTitle">Créer votre compte</h2>
+        <button class="icon-btn" data-action="close-signup" aria-label="Fermer">&times;</button>
+      </div>
+      <form id="signupForm" novalidate>
+        <div class="field">
+          <label for="signupName">Nom complet <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="signupName" required placeholder="Votre nom complet" autocomplete="name" aria-describedby="signupNameError">
+          <div class="field-error" id="signupNameError" role="alert"></div>
+        </div>
+        <div class="field">
+          <label for="signupEmail">Email <span style="color:var(--danger)">*</span></label>
+          <input type="email" id="signupEmail" required placeholder="exemple@email.com" autocomplete="email" aria-describedby="signupEmailError">
+          <div class="field-error" id="signupEmailError" role="alert"></div>
+        </div>
+        <div class="field">
+          <label for="signupWhatsapp">WhatsApp <span style="color:var(--danger)">*</span></label>
+          <input type="tel" id="signupWhatsapp" required placeholder="+212 6XX-XXXXXX" autocomplete="tel" aria-describedby="signupWhatsappError">
+          <div class="field-error" id="signupWhatsappError" role="alert"></div>
+        </div>
+        <div class="field">
+          <label for="signupPassword">Mot de passe <span style="color:var(--danger)">*</span></label>
+          <div style="position:relative;">
+            <input type="password" id="signupPassword" required placeholder="6 caractères minimum" minlength="6" autocomplete="new-password" style="padding-right:36px;" aria-describedby="signupPasswordError">
+            <button type="button" class="lp-password-toggle" data-target="signupPassword" aria-label="Afficher le mot de passe" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;">👁</button>
+          </div>
+          <div class="field-error" id="signupPasswordError" role="alert"></div>
+        </div>
+        <div class="field">
+          <label for="signupConfirm">Confirmer le mot de passe <span style="color:var(--danger)">*</span></label>
+          <div style="position:relative;">
+            <input type="password" id="signupConfirm" required placeholder="Retapez votre mot de passe" autocomplete="new-password" style="padding-right:36px;" aria-describedby="signupConfirmError">
+            <button type="button" class="lp-password-toggle" data-target="signupConfirm" aria-label="Afficher le mot de passe" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;">👁</button>
+          </div>
+          <div class="field-error" id="signupConfirmError" role="alert"></div>
+        </div>
+        <div class="field-error" id="signupGlobalError" style="text-align:center;margin-bottom:8px;" role="alert"></div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-accent btn-block" id="signupSubmit">Créer mon compte</button>
+        </div>
+        <p style="text-align:center;margin:12px 0 0;font-size:13px;color:var(--muted);">
+          Déjà un compte ? <a href="#" id="switchToSignin" style="color:var(--accent);">Se connecter</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <div id="signinOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="signinTitle">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="signinTitle">Se connecter</h2>
+        <button class="icon-btn" data-action="close-signin" aria-label="Fermer">&times;</button>
+      </div>
+      <form id="signinForm" novalidate>
+        <div class="field">
+          <label for="signinEmail">Email</label>
+          <input type="email" id="signinEmail" required placeholder="votre@email.com" autocomplete="email" aria-describedby="signinEmailError">
+          <div class="field-error" id="signinEmailError" role="alert"></div>
+        </div>
+        <div class="field">
+          <label for="signinPassword">Mot de passe</label>
+          <div style="position:relative;">
+            <input type="password" id="signinPassword" required placeholder="Votre mot de passe" autocomplete="current-password" style="padding-right:36px;" aria-describedby="signinPasswordError">
+            <button type="button" class="lp-password-toggle" data-target="signinPassword" aria-label="Afficher le mot de passe" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;">👁</button>
+          </div>
+          <div class="field-error" id="signinPasswordError" role="alert"></div>
+        </div>
+        <div class="field" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;pointer-events:none;height:0;overflow:hidden;">
+          <input type="text" id="signinWebsite" name="website" tabindex="-1" autocomplete="off">
+        </div>
+        <div class="field-error" id="signinGlobalError" style="text-align:center;margin-bottom:8px;" role="alert"></div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-accent btn-block" id="signinSubmit">Se connecter</button>
+        </div>
+        <p style="text-align:center;margin:12px 0 0;font-size:13px;color:var(--muted);">
+          Pas encore de compte ? <a href="#" id="switchToSignup" style="color:var(--accent);">Créer un compte</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <div id="accessBlockedOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="blockedTitle">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="blockedTitle">Accès non autorisé</h2>
+        <button class="icon-btn" data-action="close-blocked" aria-label="Fermer">&times;</button>
+      </div>
+      <div style="text-align:center;padding:20px 0;">
+        <p id="blockedMessage" style="font-size:14px;color:var(--muted);line-height:1.7;"></p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary btn-block" data-action="close-blocked">Retour</button>
+      </div>
+    </div>
+  </div>
+
+  <header class="lp-header">
+    <div class="lp-header-inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">IN</div>
+        <div>
+          <p class="brand-name">INVOOFFICE</p>
+          <p>Facturation intelligente</p>
+        </div>
+      </div>
+      <nav class="lp-nav" aria-label="Navigation principale">
+        <a href="#features">Tarif</a>
+        <a href="#how-it-works">Fonctionnement</a>
+        <a href="#faq">FAQ</a>
+        <button class="btn btn-ghost theme-btn" id="themeToggle" aria-label="Basculer le thème clair/sombre"></button>
+        <button class="btn btn-ghost" data-action="show-signin">Connexion</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="lp-hero" id="hero">
+      <div class="lp-hero-inner">
+        <div class="lp-hero-text">
+          <h1>Votre facturation,<br><span class="lp-hero-highlight">simplement.</span></h1>
+          <p>Créez facilement vos devis, factures, bons de livraison et avoirs en PDF. Pour auto-entrepreneurs, freelances, artisans et petites entreprises au Maroc. Exportez et envoyez immédiatement vos documents à vos clients.</p>
+          <div class="lp-hero-actions">
+            <button class="btn btn-accent btn-lg" data-action="show-signup">Commencer maintenant</button>
+            <button class="btn btn-ghost btn-lg" data-action="show-signin">Se connecter</button>
+          </div>
+        </div>
+        <div class="lp-hero-visual" aria-hidden="true">
+          <div class="lp-mockup">
+            <div class="lp-mockup-bar"><span></span><span></span><span></span></div>
+            <div class="lp-mockup-body">
+              <div class="lp-mockup-line lp-mockup-line-short"></div>
+              <div class="lp-mockup-line"></div>
+              <div class="lp-mockup-line lp-mockup-line-long"></div>
+              <div class="lp-mockup-table">
+                <div class="lp-mockup-row lp-mockup-row-head">
+                  <span>Désignation</span><span>P.U.</span><span>Qté</span><span>Total</span>
+                </div>
+                <div class="lp-mockup-row"><span>Prestation conseil</span><span>2 500</span><span>1</span><span>2 500</span></div>
+                <div class="lp-mockup-row"><span>Développement web</span><span>8 000</span><span>1</span><span>8 000</span></div>
+              </div>
+              <div class="lp-mockup-total">Total &mdash; 10 500 DH</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-section lp-premium" id="features">
+      <div class="lp-section-inner">
+        <div class="lp-premium-grid">
+
+          <!-- Colonne gauche : Valeur + Fonctionnalités + Confiance -->
+          <div class="lp-premium-left">
+            <h2 class="lp-premium-heading">Un outil de facturation simple pour les auto-entrepreneurs, freelances, artisans et PME au Maroc.</h2>
+            <p class="lp-premium-desc">Créez vos documents professionnels en quelques clics. Exportez-les en PDF et envoyez-les directement à vos clients. Sans abonnement, sans complication.</p>
+
+            <div class="lp-premium-features">
+              <div class="lp-pf-card">
+                <div class="lp-pf-icon">📄</div>
+                <div><strong>Devis &amp; Factures</strong><p>Devis et factures avec vos informations d'entreprise.</p></div>
+              </div>
+              <div class="lp-pf-card">
+                <div class="lp-pf-icon">📦</div>
+                <div><strong>Bons de livraison</strong><p>Créez vos bons de livraison rapidement.</p></div>
+              </div>
+              <div class="lp-pf-card">
+                <div class="lp-pf-icon">👥</div>
+                <div><strong>Gestion clients</strong><p>Retrouvez vos clients instantanément.</p></div>
+              </div>
+              <div class="lp-pf-card">
+                <div class="lp-pf-icon">📥</div>
+                <div><strong>Export PDF</strong><p>Exportez et partagez vos documents en un clic.</p></div>
+              </div>
+              <div class="lp-pf-card">
+                <div class="lp-pf-icon">📶</div>
+                <div><strong>Hors-ligne</strong><p>Vos données restent sur votre appareil.</p></div>
+              </div>
+              <div class="lp-pf-card">
+                <div class="lp-pf-icon">🇲🇦</div>
+                <div><strong>Facturation adaptée au Maroc</strong><p>ICE, IF, TP, RC, CNSS. Adaptez le régime de TVA à votre activité.</p></div>
+              </div>
+            </div>
+
+            <div class="lp-trust">
+              <span class="lp-trust-badge">✓ Adapté au Maroc</span>
+              <span class="lp-trust-badge">✓ TVA selon votre activité</span>
+              <span class="lp-trust-badge">✓ Paiement unique</span>
+              <span class="lp-trust-badge">✓ Fonctionne hors ligne</span>
+              <span class="lp-trust-badge">✓ Données locales</span>
+              <span class="lp-trust-badge">✓ Support WhatsApp</span>
+              <span class="lp-trust-badge">✓ Mises à jour incluses</span>
+            </div>
+          </div>
+
+          <!-- Colonne droite : Offre -->
+          <div class="lp-premium-right">
+            <div class="lp-premium-card">
+              <div class="lp-premium-badge">Offre unique</div>
+              <h3>Accès à vie</h3>
+              <div class="lp-premium-price">300<span>DH</span></div>
+              <ul class="lp-premium-perks">
+                <li>✓ Devis, factures, BL et avoirs en illimité</li>
+                <li>✓ Aucun abonnement</li>
+                <li>✓ Export PDF professionnel</li>
+                <li>✓ Gestion de vos clients</li>
+                <li>✓ TVA adaptée à votre activité</li>
+                <li>✓ Mises à jour incluses</li>
+                <li>✓ Support WhatsApp</li>
+              </ul>
+              <div class="lp-premium-tags">
+                <span>Paiement unique</span>
+                <span>Sans abonnement</span>
+                <span>Accès illimité</span>
+              </div>
+              <button class="btn btn-accent btn-lg btn-block" data-action="show-signup">Commencer maintenant</button>
+              <p class="lp-premium-note">Activation sous 24 à 48 h après validation du paiement.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-section" id="how-it-works">
+      <div class="lp-section-inner">
+
+        <div class="lp-card">
+          <!-- Timeline -->
+          <div class="lp-card-block">
+            <h2 class="lp-section-title">Obtenez votre accès en quelques minutes</h2>
+            <p class="lp-section-sub">Un paiement unique de 300 DH. Aucun abonnement, accès à vie. Puis créez vos documents sans limite.</p>
+            <div class="lp-timeline">
+              <div class="lp-tl-step">
+                <div class="lp-tl-dot">1</div>
+                <h4>Créez votre compte</h4>
+                <p>Inscription gratuite en quelques secondes.</p>
+              </div>
+              <div class="lp-tl-step">
+                <div class="lp-tl-dot">2</div>
+                <h4>Effectuez le paiement</h4>
+                <p>Virement, Wafa Cash ou Cash Plus.</p>
+              </div>
+              <div class="lp-tl-step">
+                <div class="lp-tl-dot">3</div>
+                <h4>Validation 24-48h</h4>
+                <p>Notre équipe active votre compte.</p>
+              </div>
+              <div class="lp-tl-step">
+                <div class="lp-tl-dot lp-tl-dot-accent">4</div>
+                <h4>Accès Lifetime</h4>
+                <p>Connectez-vous et commencez.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Video Demo -->
+          <div class="lp-card-block lp-card-demo">
+            <div class="lp-video-wrapper">
+              <video
+                id="demoVideo"
+                class="lp-video"
+                src="/demo.mp4"
+                muted
+                loop
+                playsinline
+                preload="metadata"
+              >
+                Votre navigateur ne supporte pas la lecture vidéo.
+              </video>
+            </div>
+          </div>
+
+          <!-- FAQ -->
+          <div class="lp-card-block lp-card-faq" id="faq">
+            <h3 class="lp-card-subtitle">Questions fréquentes</h3>
+            <div class="lp-faq-list" id="faqList">
+              <div class="lp-faq-item">
+                <button class="lp-faq-question" aria-expanded="false">
+                  <span>Comment fonctionne INVOOFFICE ?</span>
+                  <span class="lp-faq-icon"></span>
+                </button>
+                <div class="lp-faq-answer" hidden>
+                  <p>Vous créez vos documents dans votre navigateur. Tout fonctionne localement : vos données ne sont jamais envoyées à un serveur.</p>
+                </div>
+              </div>
+              <div class="lp-faq-item">
+                <button class="lp-faq-question" aria-expanded="false">
+                  <span>Mes données sont-elles en sécurité ?</span>
+                  <span class="lp-faq-icon"></span>
+                </button>
+                <div class="lp-faq-answer" hidden>
+                  <p>Oui. Toutes vos données sont stockées exclusivement dans votre navigateur. Rien n'est transmis à nos serveurs.</p>
+                </div>
+              </div>
+              <div class="lp-faq-item">
+                <button class="lp-faq-question" aria-expanded="false">
+                  <span>Puis-je utiliser INVOOFFICE sur mon téléphone ?</span>
+                  <span class="lp-faq-icon"></span>
+                </button>
+                <div class="lp-faq-answer" hidden>
+                  <p>Absolument. Compatible avec tous les appareils. Vous pouvez l'installer comme une application.</p>
+                </div>
+              </div>
+              <div class="lp-faq-item">
+                <button class="lp-faq-question" aria-expanded="false">
+                  <span>Les documents incluent-ils les mentions légales requises ?</span>
+                  <span class="lp-faq-icon"></span>
+                </button>
+                <div class="lp-faq-answer" hidden>
+                  <p>Les mentions ICE, IF, TP, RC, CNSS et TVA sont incluses dans vos documents.</p>
+                </div>
+              </div>
+              <div class="lp-faq-item">
+                <button class="lp-faq-question" aria-expanded="false">
+                  <span>Je suis auto-entrepreneur ou freelance, est-ce adapté ?</span>
+                  <span class="lp-faq-icon"></span>
+                </button>
+                <div class="lp-faq-answer" hidden>
+                  <p>Tout à fait. INVOOFFICE est conçu pour les indépendants, auto-entrepreneurs et freelances qui ont besoin de créer des devis et factures simplement, sans logiciel compliqué.</p>
+                </div>
+              </div>
+              <div class="lp-faq-item">
+                <button class="lp-faq-question" aria-expanded="false">
+                  <span>Puis-je créer des documents sans TVA ?</span>
+                  <span class="lp-faq-icon"></span>
+                </button>
+                <div class="lp-faq-answer" hidden>
+                  <p>Oui. INVOOFFICE vous permet de choisir le régime adapté à votre activité : avec ou sans TVA. Vos documents s'adaptent automatiquement.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CTA -->
+          <div class="lp-card-block lp-card-cta" id="cta">
+            <div class="lp-cta-row">
+              <div>
+                <h2>Prêt à simplifier votre facturation ?</h2>
+                <p>Paiement unique · Accès à vie · Support inclus</p>
+              </div>
+              <div class="lp-cta-right">
+                <div class="lp-cta-price">300 <span>DH</span></div>
+                <button class="btn btn-accent btn-lg" data-action="show-signup">Créer mon compte</button>
+                <a class="btn btn-whatsapp btn-lg" href="https://wa.me/212782886792" target="_blank" rel="noopener">Contactez-nous sur WhatsApp</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer lp-footer">
+    <nav class="secondary-nav" aria-label="Navigation secondaire">
+      <a href="/">Accueil</a>
+      <a href="pourquoi-invooffice.html">Pourquoi INVOOFFICE</a>
+      <a href="fonctionnalites.html">Fonctionnalités</a>
+      <a href="confidentialite.html">Confidentialité</a>
+      <a href="faq.html">FAQ</a>
+      <a href="blog/">Blog</a>
+      
+      <a href="cgu.html">CGU</a>
+    </nav>
+    <p>&copy; <span id="footerYear">2026</span> INVOOFFICE. Tous droits réservés.</p>
+  </footer>
+
+  <script type="module" src="modules/landing/video.js"></script>
+  <script type="module" src="modules/landing/faq.js"></script>
+  <script type="module" src="modules/landing/auth-modals.js"></script>
+  <script type="module">import{initThemeToggle}from'./js/theme.js';initThemeToggle('themeToggle');</script>
+  <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
+</body>
+</html>

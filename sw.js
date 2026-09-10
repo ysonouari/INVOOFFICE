@@ -1,0 +1,127 @@
+const CACHE_NAME = 'facturation-v7';
+
+const PRECACHE_URLS = [
+  './',
+  'app.html',
+  'landing.html',
+  'admin/index.html',
+  'confirmation/index.html',
+  'faq.html',
+  'fonctionnalites.html',
+  'pourquoi-invooffice.html',
+  'cgu.html',
+  'confidentialite.html',
+  'manifest.json',
+  'css/styles.css',
+  'css/rtl.css',
+  'css/fonts.css',
+  'css/landing.css',
+  'css/admin.css',
+  'js/auth.js',
+  'js/admin.js',
+  'js/backup.js',
+  'js/brand-logo.js',
+  'js/client.js',
+  'js/company-modal.js',
+  'js/config.js',
+  'js/dialog.js',
+  'js/history.js',
+  'js/history-view.js',
+  'js/history-actions.js',
+  'js/i18n.js',
+  'js/icons.js',
+  'js/lines.js',
+  'js/main.js',
+  'js/navigation.js',
+  'js/opfs-storage.js',
+  'js/pdf-font.js',
+  'js/pdf.js',
+  'js/pdfkit-engine.js',
+  'js/storage-quota.js',
+  'js/storage-persistence.js',
+  'js/storage.js',
+  'js/theme.js',
+  'js/utils.js',
+  'js/locales/fr.json',
+  'js/locales/ar.json',
+  'assets/fonts/Tajawal-Black.ttf',
+  'assets/fonts/Tajawal-Bold.ttf',
+  'assets/fonts/Tajawal-ExtraBold.ttf',
+  'assets/fonts/Tajawal-Regular.ttf',
+  'assets/lib/pdfkit.standalone.js',
+  'entit.png',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+  'icons/icon-180.png',
+  'icons/icon-maskable-192.png',
+  'icons/icon-maskable-512.png',
+  'supabase/config/supabase-config.js',
+  'modules/auth/supabase-client.js',
+  'modules/auth/guard.js',
+  'modules/auth/session.js',
+  'modules/auth/signin.js',
+  'modules/auth/signup.js',
+  'modules/auth/offline-snapshot.js',
+  'modules/auth/auth-events.js',
+  'modules/landing/auth-modals.js',
+  'modules/landing/faq.js',
+  'modules/shared/ui.js',
+  'modules/shared/validators.js',
+];
+
+self.addEventListener('install', (e) => {
+  self.skipWaiting();
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return Promise.allSettled(
+        PRECACHE_URLS.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn('[SW] precache failed for:', url, err.message);
+          })
+        )
+      );
+    })
+  );
+});
+
+self.addEventListener('message', (e) => {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    self.clients.claim().then(() =>
+      Promise.all([
+        caches.keys().then((keys) =>
+          Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+        ),
+        self.clients.matchAll({ type: 'window' }).then((clients) => {
+          clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED' }));
+        }),
+      ])
+    )
+  );
+});
+
+self.addEventListener('fetch', (e) => {
+  const url = new URL(e.request.url);
+
+  if (url.origin !== self.location.origin) return;
+
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then((response) => {
+          const cloned = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, cloned));
+          return response;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  e.respondWith(
+    caches.match(e.request).then((cached) => cached || fetch(e.request))
+  );
+});
