@@ -1,0 +1,123 @@
+/* ==========================================================================
+   blog.css — Composants propres au Blog INVOOFFICE
+   --------------------------------------------------------------------------
+   Le Blog hérite du composant public partagé `.content-page` (css/landing.css,
+   l.730-750) via <main class="content-page blog-page|cat-page|article-page">.
+
+   Ce fichier ne définit QUE ce que `.content-page` ne fournit pas :
+   - aucun nouveau token, couleur, espacement ou typographie ;
+   - aucune règle dupliquée depuis `.content-page` (h1/h2/p/ul/ol/li/a,
+     .subtitle, .nav-back, .cta-box, .faq-item, media query 480px) ;
+   - les seules valeurs littérales conservées sont celles sans token
+     (30px, 36px, 50px, 18px) — à l'identique des feuilles existantes.
+   Tokens : ceux de `:root` (css/styles.css).
+   ========================================================================== */
+
+/* --- Fil d'Ariane (catégories + articles) --------------------------------- */
+.cat-page .breadcrumb,
+.article-page .breadcrumb { font-size: var(--fs-sm-2); color: var(--muted-2); margin: 0 0 var(--space-8); }
+.cat-page .breadcrumb a,
+.article-page .breadcrumb a { color: var(--muted); text-decoration: none; }
+.cat-page .breadcrumb a:hover,
+.article-page .breadcrumb a:hover { color: var(--text); }
+.article-page .breadcrumb span { margin: 0 var(--space-2); }
+
+/* --- En-tête d'article ----------------------------------------------------- */
+.article-page .article-meta { font-size: var(--fs-md); color: var(--muted-2); margin: 0 0 var(--space-3); }
+.article-page .article-excerpt { color: var(--muted); font-size: var(--fs-base-2); margin: 0 0 30px; line-height: 1.6; }
+
+/* --- Sommaire -------------------------------------------------------------- */
+.article-page .toc { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: var(--space-7) var(--space-8); margin: 0 0 30px; }
+.article-page .toc h3 { margin: 0 0 var(--space-3); font-size: var(--fs-base); color: var(--text); }
+.article-page .toc ol { margin: 0; padding-left: 18px; font-size: var(--fs-md-2); color: var(--muted); line-height: 1.8; }
+.article-page .toc a { color: var(--accent-2); text-decoration: none; }
+.article-page .toc a:hover { text-decoration: underline; }
+
+/* --- Titres de corps (non fournis par .content-page hors .faq-item) -------- */
+.article-page h3 { font-size: var(--fs-lg); font-weight: 600; margin: var(--space-9) 0 var(--space-3); color: var(--text); }
+
+/* --- Encadrés -------------------------------------------------------------- */
+.article-page .callout { background: var(--panel-2); border-left: 3px solid var(--accent-2); border-radius: 0 var(--radius) var(--radius) 0; padding: var(--space-6) 18px; margin: 0 0 var(--space-8); font-size: var(--fs-md-2); color: var(--text); line-height: 1.65; }
+.article-page .callout-tip { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: var(--space-6) 18px; margin: 0 0 var(--space-8); font-size: var(--fs-md-2); color: var(--muted); line-height: 1.65; }
+
+/* --- Tableau comparatif ---------------------------------------------------- */
+.article-page .compare-table { width: 100%; border-collapse: collapse; margin: 0 0 var(--space-8); font-size: var(--fs-md); }
+.article-page .compare-table th { text-align: left; padding: var(--space-3) var(--space-4); background: var(--panel-2); border-bottom: 1px solid var(--border); color: var(--text); font-weight: 600; }
+.article-page .compare-table td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-soft); color: var(--muted); }
+
+/* --- Bloc « Articles similaires » (template + articles) -------------------- */
+.article-page .related { margin-top: var(--space-11); padding-top: var(--space-9); border-top: 1px solid var(--border-soft); }
+.article-page .related h3 { margin: 0 0 var(--space-5); }
+.article-page .related-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-4); }
+.article-page .related-card { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: var(--space-6); }
+.article-page .related-card a { font-size: var(--fs-md-2); font-weight: 600; color: var(--text); text-decoration: none; }
+.article-page .related-card a:hover { color: var(--accent-2); }
+.article-page .related-card p { margin: var(--space-1) 0 0; font-size: var(--fs-sm); color: var(--muted-2); }
+
+/* --- Navigation article précédent / suivant -------------------------------- */
+.article-page .prev-next { display: flex; justify-content: space-between; margin-top: 30px; padding-top: var(--space-8); border-top: 1px solid var(--border-soft); font-size: var(--fs-md-2); }
+.article-page .prev-next a { color: var(--accent-2); text-decoration: none; }
+.article-page .prev-next a:hover { color: var(--accent-2-hover); }
+.article-page .back-blog { text-align: center; margin-top: var(--space-7); font-size: var(--fs-md); }
+.article-page .back-blog a { color: var(--muted); text-decoration: none; }
+.article-page .back-blog a:hover { color: var(--text); }
+
+/* --- Hub : grille de catégories ------------------------------------------- */
+.blog-page .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--space-5); margin: 0 0 36px; }
+.blog-page .cat-card { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 18px; text-align: center; }
+.blog-page .cat-card a { font-size: var(--fs-base-2); font-weight: 600; color: var(--text); text-decoration: none; }
+.blog-page .cat-card a:hover { color: var(--accent-2); }
+.blog-page .cat-card .count { font-size: var(--fs-sm); color: var(--muted-2); margin-top: var(--space-1); }
+
+/* --- Listes d'articles (hub + catégories) --------------------------------- */
+.blog-page .article-list,
+.cat-page .article-list { list-style: none; padding: 0; margin: 0; }
+.blog-page .article-item,
+.cat-page .article-item { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: var(--space-7); margin-bottom: var(--space-4); }
+.blog-page .article-item h3,
+.cat-page .article-item h3 { margin: 0 0 var(--space-1); font-size: var(--fs-base-2); }
+.blog-page .article-item h3 a,
+.cat-page .article-item h3 a { color: var(--text); text-decoration: none; }
+.blog-page .article-item h3 a:hover,
+.cat-page .article-item h3 a:hover { color: var(--accent-2); }
+.blog-page .article-item .meta,
+.cat-page .article-item .meta { font-size: var(--fs-sm); color: var(--muted-2); }
+.cat-page .article-item .meta { margin-bottom: var(--space-1); }
+.blog-page .article-item p { margin: var(--space-2) 0 0; font-size: var(--fs-md-2); color: var(--muted); line-height: 1.5; }
+.cat-page .article-item p { margin: 0; font-size: var(--fs-md-2); color: var(--muted); }
+
+/* --- Catégories : liens vers les autres catégories ------------------------ */
+.cat-page .other-cats { display: flex; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-8); }
+.cat-page .other-cats a { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: var(--space-3) var(--space-6); font-size: var(--fs-md); color: var(--muted); text-decoration: none; }
+.cat-page .other-cats a:hover { color: var(--text); }
+
+/* --- Convergence vers `.content-page` (ajouts seuls — AC-3) ----------------
+   La bordure de h2 et le soulignement des liens de lecture existent sur les
+   pages sœurs (faq.html, cgu.html, fonctionnalites.html) mais pas dans le bloc
+   `.content-page` de landing.css (non modifiable). Ajout strictement scopé, sans
+   dupliquer aucune autre propriété du composant partagé. */
+.blog-page h2,
+.cat-page h2,
+.article-page h2 { border-bottom: 1px solid var(--border-soft); padding-bottom: var(--space-3); }
+.blog-page a,
+.cat-page a,
+.article-page a { text-decoration: underline; }
+.blog-page .btn,
+.cat-page .btn,
+.article-page .btn,
+.blog-page .btn-ghost,
+.cat-page .btn-ghost,
+.article-page .btn-ghost,
+.blog-page .secondary-nav a,
+.cat-page .secondary-nav a,
+.article-page .secondary-nav a,
+.blog-page .theme-btn,
+.cat-page .theme-btn,
+.article-page .theme-btn { text-decoration: none; }
+.blog-page .cta-box a:hover,
+.cat-page .cta-box a:hover,
+.article-page .cta-box a:hover { background: var(--accent-2-hover); }
+
+@media (max-width: 480px) {
+  .blog-page .cat-grid { grid-template-columns: repeat(2, 1fr); }
+}

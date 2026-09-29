@@ -16,6 +16,7 @@ const PRECACHE_URLS = [
   'css/rtl.css',
   'css/fonts.css',
   'css/landing.css',
+  'css/blog.css',
   'css/admin.css',
   'js/auth.js',
   'js/admin.js',
