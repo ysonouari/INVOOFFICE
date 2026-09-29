@@ -1,0 +1,324 @@
+/**
+ * INVOOFFICE — Publication automatisée du Blog
+ * Module : Utils.gs
+ * ---------------------------------------------------------------------------
+ * Responsabilité unique : primitives pures (échappement, slugs, dates françaises,
+ * temps de lecture, JSON) + couche d'appel HTTP avec retry borné.
+ *
+ * Aucune dépendance à Google Sheets, à GitHub ou à un état global : ce module
+ * est chargeable et testable isolément.
+ *
+ * PHASE 2 — fondation. Aucune publication n'est possible depuis ce module
+ * (les écritures sont verrouillées par Github.gs / GITHUB_WRITE_ENABLED).
+ */
+
+/** Constantes de l'application — aucune valeur secrète ici. */
+var APP = {
+  // Dépôt vérifié (Phase 1, §1.1) — ne pas revenir à INVOOFFICE/INVOOFFICE ni à main.
+  OWNER: 'ysonouari',
+  REPOSITORY: 'INVOOFFICE',
+  BRANCH: 'master',
+  API_BASE: 'https://api.github.com',
+
+  // Domaine canonique vérifié dans le dépôt (Phase 1, §1.1). Jamais invooffice.com.
+  SITE_ORIGIN: 'https://www.invooffice.com',
+
+  /**
+   * MIROIR du champ `timeZone` de `appsscript.json`. Sert UNIQUEMENT à
+   * `assertTimeZoneConsistency()`, qui refuse toute divergence avec Config.
+   * Ce n'est PAS une source de fuseau : aucun calcul de date ni le scheduler
+   * ne doit lire cette valeur (ils lisent `getConfiguredTimeZone()`).
+   */
+  MANIFEST_TIMEZONE: 'Africa/Casablanca',
+
+  BLOG_DIR: 'blog',
+  TEMPLATE_PATH: 'blog/template-article.html',
+  SITEMAP_PATH: 'sitemap-fr.xml',
+
+  /**
+   * Pages publiées utilisées par verifySiteOriginFromRepository() (D9).
+   * Le gabarit est volontairement exclu de ce tableau : ses URLs sont des
+   * placeholders, il est chargé séparément par TemplateLoader.
+   */
+  CANONICAL_SAMPLES: [
+    'blog/index.html',
+    'blog/auto-entrepreneur/index.html',
+    'blog/devis/index.html',
+    'blog/facturation/index.html',
+    'blog/guides/index.html',
+    'blog/tva/index.html'
+  ],
+
+  MAX_DESCRIPTION: 160,
+  MAX_TEMPLATE_BYTES: 262144,
+  RETRYABLE_STATUS: [429, 500, 502, 503],
+  BACKOFF_BASE_MS: 1000,
+  BACKOFF_MAX_MS: 30000
+};
+
+var FR_MONTHS = [
+  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+];
+
+/* -------------------------------------------------------------------------- */
+/* Échappement                                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Échappe une valeur destinée au HTML (texte ou attribut).
+ * Utilisé par TOUTE insertion dans le HTML généré et par les logs.
+ */
+function escHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Échappe une valeur destinée à une chaîne JSON (sans les guillemets). */
+function escJson(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+}
+
+/** Neutralise les motifs de script dans tout champ saisi (défense en profondeur). */
+function containsScript(value) {
+  if (value === null || value === undefined) return false;
+  var s = String(value).toLowerCase();
+  return s.indexOf('<script') !== -1 ||
+    s.indexOf('onerror=') !== -1 ||
+    s.indexOf('onload=') !== -1 ||
+    s.indexOf('javascript:') !== -1;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Normalisation                                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Slug ASCII en minuscules. Utilisé UNIQUEMENT pour le SLUG d'article
+ * et pour la suggestion dérivée de KEYWORD.
+ * NE DOIT PAS servir à dériver un slug de catégorie : voir Config.gs / CATEGORY_MAP
+ * (décision D2 — « TVA Maroc » → « tva » n'est pas dérivable).
+ */
+function slugify(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/** true si le slug est strictement conforme : [a-z0-9-], pas de bord. */
+function isValidSlug(value) {
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(value || ''));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dates                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Décalage en minutes du fuseau configuré, à l'instant `date`.
+ *
+ * Dérivé de `getConfiguredTimeZone()` — aucune valeur de fuseau n'est écrite
+ * en dur ici. Passé à 00 h 30 au Maroc (UTC+1), l'instant est encore la
+ * veille en UTC : sans cette correction, `PUBLISHED_AT` serait daté à tort.
+ *
+ * @return {number} minutes (ex. 60 pour Africa/Casablanca)
+ */
+function zoneOffsetMinutes(date) {
+  var zone = getConfiguredTimeZone();
+  var instant = date || new Date();
+  try {
+    var formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: zone,
+      hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    var parts = {};
+    formatter.formatToParts(instant).forEach(function (p) {
+      parts[p.type] = p.value;
+    });
+    var asUtc = Date.UTC(
+      Number(parts.year), Number(parts.month) - 1, Number(parts.day),
+      Number(parts.hour) % 24, Number(parts.minute), Number(parts.second)
+    );
+    return Math.round((asUtc - instant.getTime()) / 60000);
+  } catch (e) {
+    // Fuseau inconnu de l'environnement : UTC reste un repli sûr et explicite.
+    return 0;
+  }
+}
+
+/**
+ * 'YYYY-MM-DD' de la date de publication, dans le fuseau CONFIGURÉ.
+ * Idempotent : deux exécutions le même jour donnent la même chaîne.
+ */
+function toIsoDate(date) {
+  var instant = date || new Date();
+  var local = new Date(instant.getTime() + zoneOffsetMinutes(instant) * 60000);
+  return local.getUTCFullYear() + '-' +
+    pad2(local.getUTCMonth() + 1) + '-' +
+    pad2(local.getUTCDate());
+}
+
+/** '14 juillet 2026' depuis 'YYYY-MM-DD'. Renvoie '' si l'entrée est invalide. */
+function frenchDate(iso) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || '').trim());
+  if (!m) return '';
+  var month = FR_MONTHS[parseInt(m[2], 10) - 1];
+  if (!month) return '';
+  return parseInt(m[3], 10) + ' ' + month + ' ' + m[1];
+}
+
+/** Horodatage ISO complet pour la feuille Logs. */
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function pad2(n) {
+  return (n < 10 ? '0' : '') + n;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Lecture du contenu                                                        */
+/* -------------------------------------------------------------------------- */
+
+/** Retire balises et entités pour compter les mots du corps de l'article. */
+function plainText(html) {
+  if (!html) return '';
+  return String(html)
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Temps de lecture déterministe : 200 mots/minute, minimum 1.
+ * Le gabarit ne définit aucune formule (Phase 1, §2) : la valeur est
+ * arbitraire mais stable et documentée.
+ */
+function readingTime(html) {
+  var words = plainText(html).split(' ').filter(function (w) { return w.length > 0; });
+  if (!words.length) return 1;
+  return Math.max(1, Math.round(words.length / 200));
+}
+
+/* -------------------------------------------------------------------------- */
+/* JSON                                                                       */
+/* -------------------------------------------------------------------------- */
+
+function parseJsonSafe(raw) {
+  try {
+    return JSON.parse(String(raw));
+  } catch (e) {
+    return null;
+  }
+}
+
+/** Sérialisation JSON compacte et stable (une ligne). */
+function toJson(value) {
+  try {
+    return JSON.stringify(value);
+  } catch (e) {
+    return '';
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* HTTP                                                                       */
+/* -------------------------------------------------------------------------- */
+
+function backoffMs(attempt) {
+  var base = APP.BACKOFF_BASE_MS * Math.pow(2, attempt - 1);
+  var jittered = base * (0.5 + Math.random() * 0.5);
+  return Math.min(APP.BACKOFF_MAX_MS, Math.round(jittered));
+}
+
+/**
+ * Appel HTTP avec retry limité aux erreurs RÉCUPÉRABLES.
+ * Ne réessaie jamais un 4xx (401/403/404/422) : ces erreurs sont définitives
+ * et un nouvel essai ne ferait qu'aggraver le rate limit.
+ *
+ * @param {{url:string, method?:string, headers?:Object, payload?:*|null,
+ *          retries?:number}} opt
+ * @return {Object} réponse UrlFetchApp (muteHttpExceptions: true)
+ * @throws {Error} après épuisement des tentatives, message sans secret
+ */
+function httpRequest(opt) {
+  var url = opt.url;
+  var retries = typeof opt.retries === 'number' ? opt.retries : 0;
+  var attempt = 0;
+
+  while (true) {
+    var response = null;
+    var transportError = null;
+
+    try {
+      response = UrlFetchApp.fetch(url, {
+        method: (opt.method || 'get').toUpperCase(),
+        headers: opt.headers || {},
+        payload: opt.payload === undefined ? null : opt.payload,
+        muteHttpExceptions: true,
+        validateHttpsCertificates: true,
+        followRedirects: true
+      });
+    } catch (e) {
+      transportError = e;
+    }
+
+    if (response) {
+      var status = response.getResponseCode();
+      if (APP.RETRYABLE_STATUS.indexOf(status) === -1 || attempt >= retries) {
+        return response;
+      }
+      // Statut récupérable mais tentatives épuisées : on rend la réponse
+      // pour que l'appelant décide (message d'erreur précis).
+      if (attempt >= retries) return response;
+    } else if (transportError) {
+      if (attempt >= retries) {
+        throw new Error('Transport GitHub: ' + transportError.message);
+      }
+    }
+
+    attempt += 1;
+    Utilities.sleep(backoffMs(attempt));
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Diagnostics                                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Retire tout motif ressemblant à un secret d'un message destiné aux Logs
+ * ou à l'UI. Dernière barrière : le token ne doit jamais fuir (Phase 1, §6.2).
+ */
+function redact(message) {
+  if (message === null || message === undefined) return '';
+  var s = String(message);
+  s = s.replace(/gh[pousr]_[A-Za-z0-9]{16,}/g, '[REDACTED]');
+  s = s.replace(/github_pat_[A-Za-z0-9_]{20,}/g, '[REDACTED]');
+  s = s.replace(/(authorization"?\s*[:=]\s*"?)(token|bearer)?\s*[A-Za-z0-9._-]{8,}/gi,
+    '$1[REDACTED]');
+  return s;
+}

@@ -1,0 +1,256 @@
+/**
+ * INVOOFFICE — Publication automatisée du Blog
+ * Module : Code.gs
+ * ---------------------------------------------------------------------------
+ * Points d'entrée et menus.
+ *
+ * PHASE 2 — actions disponibles :
+ *   - Configurer les Script Properties
+ *   - Initialiser les feuilles (Articles / Config / Logs)
+ *   - Tester la connexion GitHub (LECTURE SEULE)
+ *   - Vérifier le gabarit d'article
+ *   - Valider les articles
+ *   - Voir les erreurs
+ *
+ * NON implémenté en Phase 2 (décision du Product Owner) :
+ *   - publication, scheduler, activation automatique.
+ *   Les entrées de menu correspondantes n'existent pas encore, afin de ne pas
+ *   exposer une action qui ne fonctionne pas.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Menu                                                                       */
+/* -------------------------------------------------------------------------- */
+
+function onOpen() {
+  try {
+    SpreadsheetApp.getUi()
+      .createMenu('🤖 Blog INVOOFFICE')
+      .addItem('⚙️ Configuration', 'menuConfiguration')
+      .addItem('📋 Initialiser les feuilles', 'menuBootstrapSheets')
+      .addSeparator()
+      .addItem('🔌 Tester la connexion GitHub', 'menuTestGithub')
+      .addItem('📄 Vérifier le gabarit d\'article', 'menuCheckTemplate')
+      .addItem('✅ Valider les articles', 'menuValidateArticles')
+      .addSeparator()
+      .addItem('⚠️ Voir les erreurs', 'menuShowErrors')
+      .addToUi();
+  } catch (e) {
+    console.error(redact(e.message));
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Actions                                                                    */
+/* -------------------------------------------------------------------------- */
+
+function menuConfiguration() {
+  showDialog('Configuration', buildConfigurationHtml());
+}
+
+/** Crée les feuilles manquantes et les en-têtes attendus. */
+function menuBootstrapSheets() {
+  try {
+    var report = withScriptLock(function () { return bootstrapSheets(); });
+    logInfo('bootstrap', 'Feuilles vérifiées', {
+      creees: report.created,
+      ecarts_entetes: report.missingHeaders
+    });
+    alertOrLog(
+      'Initialisation terminée.\n\n' +
+      'Feuilles créées : ' + (report.created.join(', ') || 'aucune') + '\n' +
+      (report.missingHeaders.length
+        ? 'Écarts d\'en-tête détectés : ' + report.missingHeaders.length
+        : 'En-têtes conformes.')
+    );
+  } catch (e) {
+    logError('bootstrap', redact(e.message));
+    alertOrLog('Échec : ' + redact(e.message));
+  }
+}
+
+/** Test GitHub en lecture seule. N'écrit rien. */
+function menuTestGithub() {
+  try {
+    var result = testGithubConnection();
+    logEvent({
+      level: result.ok ? LEVEL.SUCCESS : LEVEL.ERROR,
+      action: 'test_github',
+      message: result.ok ? 'Connexion GitHub OK' : 'Connexion GitHub en échec',
+      details: result
+    });
+    alertOrLog(formatConnectionReport(result));
+  } catch (e) {
+    logError('test_github', redact(e.message));
+    alertOrLog('Échec : ' + redact(e.message));
+  }
+}
+
+/** Charge et valide le gabarit depuis GitHub (lecture seule). */
+function menuCheckTemplate() {
+  try {
+    var loaded = loadArticleTemplate();
+    if (!loaded.ok) {
+      logError('check_template', loaded.error, { githubPath: loaded.path });
+      alertOrLog('Gabarit : ÉCHEC\n\n' + loaded.error);
+      return;
+    }
+    logInfo('check_template', 'Gabarit conforme', {
+      path: loaded.path, sha: loaded.sha, size: loaded.size
+    });
+    alertOrLog(
+      'Gabarit : conforme\n\n' +
+      'Chemin : ' + loaded.path + '\n' +
+      'Taille : ' + loaded.size + ' octets\n' +
+      'Placeholders : ' + REQUIRED_PLACEHOLDERS.length + ' attendus, tous présents\n' +
+      'Robots du gabarit : ' + TEMPLATE_ROBOTS + ' (conservé, basculé au rendu)'
+    );
+  } catch (e) {
+    logError('check_template', redact(e.message));
+    alertOrLog('Échec : ' + redact(e.message));
+  }
+}
+
+/** Valide toutes les lignes Articles (aucune écriture). */
+function menuValidateArticles() {
+  try {
+    var rows = readArticles();
+    if (!rows.length) {
+      alertOrLog('Aucun article dans la feuille « Articles ».');
+      return;
+    }
+
+    var failures = 0;
+    var lines = [];
+    rows.forEach(function (row) {
+      var v = validateArticle(row);
+      if (v.ok) {
+        lines.push('OK   ' + (row.ID || '(sans ID)') + ' → ' + (v.path || ''));
+      } else {
+        failures += 1;
+        lines.push('ÉCHEC ' + (row.ID || '(sans ID)') + ' : ' +
+          v.errors.map(function (e) { return e.code; }).join(', '));
+        v.errors.forEach(function (e) {
+          logError('validate', e.message, { articleId: row.ID, slug: row.SLUG });
+        });
+      }
+      (v.warnings || []).forEach(function (w) {
+        logWarning('validate', w.message, { articleId: row.ID, slug: row.SLUG });
+      });
+    });
+
+    logInfo('validate', 'Validation terminée : ' + (rows.length - failures) +
+      '/' + rows.length + ' valides', { total: rows.length, echecs: failures });
+    alertOrLog(
+      'Validation : ' + (rows.length - failures) + '/' + rows.length + ' article(s) valide(s)\n\n' +
+      lines.slice(0, 20).join('\n') +
+      (lines.length > 20 ? '\n… ' + (lines.length - 20) + ' ligne(s) de plus' : '')
+    );
+  } catch (e) {
+    logError('validate', redact(e.message));
+    alertOrLog('Échec : ' + redact(e.message));
+  }
+}
+
+function menuShowErrors() {
+  try {
+    var errors = readErrorLogs(20);
+    if (!errors.length) {
+      alertOrLog('Aucune erreur enregistrée.');
+      return;
+    }
+    var lines = errors.map(function (e) {
+      return e.TIMESTAMP + ' — ' + e.ACTION + ' — ' + e.MESSAGE;
+    });
+    alertOrLog('Erreurs récentes (' + errors.length + ') :\n\n' + lines.join('\n'));
+  } catch (e) {
+    alertOrLog('Échec : ' + redact(e.message));
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Présentation                                                               */
+/* -------------------------------------------------------------------------- */
+
+function formatConnectionReport(result) {
+  var c = result.checks;
+  var lines = [
+    'Dépôt       : ' + c.owner + '/' + c.repository + ' (' + c.branch + ')',
+    'API         : ' + c.apiBase,
+    'Token       : ' + (c.tokenConfigured ? 'configuré' : 'ABSENT'),
+    'Joignable   : ' + (c.reachable ? 'oui' : 'NON'),
+    'Écriture    : ' + (c.canPush ? 'autorisée' : 'refusée'),
+    'Verrou      : ' + (writesEnabled() ? 'OUVERT' : 'fermé (GITHUB_WRITE_ENABLED=FALSE)')
+  ];
+  if (result.errors.length) {
+    lines.push('', 'Anomalies :', '- ' + result.errors.join('\n- '));
+  }
+  lines.push('', 'Aucun fichier n\'a été modifié.');
+  return lines.join('\n');
+}
+
+function buildConfigurationHtml() {
+  var rows = [
+    ['PROP', 'GITHUB_TOKEN', propGet(PROP_KEYS.TOKEN) ? 'configuré' : 'ABSENT'],
+    ['PROP', PROP_KEYS.OWNER, propGet(PROP_KEYS.OWNER) || APP.OWNER + ' (défaut)'],
+    ['PROP', PROP_KEYS.REPOSITORY, propGet(PROP_KEYS.REPOSITORY) || APP.REPOSITORY + ' (défaut)'],
+    ['PROP', PROP_KEYS.BRANCH, propGet(PROP_KEYS.BRANCH) || APP.BRANCH + ' (défaut)'],
+    ['PROP', PROP_KEYS.API_BASE, propGet(PROP_KEYS.API_BASE) || APP.API_BASE + ' (défaut)'],
+    ['PROP', PROP_KEYS.SPREADSHEET_ID, propGet(PROP_KEYS.SPREADSHEET_ID) || '(script lié)'],
+    ['PROP', PROP_KEYS.WRITE_ENABLED, writesEnabled() ? 'TRUE' : 'FALSE (Phase 2)']
+  ];
+
+  var config = readConfigMap();
+  var configRows = CONFIG_KEYS.map(function (k) {
+    return ['CONFIG', k, String(config[k])];
+  });
+
+  var html = '<div style="font-family:Roboto,Arial,sans-serif;font-size:13px">' +
+    '<h3>Script Properties</h3>' +
+    '<p style="color:#666">Le token n\'est jamais affiché. ' +
+    'Renseignez-le via <b>Script Properties</b> (clé <code>' + PROP_KEYS.TOKEN +
+    '</code>).</p>' + tableHtml(rows) +
+    '<h3>Feuille Config</h3>' + tableHtml(configRows) +
+    '<p style="color:#666">Clés legacy (jamais exécutées) : ' +
+    CONFIG_LEGACY.join(', ') + '.</p>' +
+    '<p style="color:#666">Verrou d\'écriture : <b>' +
+    (writesEnabled() ? 'OUVERT' : 'fermé') + '</b> — Phase 2 : aucune publication.</p>' +
+    '</div>';
+  return html;
+}
+
+function tableHtml(rows) {
+  var out = '<table style="border-collapse:collapse;width:100%">';
+  rows.forEach(function (r) {
+    out += '<tr>';
+    r.forEach(function (cell, i) {
+      var style = i === 0
+        ? 'padding:3px 8px;color:#888;'
+        : 'padding:3px 8px;border-top:1px solid #eee;';
+      out += '<td style="' + style + '">' + escHtml(cell) + '</td>';
+    });
+    out += '</tr>';
+  });
+  return out + '</table>';
+}
+
+function showDialog(title, html) {
+  try {
+    SpreadsheetApp.getUi().showModalDialog(
+      HtmlService.createHtmlOutput(html).setWidth(560).setHeight(520),
+      title
+    );
+  } catch (e) {
+    // Hors contexte de tableur (exécution manuelle) : on retombe sur le journal.
+    logInfo('ui', title, 'Interface indisponible : ' + redact(e.message));
+  }
+}
+
+/** Affiche une alerte si le contexte UI existe, sinon journalise. */
+function alertOrLog(message) {
+  try {
+    SpreadsheetApp.getUi().alert(message);
+  } catch (e) {
+    console.log(redact(message));
+  }
+}
