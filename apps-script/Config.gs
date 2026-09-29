@@ -59,7 +59,12 @@ var CONFIG_DEFAULTS = {
   // /icons/og-image-1200x630.png. Passer cette valeur à TRUE n'ajoute donc
   // aucune image : le moteur ignore IMAGE_URL (cf. Renderer.gs).
   ENABLE_FEATURED_IMAGE: 'FALSE',
-  TEST_MODE: 'FALSE',
+  // PHASE 4 : le mode test est le défaut. Le moteur de publication
+  // (Publisher.gs) rend ET valide l'article, puis s'arrête : la levée du
+  // mode test est un acte délibéré du Product Owner, jamais un effet de bord.
+  // GITHUB_WRITE_ENABLED (Script Property) reste FALSE par défaut : les deux
+  // verrous doivent être ouverts pour qu'un commit existe.
+  TEST_MODE: 'TRUE',
   MAX_ARTICLES_PER_RUN: '1',
   MAX_RETRIES: '3',
   SCHEDULE_MODE: 'WEEKLY',
@@ -129,8 +134,9 @@ function getGithubApiBase() {
 
 /**
  * Verrou d'écriture. Défaut FALSE : la fondation ne peut structurellement
- * produire aucun commit. Lebranché explicitement par le Product Owner
- * lors du pilote (phase 10), jamais automatiquement.
+ * produire aucun commit. Levé explicitement par le Product Owner lors du
+ * pilote, jamais automatiquement — et jamais seul : TEST_MODE doit aussi
+ * valoir FALSE (Publisher.gs, assertWritesAllowed).
  */
 function writesEnabled() {
   return propGet(PROP_KEYS.WRITE_ENABLED).toUpperCase() === 'TRUE';

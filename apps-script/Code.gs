@@ -4,18 +4,20 @@
  * ---------------------------------------------------------------------------
  * Points d'entrée et menus.
  *
- * PHASE 2 — actions disponibles :
+ * PHASE 4 — actions disponibles :
  *   - Configurer les Script Properties
  *   - Initialiser les feuilles (Articles / Config / Logs)
  *   - Tester la connexion GitHub (LECTURE SEULE)
  *   - Vérifier le gabarit d'article
  *   - Valider les articles
+ *   - Publier l'article sélectionné
+ *   - Publier le prochain article READY
  *   - Voir les erreurs
  *
- * NON implémenté en Phase 2 (décision du Product Owner) :
- *   - publication, scheduler, activation automatique.
- *   Les entrées de menu correspondantes n'existent pas encore, afin de ne pas
- *   exposer une action qui ne fonctionne pas.
+ * NON implémenté (décision du Product Owner) :
+ *   - scheduler, activation automatique, publication par lot.
+ *   Chaque publication porte sur UN SEUL article (Publisher.gs) et reste
+ *   bloquée tant que TEST_MODE = TRUE ou GITHUB_WRITE_ENABLED = FALSE.
  */
 
 /* -------------------------------------------------------------------------- */
@@ -32,6 +34,8 @@ function onOpen() {
       .addItem('🔌 Tester la connexion GitHub', 'menuTestGithub')
       .addItem('📄 Vérifier le gabarit d\'article', 'menuCheckTemplate')
       .addItem('✅ Valider les articles', 'menuValidateArticles')
+      .addItem('🚀 Publier l\'article sélectionné', 'publishSelectedArticle')
+      .addItem('🚀 Publier le prochain article READY', 'publishNextReadyArticle')
       .addSeparator()
       .addItem('⚠️ Voir les erreurs', 'menuShowErrors')
       .addToUi();
@@ -197,7 +201,8 @@ function buildConfigurationHtml() {
     ['PROP', PROP_KEYS.BRANCH, propGet(PROP_KEYS.BRANCH) || APP.BRANCH + ' (défaut)'],
     ['PROP', PROP_KEYS.API_BASE, propGet(PROP_KEYS.API_BASE) || APP.API_BASE + ' (défaut)'],
     ['PROP', PROP_KEYS.SPREADSHEET_ID, propGet(PROP_KEYS.SPREADSHEET_ID) || '(script lié)'],
-    ['PROP', PROP_KEYS.WRITE_ENABLED, writesEnabled() ? 'TRUE' : 'FALSE (Phase 2)']
+    ['PROP', PROP_KEYS.WRITE_ENABLED, writesEnabled() ? 'TRUE' : 'FALSE (verrou fermé)'],
+    ['CONFIG', 'TEST_MODE', getConfigValue('TEST_MODE') + (getConfigBoolean('TEST_MODE') ? ' (aucune écriture)' : ' (écriture autorisée)')]
   ];
 
   var config = readConfigMap();
@@ -214,7 +219,8 @@ function buildConfigurationHtml() {
     '<p style="color:#666">Clés legacy (jamais exécutées) : ' +
     CONFIG_LEGACY.join(', ') + '.</p>' +
     '<p style="color:#666">Verrou d\'écriture : <b>' +
-    (writesEnabled() ? 'OUVERT' : 'fermé') + '</b> — Phase 2 : aucune publication.</p>' +
+    (writesEnabled() ? 'OUVERT' : 'fermé') + '</b> — une publication exige ' +
+    'GITHUB_WRITE_ENABLED=TRUE <b>et</b> TEST_MODE=FALSE.</p>' +
     '</div>';
   return html;
 }

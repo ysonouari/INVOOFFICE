@@ -23,6 +23,8 @@ var SHEETS = {
  * Colonnes `Articles`.
  * Les 14 premières sont imposées par la mission et conservées dans l'ordre.
  * Les suivantes sont des ajouts documentés (décision D1 + idempotence).
+ * `READING_TIME` est un ajout D1 d'intégration (cf. commentaire sur la
+ * colonne) : le moteur de rendu l'exige et ne la calcule jamais.
  */
 var ARTICLE_COLUMNS = [
   // --- 14 colonnes imposées (ordre inchangé) ---
@@ -44,6 +46,13 @@ var ARTICLE_COLUMNS = [
   'SOCIAL_DESCRIPTION',
   'ARTICLE_EXCERPT',
   'CARD_EXCERPT',
+  // --- Ajout D1 (intégration Renderer) : temps de lecture ---
+  // Le gabarit expose {{READING_TIME}} et le moteur refuse de le CALCULER
+  // (PO-2 : donnée éditoriale, jamais dérivée du nombre de mots). Sans cette
+  // colonne, aucune ligne ne pourrait être rendue (code R3b) : la donnée doit
+  // donc être saisissable. readArticles() étant piloté par l'en-tête,
+  // Renderer.gs la lit sans modification.
+  'READING_TIME',
   // --- Ajout technique : idempotence / traçabilité ---
   'GITHUB_PATH',
   'GITHUB_SHA',

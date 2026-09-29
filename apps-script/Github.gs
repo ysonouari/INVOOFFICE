@@ -7,11 +7,11 @@
  * Opérations : getRepositoryInfo, testGithubConnection, getFile,
  *              createOrUpdateFile.
  *
- * SÉCURITÉ — deux verrous indépendants, tous deux à FALSE par défaut :
+ * SÉCURITÉ — deux verrous indépendants, tous deux fermés par défaut :
  *   1. GITHUB_WRITE_ENABLED (Script Property) : coupe createOrUpdateFile.
- *   2. TEST_MODE (Config) : coupe toute écriture même si le verrou est levé.
- * En Phase 2, aucune écriture n'est possible. Le test de connexion est en
- * lecture seule (GET /repos/...).
+ *   2. TEST_MODE (Config, TRUE par défaut) : coupe toute écriture même si le
+ *      premier verrou est levé.
+ * Le test de connexion est en lecture seule (GET /repos/...).
  */
 
 /** Message Levé quand une écriture est tentée alors que les verrous sont fermés. */
@@ -170,7 +170,12 @@ function decodeContentResponse(data) {
   return {
     sha: String(data.sha || ''),
     path: String(data.path || ''),
-    content: Utilities.base64Decode(content),
+    // Utilities.base64Decode() renvoie un Byte[] (tableau d'octets signes),
+    // PAS un String. Sans le passage par un Blob, `content` arrivait non-string
+    // aux appelants (validateTemplate, re.exec sur Config) et echouait sur
+    // « html.replace is not a function ». On produit donc reellement le String
+    // promis par le contrat @return de getFile().
+    content: Utilities.newBlob(Utilities.base64Decode(content)).getDataAsString('UTF-8'),
     size: Number(data.size || 0)
   };
 }
@@ -209,9 +214,9 @@ function assertWritesAllowed() {
 /**
  * Crée ou met à jour un fichier via l'API Contents.
  *
- * ⚠ Non appelé en Phase 2. Présent pour la phase publication ; protégé par
- *   assertWritesAllowed(). En cas d'échec, l'appelant reçoit une exception et
- *   ne doit marquer l'article PUBLISHED qu'après succès.
+ * Appelé par Publisher.gs (phase publication) ; protégé par
+ * assertWritesAllowed(). En cas d'échec, l'appelant reçoit une exception et
+ * ne doit marquer l'article PUBLISHED qu'après succès.
  *
  * @param {{path:string, content:string, message:string, sha?:string, branch?:string}} opt
  * @return {{sha:string, commitSha:string, path:string}}
@@ -252,7 +257,7 @@ function createOrUpdateFile(opt) {
 function checkWriteReadiness() {
   var errors = [];
   if (!writesEnabled()) {
-    errors.push('GITHUB_WRITE_ENABLED=FALSE (attendu en Phase 2)');
+    errors.push('GITHUB_WRITE_ENABLED=FALSE (verrou fermé)');
   }
   if (!getConfigSheet()) {
     errors.push('Feuille Config absente (initialisation requise)');
