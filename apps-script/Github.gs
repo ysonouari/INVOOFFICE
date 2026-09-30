@@ -268,3 +268,130 @@ function checkWriteReadiness() {
   if (!conn.ok) errors = errors.concat(conn.errors);
   return { ok: errors.length === 0, errors: errors };
 }
+
+/* -------------------------------------------------------------------------- */
+/* Suppression (verrouillée) — D5                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Forme STRUCTURELLE d'un chemin d'article : blog/<catégorie>/<article>.html
+ *
+ * ATTENTION — ce motif seul est INSUFFISANT et ne doit jamais être utilisé
+ * seul comme garde-fou. « index » satisfait `[a-z0-9-]+`, donc
+ * `blog/facturation/index.html` VALIDE ce motif alors que c'est un index de
+ * catégorie, jamais un article. La défense réelle est
+ * validateArticleFilePath(), qui ajoute une liste de refus explicite.
+ *
+ * Ce motif couvre déjà, par construction : le hub et le gabarit (un seul
+ * segment), le sitemap (hors préfixe `blog/`), les répertoires (`/` final),
+ * la traversée (`.`), les antislash, les chemins encodés (`%`), les jokers
+ * (`*`) et les chemins absolus (`/` initial).
+ */
+var ARTICLE_PATH_RE = /^blog\/[a-z0-9-]+\/[a-z0-9-]+\.html$/;
+
+/** Un index de catégorie : blog/<catégorie>/index.html (INTERDIT à la suppression). */
+var CATEGORY_INDEX_RE = /^blog\/[^/]+\/index\.html$/;
+
+/**
+ * Vérifie qu'un chemin est bien celui d'un ARTICLE, et rien d'autre.
+ *
+ * Fonction PURE et SÛRE-FAILLE : toute ambiguïté est refusée. Aucune écriture
+ * n'est tentée. C'est la seule défense propre de deleteFile(), qui ne connaît
+ * pas la feuille : la validation d'IDENTITÉ (la ligne correspond-elle à ce
+ * chemin ?) appartient à Publisher.gs.
+ *
+ * @param {string} path chemin relatif déjà validé comme `GITHUB_PATH`
+ * @throws {Error} si le chemin n'est pas un article
+ */
+function validateArticleFilePath(path) {
+  var value = String(path === null || path === undefined ? '' : path);
+
+  if (!value) throw new Error('Chemin vide : suppression refusée.');
+
+  // Listes de refus EXPLICITES, évaluées AVANT le motif. Ce sont elles qui
+  // portent réellement les invariants « jamais un index, jamais un sitemap ».
+  if (value === BLOG_HUB_PATH) {
+    throw new Error('Suppression refusée : « ' + BLOG_HUB_PATH + ' » est le hub du Blog.');
+  }
+  if (value === APP.SITEMAP_PATH) {
+    throw new Error('Suppression refusée : « ' + APP.SITEMAP_PATH + ' » est le sitemap.');
+  }
+  if (value === APP.TEMPLATE_PATH) {
+    throw new Error('Suppression refusée : « ' + APP.TEMPLATE_PATH + ' » est le gabarit.');
+  }
+  if (CATEGORY_INDEX_RE.test(value)) {
+    throw new Error('Suppression refusée : « ' + value + ' » est un index de catégorie.');
+  }
+
+  if (!ARTICLE_PATH_RE.test(value)) {
+    throw new Error(
+      'Suppression refusée : « ' + value + ' » n\'a pas la forme attendue ' +
+      '(blog/<catégorie>/<article>.html). Aucun joker, aucun répertoire, ' +
+      'aucune traversée.'
+    );
+  }
+
+  return true;
+}
+
+/**
+ * Supprime UN fichier du dépôt via l'API Contents.
+ *
+ *Appelé par Publisher.gs (opération « supprimer un article publié ») ; protégé
+ * par assertWritesAllowed(), exactement comme createOrUpdateFile(). Aucune
+ * suppression récursive, aucune suppression de répertoire : le SHA est
+ * obligatoire, ce qui interdit le mode `recursive` de l'API Contents — un
+ * appel sans SHA échouerait, un appel avec SHA ne peut viser qu'UN fichier.
+ *
+ * Le chemin NE DOIT PAS provenir d'une saisie utilisateur : il vient de la
+ * colonne GITHUB_PATH d'une ligne `Articles`, et n'a atteint cette fonction
+ * qu'après avoir été comparé au chemin DÉRIVÉ de CATEGORY + CATEGORY_MAP +
+ * SLUG (invariant d'identité). validateArticleFilePath() n'en est pas le
+ * substitut : il borne la STRUCTURE du chemin, pas sa provenance.
+ *
+ * @param {{path:string, sha:string, message?:string}} opt
+ *        `branch` est volontairement IGNORÉ : le paramètre est obsolète dans
+ *        l'API Contents (2022-11-28) et une seule source de vérité de branche
+ *        doit exister dans le projet.
+ * @return {{code:number, deleted:boolean, commitSha:string, path:string}}
+ * @throws {Error} si un verrou d'écriture est fermé, si le chemin n'est pas un
+ *         article, si le SHA est absent, ou si l'API répond en erreur
+ */
+function deleteFile(opt) {
+  // Point d'entrée UNIQUE d'écriture : aucune requête réseau avant cette ligne.
+  assertWritesAllowed();
+
+  var path = String(opt && opt.path ? opt.path : '');
+  validateArticleFilePath(path);
+
+  // SHA obligatoire : garde-fou contre la suppression récursive de répertoires.
+  var sha = String(opt && opt.sha ? opt.sha : '');
+  if (!sha) {
+    throw new Error(
+      'Suppression refusée : SHA obligatoire pour ' + path +
+      ' (il empêche toute suppression récursive).'
+    );
+  }
+
+  var response = ghRequest(
+    'delete',
+    '/repos/' + getGithubOwner() + '/' + getGithubRepository() + '/contents/' + path,
+    // `sha` est EXIGE par l'API Contents : sans lui l'appel échoue (422) au
+    // lieu de supprimer, et il interdit toute suppression récursive. Il est
+    // transmis à l'identique, jamais recalculé.
+    {
+      message: String(opt.message || ('Suppression : ' + path)),
+      sha: sha
+    }
+  );
+
+  var data = JSON.parse(response.getContentText());
+  // L'API renvoie `content: null` sur un DELETE réussi : le SHA du fichier
+  // supprimé n'est donc PAS relisible, seul celui du commit l'est.
+  return {
+    code: response.getResponseCode(),
+    deleted: true,
+    commitSha: String((data && data.commit && data.commit.sha) || ''),
+    path: path
+  };
+}

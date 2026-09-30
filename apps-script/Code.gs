@@ -37,6 +37,8 @@ function onOpen() {
       .addItem('🚀 Publier l\'article sélectionné', 'publishSelectedArticle')
       .addItem('🚀 Publier le prochain article READY', 'publishNextReadyArticle')
       .addSeparator()
+      .addItem('🗑️ Supprimer l\'article publié', 'deleteSelectedPublishedArticle')
+      .addSeparator()
       .addItem('⚠️ Voir les erreurs', 'menuShowErrors')
       .addToUi();
   } catch (e) {
@@ -50,6 +52,49 @@ function onOpen() {
 
 function menuConfiguration() {
   showDialog('Configuration', buildConfigurationHtml());
+}
+
+/**
+ * Supprime l'article PUBLIÉ situé sur la ligne sélectionnée (D5).
+ *
+ * Cette entrée est volontairement ISOLÉE des actions de publication, par un
+ * séparateur de part et d'autre : une suppression définitive ne doit jamais
+ * être à un clic d'une publication, ni se confondre avec elle.
+ *
+ * Le parcours comporte DEUX étapes et une seule confirmation :
+ *   1. sélection + validation SANS aucun appel GitHub, puis affichage du chemin
+ *      exact qui sera supprimé ;
+ *   2. confirmation explicite → `deleteArticleById(id)`, qui RELIT la ligne et
+ *      revalide tout avant d'écrire.
+ *
+ * L'opérateur ne saisit jamais de chemin : le chemin affiché est celui de la
+ * colonne GITHUB_PATH, après contrôle d'identité.
+ */
+function deleteSelectedPublishedArticle() {
+  try {
+    var selection = selectActivePublishedArticle();
+    if (!selection.ok) {
+      logWarning('delete_selected', selection.error, {});
+      alertOrLog('Suppression : ÉCHEC\n\n' + selection.error);
+      return failure('NO_SELECTION', selection.error, null);
+    }
+
+    var shown = showDeleteArticleDialog(selection.article.ID);
+    if (!shown.ok) {
+      logWarning('delete_selected', shown.error, {});
+      alertOrLog('Suppression : ÉCHEC\n\n' + shown.error);
+      return failure('NO_SELECTION', shown.error, selection.article);
+    }
+
+    // Ici s'arrête l'entrée de menu : la suppression n'a lieu qu'après
+    // validation explicite dans le dialogue (bouton SUPPRIMER DÉFINITIVEMENT).
+    return { ok: true, code: 'AWAITING_CONFIRMATION', message: shown.path };
+  } catch (e) {
+    var message = redact(String(e && e.message ? e.message : e));
+    logError('delete_selected', message, {});
+    alertOrLog('Suppression : ÉCHEC\n\n' + message);
+    return failure('UNEXPECTED', message, null);
+  }
 }
 
 /** Crée les feuilles manquantes et les en-têtes attendus. */

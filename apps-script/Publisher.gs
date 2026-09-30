@@ -37,6 +37,16 @@ var PUBLISH_LOCK_MS = 1000;
 var PUBLISH_CONFLICT_RETRIES = 1;
 
 /**
+ * Attente du verrou de script pour une SUPPRESSION (D5).
+ *
+ * Volontairement IDENTIQUE à PUBLISH_LOCK_MS : une suppression et une
+ * publication ne doivent jamais se chevaucher, et le même délai évite qu'une
+ * suppression patiente bloque une publication (ou l'inverse) plus longtemps que
+ * nécessaire. Le verrou reste commun et unique : toute écriture du projet y passe.
+ */
+var DELETE_LOCK_MS = 1000;
+
+/**
  * Statuts qui interdisent de relancer une publication.
  *
  * Construit à l'appel, et NON à la charge du fichier : Apps Script charge les
@@ -309,6 +319,721 @@ function runPublishPipeline(id, opts) {
     validation: render.validation,
     warnings: render.warnings
   });
+}
+
+/* ==========================================================================
+ * D5 — SUPPRESSION D'UN ARTICLE PUBLIÉ
+ * ==========================================================================
+ *
+ * Cette section est STRICTEMENT SÉPARÉE de la publication (`runPublishPipeline`)
+ * et n'en réutilise que trois briques : `selectActiveArticle()` (sélection),
+ * `publishGate()` (verrou d'écriture) et `success()`/`failure()` (résultat).
+ *
+ * `publishArticle()` n'est PAS modifié. Aucun de ses chemins n'est réutilisé
+ * pour la suppression : elle ne rend pas de HTML, ne lit pas de gabarit et
+ * surtout ne crée aucun état transitoire — il n'existe volontairement pas de
+ * statut `DELETING`, donc aucune fenêtre pendant laquelle la ligne pourrait
+ * être laissée figée par une exception.
+ *
+ * ORDRE IMPOSÉ (invariant central de la fonctionnalité) :
+ *   validation unique → identité → verrou → assertWritesAllowed()
+ *   → GET frais → égalité des SHA → index de catégorie → hub → sitemap
+ *   → DELETE de l'article → état de la ligne → résultat → journal.
+ *
+ * Pourquoi le fichier article est supprimé EN DERNIER : si une écriture d'index
+ * échoue après le DELETE, l'index est en retard alors que le fichier est déjà
+ * absent — état réparable par republication. L'inverse (index à jour, fichier
+ * encore présent) laisserait un lien mort visible du public, plus difficile à
+ * détecter et à corriger.
+ *
+ * AUCUN retour en arrière : ce qui a été écrit reste écrit. L'état d'échec
+ * observable est `STATUS = ERROR` avec les champs GitHub CONSERVÉS, afin que
+ * l'opérateur puisse diagnostiquer (et ré-essayer) sans avoir perdu le SHA.
+ */
+
+/** Statut unique exigé pour pouvoir supprimer. */
+var DELETE_REQUIRED_STATUS = 'PUBLISHED';
+
+/**
+ * Point d'entrée unique de la suppression, appelé par Code.gs.
+ *
+ * @param {string} id ID de la ligne (jamais un numéro de ligne, jamais un chemin)
+ * @return {Object} résultat `success()`/`failure()`
+ */
+function deleteArticleById(id) {
+  var wanted = String(id === null || id === undefined ? '' : id).trim();
+  if (!wanted) {
+    return failure('NO_ARTICLE', 'Aucun article sélectionné (identifiant absent).', null);
+  }
+  return deleteArticle(wanted);
+}
+
+/**
+ * Supprime l'article identifié par `id`.
+ *
+ * @param {string} id
+ * @return {Object} résultat normalisé
+ */
+function deleteArticle(id) {
+  var waitMs = DELETE_LOCK_MS;
+
+  /* --- 1. Lecture de la ligne ------------------------------------------- */
+  var article = findArticleById(id);
+  if (!article) return failure('NO_ARTICLE', 'Ligne introuvable : ' + id, null);
+
+  /* --- 2. Verrou de script ---------------------------------------------- */
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(waitMs)) {
+    // Suppression concurrente : aucune ligne n'est touchée, aucune requête.
+    logDeleteEvent(LEVEL.WARNING, 'Suppression ignorée : une opération est déjà en cours', {
+      articleId: article.ID,
+      slug: article.SLUG,
+      status: article.STATUS,
+      githubPath: article.GITHUB_PATH
+    });
+    return failure('LOCK_BUSY',
+      'Une opération est déjà en cours. Aucune action.', article);
+  }
+
+  try {
+    return runDeletePipeline(article.ID);
+  } catch (e) {
+    // Filet de sécurité : une exception inattendue ne doit ni laisser un commit
+    // à moitié supprimé ni masquer la cause. La ligne passe en ERROR, les champs
+    // GitHub sont CONSERVÉS (le diagnostic exige le SHA d'origine).
+    var message = redact(String(e && e.message ? e.message : e));
+    try {
+      markDeleteError(article.ID, message);
+    } catch (writeError) {
+      console.error('Impossible de marquer ERROR : ' + redact(String(writeError && writeError.message)));
+    }
+    logDeleteEvent(LEVEL.ERROR, message, {
+      articleId: article.ID,
+      slug: article.SLUG,
+      status: STATUS.ERROR,
+      githubPath: article.GITHUB_PATH
+    });
+    return failure('UNEXPECTED', message, article, { status: STATUS.ERROR });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Chaîne d'opérations sous verrou. La ligne est RELUE au début : la validation
+ * porte sur l'état courant, jamais sur celui présenté dans le dialogue.
+ */
+function runDeletePipeline(id) {
+  /* --- 1. Ligne présente et cohérente ----------------------------------- */
+  var article = findArticleById(id);
+  if (!article) return failure('NO_ARTICLE', 'Ligne introuvable : ' + id, null);
+
+  /* --- 2. Contrôles de champ (chemin, SHA, catégorie, slug) ------------- */
+  /**
+   * Les CHAMPS passent avant le STATUT, et c'est délibéré.
+   *
+   * Après une suppression réussie, la ligne repasse READY et `GITHUB_PATH`
+   * est vidé : la refuser sur `MISSING_PATH` (« cette ligne est déjà
+   * réconciliée, il n'y a rien à supprimer ») est plus juste que
+   * `NOT_PUBLISHED`, qui laisserait croire que la ligne attend encore sa
+   * première publication. L'ordre ne coûte rien : ces contrôles sont purely
+   * structurels, ils n'effectuent AUCUN appel GitHub, et ils sont vrais pour
+   * toute ligne PUBLISHED cohérente comme faux pour toute ligne falsifiée.
+   */
+  var check = checkDeletableFields(article);
+  if (!check.ok) {
+    logDeleteEvent(LEVEL.WARNING, check.message, {
+      articleId: id, slug: article.SLUG, status: article.STATUS,
+      githubPath: article.GITHUB_PATH
+    });
+    return failure(check.code, check.message, article);
+  }
+  var identity = check.identity;
+
+  /* --- 3. Statut : PUBLISHED exigé -------------------------------------- */
+  if (String(article.STATUS || '') !== DELETE_REQUIRED_STATUS) {
+    var blocked = 'Statut « ' + (article.STATUS || '(vide)') + ' » : seuls les articles ' +
+      DELETE_REQUIRED_STATUS + ' peuvent être supprimés. Aucun appel GitHub.';
+    logDeleteEvent(LEVEL.WARNING, blocked, {
+      articleId: id, slug: article.SLUG, status: article.STATUS,
+      githubPath: identity.path
+    });
+    return failure('NOT_PUBLISHED', blocked, article);
+  }
+
+  /* --- 4. Verrou d'écriture, TOUT AU DEBUT ------------------------------ */
+  var gate = publishGate();
+  if (!gate.ok) {
+    // Un refus de verrou n'est PAS une erreur d'article : la ligne reste
+    // PUBLISHED, donc supprimable plus tard. Aucun appel GitHub n'a eu lieu.
+    logDeleteEvent(LEVEL.ERROR, gate.message, {
+      articleId: id,
+      slug: article.SLUG,
+      status: DELETE_REQUIRED_STATUS,
+      githubPath: identity.path
+    });
+    return failure(gate.code, gate.message, article, {
+      status: DELETE_REQUIRED_STATUS,
+      githubPath: identity.path,
+      testMode: gate.testMode
+    });
+  }
+
+  /* --- 5. Lecture fraîche du dépôt + égalité des SHA --------------------- */
+  /**
+   * Le SHA enregistré est-il encore celui du fichier EN LIGNE ?
+   *
+   * C'est le garde-fou le plus important de toute la fonctionnalité : sans lui,
+   * un operator qui republie entre-temps verrait sa nouvelle version supprimée
+   * alors que la feuille décrit l'ancienne. On compare donc SHA à SHA et l'on
+   * refuse si le dépôt a bougé.
+   */
+  var remote = null;
+  try {
+    remote = getFile(identity.path);
+  } catch (e) {
+    return failDeleteToError(id, article, 'REMOTE_READ',
+      redact(String(e && e.message ? e.message : e)));
+  }
+  if (!remote) {
+    // Exigence explicite : le fichier doit EXISTER avant toute écriture. Une
+    // suppression « au cas où » d'un fichier déjà absent produirait des
+    // retraits d'index hasardeux pour rien ; l'opérateur doit d'abord
+    // constater l'écart. Aucune écriture n'est faite dans ce cas.
+    var notFound = 'Fichier distant absent : ' + identity.path +
+      '. Aucune écriture. Vérifiez que la ligne correspond bien à un article publié.';
+    logDeleteEvent(LEVEL.ERROR, notFound, {
+      articleId: id, slug: article.SLUG, status: article.STATUS, githubPath: identity.path
+    });
+    return failure('REMOTE_NOT_FOUND', notFound, article, {
+      githubPath: identity.path, indexed: null, indexWrites: 0
+    });
+  }
+  if (String(remote.sha || '') !== identity.sha) {
+    var drift = 'SHA distant différent de celui enregistré (attendu ' +
+      identity.sha.slice(0, 12) + ', trouvé ' + String(remote.sha).slice(0, 12) +
+      '). Article modifié depuis sa publication : suppression refusée pour ' +
+      'ne pas écraser une version plus récente.';
+    logDeleteEvent(LEVEL.ERROR, drift, {
+      articleId: id, slug: article.SLUG, status: article.STATUS, githubPath: identity.path
+    });
+    return failure('SHA_DRIFT', drift, article, {
+      githubPath: identity.path, indexed: null, indexWrites: 0
+    });
+  }
+
+  /* --- 6. Index statiques : catégorie → hub → sitemap ------------------- */
+  var indexes = removeIndexesForArticle(article, {
+    href: identity.sitePath,
+    categorySlug: identity.categorySlug,
+    categoryName: identity.categoryName,
+    slug: article.SLUG
+  });
+
+  /* --- 7. Suppression du fichier article (EN DERNIER) ------------------- */
+  var deleted = null;
+  try {
+    deleted = deleteFile({
+      path: identity.path,
+      sha: identity.sha,
+      message: deleteCommitMessage(article)
+    });
+  } catch (e) {
+    // Les index peuvent avoir été nettoyés : il n'y a pas de retour en arrière.
+    // La ligne passe en ERROR, champs GitHub CONSERVÉS, afin que l'opérateur
+    // puisse relancer une suppression (après remise en PUBLISHED) ou, mieux,
+    // vérifier ce qui a déjà été retiré.
+    var wiped = (indexes.warnings || []).map(function (w) { return w.code; });
+    if (wiped.length) {
+      indexes.warnings.push({
+        code: 'INDEX_ALREADY_CLEANED',
+        message: 'Des index avaient déjà été nettoyés avant l\'échec de la suppression : ' +
+          'vérifiez leur état avant de relancer.'
+      });
+    }
+    return failDeleteToError(id, article, 'DELETE_FAILED',
+      redact(String(e && e.message ? e.message : e)), indexes);
+  }
+
+  /* --- 8. Ligne remise à zéro ------------------------------------------ */
+  /**
+   * PUBLISHED → READY, et les trois champs GitHub sont VIDÉS.
+   *
+   * `PUBLISHED_AT` est CONSERVÉ : c'est l'historique de première publication, il
+   * ne décrit pas le fichier distant. `TITLE`, `CONTENT` et les métadonnées SEO
+   * sont conservés : la ligne redevient un brouillon publiable, pas une ligne
+   * vide. `ERROR` est remis à zéro car la suppression a réussi.
+   */
+  updateArticleFields(id, {
+    STATUS: STATUS.READY,
+    GITHUB_PATH: '',
+    GITHUB_SHA: '',
+    GITHUB_COMMIT: '',
+    ERROR: ''
+  });
+
+  var after = findArticleById(id) || article;
+
+  /* --- 9. Journal -------------------------------------------------------- */
+  logDeleteEvent(LEVEL.SUCCESS, 'Article supprimé du dépôt', {
+    articleId: id,
+    slug: article.SLUG,
+    status: STATUS.READY,
+    githubPath: identity.path,
+    details: {
+      sitePath: identity.sitePath,
+      testMode: false,
+      categoryIndexWrites: indexes.categoryIndex.changed === true,
+      hubWrites: indexes.hub.changed === true,
+      sitemapWrites: indexes.sitemap.changed === true,
+      indexWrites: indexes.writes,
+      categoryTotal: typeof indexes.categoryIndex.count === 'number' ? indexes.categoryIndex.count : -1,
+      commitSha: deleted.commitSha,
+      warnings: (indexes.warnings || []).length
+    }
+  });
+
+  /* --- 10. Résultat ------------------------------------------------------ */
+  var warnings = indexes.warnings || [];
+  return success(after, {
+    code: 'DELETED',
+    message: warnings.length
+      ? 'Article supprimé, mais ' + warnings.length + ' index(s) à vérifier.'
+      : 'Article supprimé du dépôt et des index.',
+    status: STATUS.READY,
+    githubPath: '',
+    githubSha: '',
+    githubCommit: '',
+    sitePath: identity.sitePath,
+    categoryIndex: indexes.categoryIndex,
+    hub: indexes.hub,
+    sitemap: indexes.sitemap,
+    indexed: indexes.ok === true ? true : false,
+    indexWrites: indexes.writes,
+    removedCommit: deleted.commitSha,
+    warnings: warnings
+  });
+}
+
+/**
+ * Contrôles de champ, SANS aucun appel GitHub.
+ *
+ * Séparés de `runDeletePipeline` pour être réutilisables par le dialogue de
+ * confirmation : celui-ci doit pouvoir afficher un chemin calculé de façon
+ * fiable, sans dupliquer les règles.
+ *
+ * Le contrôle d'IDENTITÉ est le cœur : `GITHUB_PATH` doit être exactement le
+ * chemin DÉRIVÉ de CATEGORY + table des catégories + SLUG. C'est ce qui empêche
+ * qu'une valeur de feuille falsifiée (ou un reste de copier-coller) ne
+ * désigne le fichier d'un autre article.
+ *
+ * @return {{ok:boolean, code?:string, message?:string, identity?:Object}}
+ */
+function checkDeletableFields(article) {
+  if (!article || !article.ID) {
+    return { ok: false, code: 'NO_ARTICLE', message: 'Ligne absente ou sans ID.' };
+  }
+
+  var storedPath = String(article.GITHUB_PATH === null || article.GITHUB_PATH === undefined ? '' : article.GITHUB_PATH).trim();
+  var storedSha = String(article.GITHUB_SHA === null || article.GITHUB_SHA === undefined ? '' : article.GITHUB_SHA).trim();
+  var slug = String(article.SLUG === null || article.SLUG === undefined ? '' : article.SLUG).trim();
+
+  if (!storedPath) {
+    return {
+      ok: false, code: 'MISSING_PATH',
+      message: 'GITHUB_PATH vide : rien à supprimer. Repassez la ligne en PUBLISHED après republication.'
+    };
+  }
+  if (!storedSha) {
+    return {
+      ok: false, code: 'MISSING_SHA',
+      message: 'GITHUB_SHA vide : suppression impossible (le SHA protège d’une suppression d’un fichier non publié).'
+    };
+  }
+  if (!isValidSlug(slug)) {
+    return {
+      ok: false, code: 'INVALID_SLUG',
+      message: 'SLUG invalide : « ' + slug + ' ». Aucune suppression.'
+    };
+  }
+
+  // Catégorie obligatoire, et EXIGÉE : une catégorie absente est un refus
+  // (`MISSING_CATEGORY`), jamais une création. Elle est distinguée de la
+  // catégorie non mappée (`UNKNOWN_CATEGORY`) parce que les deux erreurs n'appelent
+  // pas la même correction de l'opérateur.
+  var categoryName = String(article.CATEGORY === null || article.CATEGORY === undefined ? '' : article.CATEGORY).trim();
+  if (!categoryName) {
+    return {
+      ok: false, code: 'MISSING_CATEGORY',
+      message: 'CATEGORY vide : la catégorie est obligatoire pour reconstituer le chemin. Aucune suppression.'
+    };
+  }
+
+  // Catégorie connue → slug de catégorie. Une catégorie inconnue est un refus,
+  // jamais une création (même politique que resolveCategory()).
+  var category;
+  try {
+    category = resolveCategory(categoryName);
+  } catch (e) {
+    return {
+      ok: false, code: 'UNKNOWN_CATEGORY',
+      message: redact(String(e && e.message ? e.message : e))
+    };
+  }
+
+  var expectedPath = blogPath(category.slug, slug);
+  if (storedPath !== expectedPath) {
+    return {
+      ok: false, code: 'PATH_MISMATCH',
+      message: 'GITHUB_PATH incohérent : « ' + storedPath + ' » alors que CATEGORY=' +
+        category.name + ' et SLUG=' + slug + ' donnent « ' + expectedPath +
+        ' ». Aucune suppression (protection contre une ligne falsifiée).'
+    };
+  }
+
+  // Dernière barrière, purely structurelle : refuse hub, sitemap, gabarit,
+  // index de catégorie, répertoire, traversée et jokers.
+  try {
+    validateArticleFilePath(storedPath);
+  } catch (e) {
+    return {
+      ok: false, code: 'INVALID_PATH',
+      message: redact(String(e && e.message ? e.message : e))
+    };
+  }
+
+  return {
+    ok: true,
+    identity: {
+      path: expectedPath,
+      sha: storedSha,
+      sitePath: sitePath(category.slug, slug),
+      categorySlug: category.slug,
+      categoryName: category.name,
+      slug: slug,
+      publishedAt: String(article.PUBLISHED_AT || '')
+    }
+  };
+}
+
+/**
+ * Article situé sur la ligne sélectionnée, pour SUPPRESSION.
+ *
+ * Garde DÉDIÉ, et non réutilisation de `selectActiveArticle()` : ce dernier ne
+ * connaît que `getActiveCell()`, qui renvoie la cellule active même quand
+ * l'opérateur a sélectionné trois lignes. Une suppression est irréversible, et
+ * interpréter une plage de trois lignes comme « le premier article » serait
+ * exactement le type de choix non confirmé qu'un garde doit interdire. Le plan
+ * D5.6 l'impose, l'invariant 1 avec lui (« une seule ligne sélectionnée,
+ * exactement »).
+ *
+ * On lit donc la PLAGE (`getActiveRange().getNumRows()`), jamais la cellule
+ * seule, et chaque refus porte un code distinct pour que l'opérateur sache
+ * quoi corriger :
+ *
+ *   WRONG_SHEET      la feuille active n'est pas `Articles`
+ *   EMPTY_SELECTION  aucune plage sélectionnée
+ *   MULTIPLE_ROWS    plus d'une ligne sélectionnée
+ *   HEADER_ROW       la ligne d'en-tête est ciblée
+ *   NO_ARTICLE       la ligne sélectionnée ne contient aucun article
+ *   NOT_PUBLISHED    la ligne n'est pas `PUBLISHED`
+ *
+ * La ligne d'en-tête est doublement protégée : par `getRow() >= 2`, et par le
+ * contrôle de statut (un en-tête contient la chaîne littérale `STATUS`, jamais
+ * `PUBLISHED`). La redondance est délibérée.
+ *
+ * AUCUN appel GitHub ici : ce garde ne fait que lire la feuille.
+ *
+ * @return {{ok:boolean, code?:string, error?:string, article?:Object}}
+ */
+function selectArticleForDeletion() {
+  var sheet = null;
+  try {
+    sheet = SpreadsheetApp.getActiveSheet();
+  } catch (e) {
+    sheet = null;
+  }
+  if (!sheet || String(sheet.getName()) !== SHEETS.ARTICLES) {
+    return {
+      ok: false,
+      code: 'WRONG_SHEET',
+      error: 'Sélectionnez une ligne de la feuille « ' + SHEETS.ARTICLES + ' ».'
+    };
+  }
+
+  // La PLAGE, pas la cellule : c'est la seule façon de distinguer une cellule
+  // d'une sélection de plusieurs lignes.
+  var range = null;
+  try {
+    range = sheet.getActiveRange();
+  } catch (e) {
+    range = null;
+  }
+  if (!range) {
+    return {
+      ok: false,
+      code: 'EMPTY_SELECTION',
+      error: 'Aucune sélection : cliquez sur la ligne de l’article à supprimer.'
+    };
+  }
+
+  var numRows = Number(range.getNumRows());
+  if (!(numRows >= 1)) {
+    return {
+      ok: false,
+      code: 'EMPTY_SELECTION',
+      error: 'Sélection vide : cliquez sur la ligne de l’article à supprimer.'
+    };
+  }
+  if (numRows > 1) {
+    return {
+      ok: false,
+      code: 'MULTIPLE_ROWS',
+      error: numRows + ' lignes sélectionnées : la suppression porte sur un seul ' +
+        'article. Sélectionnez uniquement la ligne voulue.'
+    };
+  }
+
+  var row = Number(range.getRow());
+  if (!(row >= 2)) {
+    return {
+      ok: false,
+      code: 'HEADER_ROW',
+      error: 'Ligne d\'en-tête sélectionnée : choisissez une ligne d\'article.'
+    };
+  }
+
+  // Une seule lecture, une seule vérité : `readArticles()` pilote par l'en-tête,
+  // comme le reste de l'application. `__row` identifie la ligne physique.
+  var rows = readArticles();
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].__row === row) {
+      var article = rows[i];
+      if (String(article.STATUS || '') !== DELETE_REQUIRED_STATUS) {
+        return {
+          ok: false,
+          code: 'NOT_PUBLISHED',
+          error: 'Statut « ' + (article.STATUS || '(vide)') + ' » : seuls les articles ' +
+            DELETE_REQUIRED_STATUS + ' peuvent être supprimés.',
+          article: article
+        };
+      }
+      return { ok: true, article: article };
+    }
+  }
+
+  return {
+    ok: false,
+    code: 'NO_ARTICLE',
+    error: 'Aucune ligne d\'article à la ligne ' + row + '.'
+  };
+}
+
+/**
+ * Article situé sur la ligne sélectionnée, VÉRIFIÉ supprimable.
+ *
+ * Enchaîne le garde de sélection DEDIE (`selectArticleForDeletion()`) puis les
+ * contrôles de CHAMPS et d'identité. Ces derniers n'effectuent AUCUN appel
+ * GitHub : ouvrir le dialogue ne doit rien déclencher.
+ *
+ * @return {{ok:boolean, code?:string, error?:string, article?:Object, identity?:Object}}
+ */
+function selectActivePublishedArticle() {
+  var picked = selectArticleForDeletion();
+  if (!picked.ok) return { ok: false, code: picked.code, error: picked.error };
+
+  var check = checkDeletableFields(picked.article);
+  if (!check.ok) return { ok: false, code: check.code, error: check.message };
+
+  return { ok: true, article: picked.article, identity: check.identity };
+}
+
+/**
+ * Journal du flux de suppression.
+ *
+ * `logWarning()` et `logError()` n'acceptent que `details` : ils déposent donc
+ * `githubPath` dans la colonne DETAILS (index 8) et laissent la colonne
+ * GITHUB_PATH (index 6) VIDE. Or c'est précisément cette colonne qui permet,
+ * depuis le seul journal, de retrouver le fichier concerné — sans elle, un
+ * échec de suppression n'était pas rattachable à un article. On appelle donc
+ * `logEvent()` directement, en s'appuyant sur le même objet que
+ * `logSuccess()` ; `Logger.gs` n'est pas modifié.
+ *
+ * Le message est systématiquement passé par `redact()` : aucune trace de jeton
+ * ni de donnée sensible ne doit atteindre la feuille Logs.
+ *
+ * @param {string} level LEVEL.INFO | LEVEL.SUCCESS | LEVEL.WARNING | LEVEL.ERROR
+ * @param {string} message
+ * @param {{articleId?:string, slug?:string, status?:string,
+ *          githubPath?:string, details?:Object}} [fields]
+ */
+function logDeleteEvent(level, message, fields) {
+  var f = fields || {};
+  try {
+    logEvent({
+      level: level,
+      action: 'delete',
+      articleId: f.articleId,
+      slug: f.slug,
+      status: f.status,
+      githubPath: f.githubPath,
+      message: redact(String(message === null || message === undefined ? '' : message)),
+      details: f.details
+    });
+  } catch (e) {
+    // Un journal ne doit JAMAIS interrompre une suppression.
+    console.error('Échec journalisation (delete) : ' + redact(String(e && e.message ? e.message : e)));
+  }
+}
+
+/** Message de commit déterministe : deux exécutions donnent le même texte. */
+function deleteCommitMessage(article) {
+  return 'Suppression : ' + String((article && article.SLUG) || (article && article.ID) || 'article');
+}
+
+/** PUBLISHED → ERROR, en conservant les champs GitHub (diagnostic). */
+function markDeleteError(id, message) {
+  updateArticleFields(id, { STATUS: STATUS.ERROR, ERROR: redact(String(message || '')) });
+}
+
+/** Échec contrôlé de la suppression : ligne en ERROR, journal, résultat. */
+function failDeleteToError(id, article, code, message, indexes) {
+  var safe = redact(String(message || ''));
+  markDeleteError(id, safe);
+  logDeleteEvent(LEVEL.ERROR, safe, {
+    articleId: id,
+    slug: article && article.SLUG,
+    status: STATUS.ERROR,
+    githubPath: article && article.GITHUB_PATH
+  });
+  var failed = failure(code, safe, article, {
+    status: STATUS.ERROR,
+    indexed: indexes ? (indexes.ok === true ? true : false) : null,
+    indexWrites: indexes ? indexes.writes : 0,
+    warnings: (indexes && indexes.warnings) || []
+  });
+  var fresh = findArticleById(id);
+  if (fresh) failed.status = fresh.STATUS;
+  return failed;
+}
+
+/**
+ * Confirmation explicite : « Annuler » par défaut.
+ *
+ * Le dialogue ne propose JAMAIS un champ modifiable : le chemin affiché est
+ * celui qui sera supprimé, et il ne peut pas être remplacé.
+ *
+ * @param {string} id
+ */
+function showDeleteArticleDialog(id) {
+  var wanted = String(id === null || id === undefined ? '' : id).trim();
+  if (!wanted) return { ok: false, error: 'Aucun article sélectionné.' };
+
+  var article = findArticleById(wanted);
+  if (!article) return { ok: false, error: 'Ligne introuvable : ' + wanted };
+
+  // Même validation que la confirmation, mais SANS écriture : le dialogue ne
+  // doit jamais valider une suppression qu'il ne pourrait pas exécuter.
+  var check = checkDeletableFields(article);
+  if (!check.ok) return { ok: false, error: check.message };
+  if (String(article.STATUS || '') !== DELETE_REQUIRED_STATUS) {
+    return {
+      ok: false,
+      error: 'Statut « ' + (article.STATUS || '(vide)') + ' » : seuls les articles ' +
+        DELETE_REQUIRED_STATUS + ' peuvent être supprimés.'
+    };
+  }
+
+  var view = renderDeleteDialogHtml(article, check.identity);
+  SpreadsheetApp.getUi().showModalDialog(
+    HtmlService.createHtmlOutput(view).setWidth(520).setHeight(340),
+    'Supprimer l’article : ' + (article.TITLE || article.SLUG)
+  );
+  return { ok: true, articleId: article.ID, path: check.identity.path };
+}
+
+/**
+ * HTML du dialogue de confirmation.
+ * Function PUR : toute donnée de la feuille est échappée.
+ */
+function renderDeleteDialogHtml(article, identity) {
+  return [
+    '<div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.5;padding:4px">',
+    '<p style="margin:0 0 10px"><b>' + escHtml(article.TITLE || article.SLUG) + '</b></p>',
+    '<p style="margin:0 0 12px;color:#666;font-size:12px">',
+    escHtml(identity.categoryName),
+    identity.publishedAt ? ' · publié le ' + escHtml(identity.publishedAt) : '',
+    '</p>',
+    '<p style="margin:0 0 10px"><b>Cette suppression est définitive.</b></p>',
+    '<p style="margin:0 0 10px">Le fichier suivant sera supprimé du dépôt, ',
+    'ainsi que sa référence dans l’index de catégorie, le hub du Blog et le sitemap.</p>',
+    '<p style="margin:0 0 4px">Fichier :</p>',
+    '<code style="display:block;font-family:monospace;background:#f4f4f5;padding:6px;',
+    'word-break:break-all;border-radius:3px">',
+    escHtml(identity.path),
+    '</code>',
+    '<p style="margin:8px 0 14px;color:#666;font-size:12px">SHA : ',
+    escHtml(identity.sha), '</p>',
+    '<p style="margin:0 0 14px;color:#b45309">',
+    'Cette action est irréversible. Il n’y a pas de retour arrière.',
+    '</p>',
+    '<div style="text-align:right">',
+    '<button type="button" id="cancel" autofocus ',
+    'style="margin-right:8px;padding:6px 14px">Annuler</button>',
+    '<button type="button" id="confirm" ',
+    'style="padding:6px 14px;color:#fff;background:#b91c1c;border:1px solid #b91c1c;',
+    'border-radius:3px;cursor:pointer">SUPPRIMER DÉFINITIVEMENT</button>',
+    '</div>',
+    '<script>',
+    'function cancelDelete(){google.script.host.close()}',
+    'document.getElementById("cancel").addEventListener("click",cancelDelete);',
+    'document.getElementById("confirm").addEventListener("click",function(){',
+    'var b=this;b.disabled=true;',
+    'google.script.run.withSuccessHandler(function(r){',
+    'document.getElementById("cancel").textContent=r&&r.ok?"Fermer":"Annulé";',
+    'b.disabled=false;',
+    '}).withFailureHandler(function(e){alert(String(e))})',
+    '.deleteArticleById(' + JSON.stringify(String(article.ID)) + ');});',
+    '</script>',
+    '</div>'
+  ].join('');
+}
+
+/**
+ * Compte rendu lisible de la suppression.
+ * @param {Object} result
+ * @return {string}
+ */
+function formatDeleteReport(result) {
+  if (!result) return 'Suppression : aucun résultat.';
+
+  var lines = [];
+  lines.push(result.ok ? 'Suppression : RÉUSSIE' : 'Suppression : ÉCHEC');
+  lines.push('');
+  if (result.title || result.slug) {
+    lines.push('Article   : ' + (result.title || result.slug) +
+      (result.slug ? ' (' + result.slug + ')' : ''));
+  }
+  if (result.statusBefore) lines.push('Statut    : ' + result.statusBefore + ' → ' + result.status);
+  if (result.message) lines.push('Détail    : ' + result.message);
+  if (result.sitePath) lines.push('URL       : ' + buildSiteUrl(result.sitePath));
+
+  if (result.ok) {
+    if (result.indexed === false) {
+      lines.push('Index     : À VÉRIFIER (fichier supprimé, un index est en retard)');
+    } else {
+      lines.push('Index     : ' + (result.indexWrites || 0) + ' index mis à jour');
+    }
+    if (result.removedCommit) lines.push('Commit    : ' + result.removedCommit.slice(0, 12));
+  }
+
+  if (result.warnings && result.warnings.length) {
+    lines.push('', 'Avertissements :');
+    result.warnings.slice(0, 5).forEach(function (w) {
+      lines.push('- ' + ((w.code ? w.code + ' ' : '') + w.message));
+    });
+  }
+  return lines.join('\n');
 }
 
 /* -------------------------------------------------------------------------- */

@@ -56,6 +56,7 @@ function makeSheet(headerRow, rows, name) {
     _rows: (rows || []).map((r) => r.slice()),
     _name: name || '',
     _activeCell: { row: 1, column: 1 },
+    _activeRange: null,
 
     getName() { return this._name; },
     setName(v) { this._name = v; return this; },
@@ -71,6 +72,49 @@ function makeSheet(headerRow, rows, name) {
         setRow: (r) => { cell.row = r; },
         setColumn: (c) => { cell.column = c; }
       };
+    },
+
+    /**
+     * Sélection courante. Par défaut elle se réduit à la cellule active, comme
+     * dans Apps Script : un test seleccionnant plusieurs lignes appelle
+     * setActiveRange(). `getNumRows()` est indispensable pour prouver
+     * l'invariant « exactement une ligne sélectionnée » : `getActiveCell()`
+     * seul ne distingue pas une cellule d'une plage de trois lignes.
+     */
+    getActiveRange() {
+      // Apps Script renvoie `null` quand rien n'est sélectionné (feuille non
+      // active par exemple) : un garde doit savoir traiter ce cas.
+      if (this._noActiveRange) return null;
+      const cell = this._activeCell;
+      const range = this._activeRange || {
+        row: cell.row, column: cell.column, numRows: 1, numColumns: 1
+      };
+      return {
+        getRow: () => range.row,
+        getColumn: () => range.column,
+        getNumRows: () => range.numRows,
+        getNumColumns: () => range.numColumns
+      };
+    },
+
+    /** Simule la sélection d'une plage (utilisé par les gardes destructifs). */
+    setActiveRange(row, column, numRows, numColumns) {
+      this._noActiveRange = false;
+      this._activeRange = {
+        row: row,
+        column: column,
+        numRows: numRows === undefined ? 1 : numRows,
+        numColumns: numColumns === undefined ? 1 : numColumns
+      };
+      this._activeCell = { row: row, column: column };
+      return this;
+    },
+
+    /** Simule l'absence de toute sélection : `getActiveRange()` -> `null`. */
+    clearActiveRange() {
+      this._noActiveRange = true;
+      this._activeRange = null;
+      return this;
     },
 
     /** Lecture d'une cellule (1 = en-tête, 2+ = données). */
@@ -199,7 +243,9 @@ function makeFetchMock(routes) {
  * Construit un contexte isolé avec les doublures.
  *
  * @param {{sheets?:Object, properties?:Object, fetchImpl?:Function,
- *          lockAvailable?:boolean, activeCell?:{row:number,column:number}}} [opts]
+ *          lockAvailable?:boolean, activeCell?:{row:number,column:number},
+ *          activeRange?:{row:number,column:number,numRows:number,numColumns:number},
+ *          noActiveRange?:boolean}} [opts]
  * @return {{ctx:Object, helpers:Object}}
  */
 function createContext(opts) {
@@ -219,6 +265,30 @@ function createContext(opts) {
     if (target) target._activeCell = { row: options.activeCell.row, column: options.activeCell.column || 1 };
   }
 
+  // Plage sélectionnée : indispensable pour prouver l'invariant « exactement
+  // une ligne », qu'aucun garde ne peut déduire de `getActiveCell()` seul.
+  // `activeCell` reste prioritaire pour la cellule ancre, comme dans Apps Script.
+  if (options.activeRange && sheets.Articles) {
+    const r = options.activeRange;
+    sheets.Articles.setActiveRange(
+      r.row,
+      r.column === undefined ? 1 : r.column,
+      r.numRows === undefined ? 1 : r.numRows,
+      r.numColumns === undefined ? 1 : r.numColumns
+    );
+  }
+
+  // Aucune sélection du tout : `getActiveRange()` doit répondre `null`.
+  if (options.noActiveRange && sheets.Articles) {
+    sheets.Articles.clearActiveRange();
+  }
+
+  // Feuille active simulée : `Articles` par défaut, comme un tableur à l'ouverture.
+  // Un test de garde destructif doit pouvoir prouver le refus quand l'opérateur
+  // travaille ailleurs : `activeSheet: 'Logs'`.
+  const activeSheetName = options.activeSheet || 'Articles';
+  const readActiveSheet = () => sheets[activeSheetName] || null;
+
   const spreadsheetMethods = () => ({
     getSheetByName: (name) => sheets[name] || null,
     insertSheet: (name) => {
@@ -226,7 +296,7 @@ function createContext(opts) {
       sheets[name] = created;
       return created;
     },
-    getActiveSheet: () => sheets.Articles || null
+    getActiveSheet: () => readActiveSheet()
   });
 
   const SpreadsheetApp = {
@@ -237,7 +307,7 @@ function createContext(opts) {
       }
       return spreadsheetMethods();
     },
-    getActiveSheet: () => sheets.Articles || null,
+    getActiveSheet: () => readActiveSheet(),
     getUi: () => ui
   };
 
@@ -351,6 +421,7 @@ function createContext(opts) {
 function makeUiMock() {
   const items = [];
   const alerts = [];
+  const dialogs = [];
   const menu = {
     name: '',
     items: items,
@@ -361,9 +432,21 @@ function makeUiMock() {
   return {
     items: items,
     alerts: alerts,
+    dialogs: dialogs,
     createMenu(name) { menu.name = name; return menu; },
     alert(message) { alerts.push(String(message)); },
-    showModalDialog() {}
+    /**
+     * Capture le dialogue au lieu de l'ignorer. `showDialog()` construit un
+     * HtmlOutput via createHtmlOutput() : on en conserve le titre ET le HTML
+     * afin qu'un test puisse vérifier qu'un chemin y figure bien en clair, sans
+     * jamais provoquer d'effet de bord.
+     */
+    showModalDialog(output, title) {
+      dialogs.push({
+        title: String(title || ''),
+        html: output && output.getContent ? String(output.getContent()) : ''
+      });
+    }
   };
 }
 
@@ -493,6 +576,24 @@ function makeRepoMock(initialFiles, opt) {
         sha: sha
       });
       return respond(200, putResponse(rel, 'x', sha, 'commit-' + seq));
+    }
+
+    /**
+     * DELETE Contents : contrat réel de l'API — un SHA absent ou périmé fait
+     * échouer l'appel (409), et la réponse de succès renvoie `content: null`
+     * avec le commit créé. Le fichier disparaît donc réellement du dépôt mocké,
+     * ce qui rend l'idempotence observable par un simple GET suivant.
+     */
+    if (method === 'delete') {
+      const payload = JSON.parse(call.payload || '{}');
+      if (!files.has(rel)) return respond(404, { message: 'Not Found' });
+      if (!payload.sha) return respond(422, { message: 'sha is required' });
+      if (payload.sha !== files.get(rel).sha) {
+        return respond(409, { message: 'does not match ' + rel });
+      }
+      seq += 1;
+      files.delete(rel);
+      return respond(200, { content: null, commit: { sha: 'commit-delete-' + seq } });
     }
 
     return respond(405, { message: 'Method Not Allowed' });
