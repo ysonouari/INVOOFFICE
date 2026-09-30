@@ -234,6 +234,25 @@ function runPublishPipeline(id, opts) {
     return failToError(id, article, 'GITHUB', redact(String(e && e.message ? e.message : e)));
   }
 
+  /* --- 5b. Index statiques du Blog (catégorie → hub → sitemap) ----------- */
+  /**
+   * Appelé UNIQUEMENT après le succès de l'écriture de l'article : rien ne
+   * n'est indexé si l'article n'est pas publié. L'ordre est imposé par
+   * updateIndexesForArticle(). La réconciliation est idempotente, elle est
+   * donc exécutée même quand `write.action === 'unchanged'` : un index peut
+   * être en retard alors que l'article, lui, est à jour.
+   *
+   * Jamais d'exception : l'article EST publié, seul son référencement statique
+   * peut être en retard. Les alertes remontent dans `warnings` (donc dans le
+   * résultat, le compte rendu opérateur et la feuille Logs) et le statut reste
+   * PUBLISHED. Aucun retour arrière, aucune suppression.
+   */
+  var indexes = updateIndexesForArticle(article, {
+    sitePath: render.sitePath,
+    publishedAt: publishedAt
+  });
+  render.warnings = (render.warnings || []).concat(indexes.warnings || []);
+
   /* --- 6. PUBLISHED ----------------------------------------------------- */
   var fields = {
     STATUS: STATUS.PUBLISHED,
@@ -250,9 +269,12 @@ function runPublishPipeline(id, opts) {
   var published = findArticleById(id);
   var action = write.action === 'unchanged' ? 'unchanged' : write.action;
 
+  // logSuccess(action, fields) : le message se place DANS l'objet de champs.
+  // Un troisième argument serait silencieusement ignoré et l'on perdrait du
+  // même coup la trace structurée de l'indexation.
   logSuccess('publish',
-    action === 'unchanged' ? 'Article déjà publié, aucun nouveau commit' : 'Article publié',
     {
+      message: action === 'unchanged' ? 'Article déjà publié, aucun nouveau commit' : 'Article publié',
       articleId: id,
       slug: article.SLUG,
       status: STATUS.PUBLISHED,
@@ -263,6 +285,8 @@ function runPublishPipeline(id, opts) {
         testMode: false,
         bytes: write.bytes,
         retried: write.retried === true,
+        indexed: indexes.indexed,
+        indexWrites: indexes.writes,
         warnings: (render.warnings || []).length
       }
     });
@@ -280,6 +304,8 @@ function runPublishPipeline(id, opts) {
     sitePath: render.sitePath,
     bytes: write.bytes,
     retried: write.retried === true,
+    indexed: indexes.indexed,
+    indexWrites: indexes.writes,
     validation: render.validation,
     warnings: render.warnings
   });
@@ -514,6 +540,11 @@ function publishResult(overrides) {
     bytes: 0,
     retried: false,
     remaining: 0,
+    // `null` = indexation non applicable (échec AVANT toute écriture : rien n'a
+    // été publié, il n'y a donc rien à réconcilier). Seuls les chemins qui
+    // publient réellement tranchent : `true` réconcilié, `false` en retard.
+    indexed: null,
+    indexWrites: 0,
     errors: [],
     warnings: [],
     validation: null
@@ -575,6 +606,13 @@ function formatPublishReport(result) {
     if (result.githubCommit) lines.push('Commit    : ' + result.githubCommit.slice(0, 12));
     if (result.publishedAt) lines.push('Publié le : ' + frenchDate(result.publishedAt));
     lines.push('Octets    : ' + result.bytes);
+    // L'indexation des pages statiques est un résultat À PART ENTIÈRE : un
+    // article publié mais invisible dans le hub doit être visible comme tel.
+    if (result.indexed === false) {
+      lines.push('Index     : NON RÉCONCILIÉ (article publié, sommaire à reprendre)');
+    } else if (result.indexWrites) {
+      lines.push('Index     : ' + result.indexWrites + ' index mis à jour');
+    }
   }
 
   if (result.testMode) {

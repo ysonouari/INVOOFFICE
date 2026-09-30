@@ -24,6 +24,9 @@ const vm = require('vm');
 
 const APPS_SCRIPT_DIR = path.join(__dirname, '..');
 
+/** Préfixe des URLs `contents` de l'API GitHub (hors domaine, hors query). */
+const CONTENTS_PATH_RE = /^\/repos\/[^/]+\/[^/]+\/contents\//;
+
 /** Modules chargés, dans l'ordre (aucune dépendance à l'ordre : hoisting vm). */
 const MODULES = [
   'Utils.gs',
@@ -35,6 +38,7 @@ const MODULES = [
   'Logger.gs',
   'Renderer.gs',
   'Publisher.gs',
+  'BlogIndexes.gs',
   'Code.gs'
 ];
 
@@ -418,6 +422,234 @@ function putResponse(path, text, sha, commitSha) {
   };
 }
 
+/* -------------------------------------------------------------------------- */
+/* Dépôt mocké (état) : index de catégorie, hub Blog, sitemap                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Dépôt GitHub MUTABLE : contrairement à makeFetchMock (liste de routes
+ * consommables une fois), ce mock garde l'état réellement écrit. Indispensable
+ * pour prouver l'idempotence des index : un PUT doit être visible au GET
+ * suivant, sinon « republication sans écriture » serait indémontrable.
+ *
+ * Seuls les chemins `/contents/` sont servis ici ; tout le reste est délégué à
+ * `fallback` (makeFetchMock), ce qui permet de mocker le gabarit et l'article
+ * avec les mécanismes existants, inchangés.
+ *
+ * @param {Array<{path:string, content:string, sha?:string}>} initialFiles
+ * @param {{fallback?:Function}} [opt]
+ */
+function makeRepoMock(initialFiles, opt) {
+  const fallback = (opt && opt.fallback) || null;
+  const files = new Map();
+  let seq = 0;
+  (initialFiles || []).forEach((f) => {
+    seq += 1;
+    files.set(f.path, { content: f.content, sha: f.sha || 'sha-seed-' + seq });
+  });
+
+  const calls = [];
+  const CONTENTS_RE = CONTENTS_PATH_RE;
+
+  const respond = (code, body) => ({
+    getResponseCode: () => code,
+    getContentText: () => JSON.stringify(body),
+    getAllHeaders: () => ({})
+  });
+
+  const fetchImpl = (url, params) => {
+    const raw = String(url);
+    const method = String((params && params.method) || 'get').toLowerCase();
+    const bare = raw.replace(/^https?:\/\/[^/]+/, '').split('?')[0];
+    const rel = CONTENTS_RE.test(bare) ? bare.replace(CONTENTS_RE, '') : null;
+
+    // Ce mock ne sert QUE les fichiers d'index qu'il a ensemencés. Le
+    // gabarit et l'article passent par le fallback : ils continuent d'être
+    // couverts par makeFetchMock, et une route non déclarée reste une erreur.
+    if (rel === null || !files.has(rel)) {
+      if (!fallback) throw new Error('Route non mockée : ' + method + ' ' + bare);
+      return fallback(url, params);
+    }
+
+    const call = {
+      url: raw,
+      path: bare,
+      method: method,
+      payload: params && params.payload ? params.payload : null
+    };
+    calls.push(call);
+
+    if (method === 'get') {
+      const file = files.get(rel);
+      return respond(200, contentsResponse(rel, file.content, file.sha));
+    }
+
+    if (method === 'put') {
+      const payload = JSON.parse(call.payload);
+      seq += 1;
+      const sha = 'sha-write-' + seq;
+      files.set(rel, {
+        content: Buffer.from(String(payload.content || ''), 'base64').toString('utf8'),
+        sha: sha
+      });
+      return respond(200, putResponse(rel, 'x', sha, 'commit-' + seq));
+    }
+
+    return respond(405, { message: 'Method Not Allowed' });
+  };
+
+  fetchImpl.fetch = fetchImpl;
+  fetchImpl.calls = calls;
+  /** Contenu actuellement stocké pour `p` dans le dépôt mocké (null si absent). */
+  fetchImpl.file = (p) => (files.has(p) ? files.get(p).content : null);
+  fetchImpl.has = (p) => files.has(p);
+  return fetchImpl;
+}
+
+/**
+ * Dépôt GitHub complet : fichiers d'index ÉTATUABLES (makeRepoMock) + routes
+ * ponctuelles consommables (makeFetchMock), avec un journal d'appels UNIQUE et
+ * ordonné.
+ *
+ * C'est ce mock qu'utilisent les tests Publisher : le gabarit et l'article
+ * restent couverts par makeFetchMock (inchangé), les index sont réinscriptibles,
+ * et `calls` conserve l'ordre RÉEL des requêtes — indispensable pour prouver
+ * l'ordre de publication article → catégorie → hub → sitemap.
+ *
+ * @param {Array<{path:string, content:string, sha?:string}>} indexFiles
+ * @param {Array<Object>} routes routes ponctuelles (gabarit, article…)
+ * @param {{failOnce?:{path?:string, method?:string, status?:number, body?:Object}}} [opt]
+ *        `failOnce` fait échouer UNE seule requête (409 de conflit, 5xx…) puis
+ *        délègue au comportement normal : c'est ce qui permet de tester le
+ *        retry de createOrUpdate() sur les index.
+ */
+function makeGitMock(indexFiles, routes, opt) {
+  const repo = makeRepoMock(indexFiles, { fallback: null });
+  const queue = makeFetchMock(routes || []);
+  const calls = [];
+  const seeded = (indexFiles || []).map((f) => f.path);
+  const o = opt || {};
+  const failOnce = o.failOnce || null;
+  let fired = false;
+
+  const fetchImpl = (url, params) => {
+    const raw = String(url);
+    const method = String((params && params.method) || 'get').toLowerCase();
+    // `path` conserve la query (comme makeFetchMock) : les tests historiques
+    // assertent `?ref=master`. `bare` sert uniquement au routage interne.
+    const withQuery = raw.replace(/^https?:\/\/[^/]+/, '');
+    const bare = withQuery.split('?')[0];
+    const rel = CONTENTS_PATH_RE.test(bare) ? bare.replace(CONTENTS_PATH_RE, '') : null;
+    // Un chemin n'est servi par le dépôt mocké que s'il a été ENSEMENCÉ :
+    // le gabarit et l'article restent couverts par les routes ponctuelles, donc
+    // une route non déclarée demeure une erreur franche.
+    const isIndex = rel !== null && seeded.indexOf(rel) !== -1;
+
+    // Journal unique, dans l'ordre réel des appels.
+    calls.push({
+      url: raw,
+      path: withQuery,
+      method: method,
+      payload: params && params.payload ? params.payload : null,
+      index: isIndex
+    });
+
+    if (failOnce && !fired &&
+        (!failOnce.path || bare.indexOf(failOnce.path) !== -1) &&
+        (!failOnce.method || failOnce.method.toLowerCase() === method)) {
+      fired = true;
+      const code = failOnce.status || 409;
+      return {
+        getResponseCode: () => code,
+        getContentText: () => JSON.stringify(failOnce.body || { message: 'Conflict' }),
+        getAllHeaders: () => ({})
+      };
+    }
+
+    if (isIndex) return repo(url, params);
+    return queue(url, params);
+  };
+
+  fetchImpl.fetch = fetchImpl;
+  fetchImpl.calls = calls;
+  fetchImpl.indexCalls = calls.filter((c) => c.index);
+  fetchImpl.base = queue;
+  fetchImpl.file = repo.file;
+  fetchImpl.has = repo.has;
+  return fetchImpl;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Fixtures d'index : markup identique à la production Blog                    */
+/* -------------------------------------------------------------------------- */
+
+/** Un `<li class="article-item">` au markup EXACT de la production. */
+function articleListItem(meta, href, title, excerpt) {
+  return '<li class="article-item"><div class="meta">' + meta + '</div>' +
+    '<h3><a href="' + href + '">' + title + '</a></h3>' +
+    '<p>' + excerpt + '</p></li>';
+}
+
+/**
+ * Copie à l'identique de `escHtml()` (Utils.gs).
+ *
+ * Les fixtures d'index doivent contenir les MÊMES entités que les fichiers de
+ * production : sans cela, un extrait contenant une apostrophe produirait une
+ * carte différente de celle du code, et l'idempotence serait faussement en
+ * échec. Les fixtures sont donc « faithful by construction ».
+ */
+function escHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Page d'index (catégorie OU hub) : `.cat-grid` optionnel + une
+ * `<ul class="article-list">`. CRLF et `<li>` sur une seule ligne, comme les
+ * fichiers de production, pour que la détection de séparateur soit exercée.
+ *
+ * Les valeurs sont ÉCHAPPÉES comme en production (cf. escHtml ci-dessus).
+ */
+function indexPageFixture(opt) {
+  const o = opt || {};
+  const nl = '\r\n';
+  const parts = ['<!DOCTYPE html>', '<html lang="fr">', '<head><title>' + escHtml(o.title || 'Blog') + '</title></head>', '<body>'];
+
+  if (o.cards && o.cards.length) {
+    parts.push('<div class="cat-grid">');
+    o.cards.forEach((c) => {
+      parts.push('  <div class="cat-card"><a href="/blog/' + c.slug + '/">' + escHtml(c.name) +
+        '</a><div class="count">' + escHtml(c.count) + '</div></div>');
+    });
+    parts.push('</div>');
+  }
+
+  parts.push('<ul class="article-list">');
+  (o.items || []).forEach((i) => {
+    parts.push(articleListItem(escHtml(i.meta), escHtml(i.href), escHtml(i.title), escHtml(i.excerpt)));
+  });
+  parts.push('</ul>');
+  parts.push('</body>', '</html>', '');
+  return parts.join(nl);
+}
+
+/** Sitemap minimal : une entrée par ligne, comme `sitemap-fr.xml`. */
+function sitemapFixture(locs) {
+  const body = (locs || []).map((l) => {
+    return '<url><loc>' + l + '</loc><lastmod>2026-07-01</lastmod>' +
+      '<changefreq>monthly</changefreq><priority>0.8</priority></url>';
+  }).join('\n');
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    (body ? body + '\n' : '') +
+    '</urlset>\n';
+}
+
 module.exports = {
   MODULES,
   createContext,
@@ -427,7 +659,13 @@ module.exports = {
   logsSheet,
   makeSheet,
   makeFetchMock,
+  makeRepoMock,
+  makeGitMock,
   contentsResponse,
   putResponse,
+  escHtml,
+  articleListItem,
+  indexPageFixture,
+  sitemapFixture,
   APPS_SCRIPT_DIR
 };

@@ -29,8 +29,13 @@ const {
   configSheet,
   logsSheet,
   makeFetchMock,
+  makeRepoMock,
+  makeGitMock,
   contentsResponse,
-  putResponse
+  putResponse,
+  articleListItem,
+  indexPageFixture,
+  sitemapFixture
 } = require('./harness.cjs');
 
 const REPO_ROOT = path.join(__dirname, '..', '..');
@@ -87,6 +92,11 @@ function includes(list, value, label) {
   }
 }
 
+/** Comparaison structurelle : `eq` compare des références, pas des tableaux. */
+function eqList(actual, expected, label) {
+  eq(JSON.stringify(actual), JSON.stringify(expected), label);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Fixtures                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -124,15 +134,163 @@ function templateRoute(times) {
   return { method: 'get', path: TEMPLATE_ROUTE, body: contentsResponse('blog/template-article.html', TEMPLATE), times: times || 1 };
 }
 
+/* ------------------------------------------------------------------------ */
+/* Fixtures des index statiques du Blog                                       */
+/* ------------------------------------------------------------------------ */
+
+const HUB_PATH = 'blog/index.html';
+const SITEMAP_FILE = 'sitemap-fr.xml';
+const SITE = 'https://www.invooffice.com';
+
+/** Les 5 slug de CATEGORY_MAP, dans l'ordre de la configuration. */
+const CATEGORY_SLUGS = ['auto-entrepreneur', 'devis', 'facturation', 'guides', 'tva'];
+const CATEGORY_NAMES = {
+  'auto-entrepreneur': 'Auto-entrepreneur',
+  devis: 'Devis',
+  facturation: 'Facturation',
+  guides: 'Guides',
+  tva: 'TVA Maroc'
+};
+
+/**
+ * Chemin GitHub d'un article, via la même logique que `blogPath()` (Config.gs)
+ * : `blog/<catégorie>/<slug>.html`. Le href web est ce chemin préfixé de `/`.
+ */
+function slugOf(article) {
+  const map = {
+    'Auto-entrepreneur': 'auto-entrepreneur',
+    Devis: 'devis',
+    Facturation: 'facturation',
+    Guides: 'guides',
+    'TVA Maroc': 'tva'
+  };
+  return 'blog/' + map[article.CATEGORY] + '/' + article.SLUG;
+}
+
+/** Date « 14 juillet 2026 » : évite de duplic frenchDate() dans les fixtures. */
+const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+  'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+function frenchDateOf(article) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(article.PUBLISHED_AT || ''));
+  return m ? parseInt(m[3], 10) + ' ' + MONTHS[parseInt(m[2], 10) - 1] + ' ' + m[1] : '';
+}
+
+/** Extrait d'une ligne `.article-list` d'une page d'index. */
+function listItems(html) {
+  return String(html).match(/<li class="article-item">[\s\S]*?<\/li>/g) || [];
+}
+
+/** Compteur affiché pour un slug dans le `.cat-grid` du hub. */
+function hubCount(html, slug) {
+  const i = String(html).indexOf('<div class="cat-card"><a href="/blog/' + slug + '/">');
+  if (i === -1) return null;
+  const m = /<div class="count">([^<]*)<\/div>/.exec(String(html).slice(i));
+  return m ? m[1] : null;
+}
+
+/** <loc> présents dans un sitemap. */
+function sitemapLocs(xml) {
+  return (String(xml).match(/<loc>[^<]*<\/loc>/g) || []).map((l) => l.replace(/<\/?loc>/g, ''));
+}
+
+/**
+ * Dépôt mocké des 7 fichiers d'index.
+ *
+ * Par défaut les index sont DÉJÀ réconciliés pour les articles sous test : les
+ * tests historiques publient donc tous contre des index corrects, ce qui
+ * exerce l'idempotence sur toute la suite (0 écriture d'index attendue).
+ *
+ * `includeArticle: false` reproduit un index EN RETARD (article absent de la
+ * catégorie, du hub et du sitemap) : c'est le cas du bug à couvrir.
+ * `omit: [chemin]` retire en plus un fichier du dépôt (index manquant).
+ * `hubLimit: n` tronque la liste « Derniers articles » du hub à n entrées,
+ * comme en production où le hub montre une sélection (6 sur 9) alors que les
+ * index de catégorie, eux, sont exhaustifs.
+ *
+ * Les articles marqués `__seeded` représentent les 9 articles de production
+ * déjà listés ; ils ne sont retirés par `includeArticle: false`.
+ */
+function indexRepo(articles, options) {
+  const o = options || {};
+  const list = (Array.isArray(articles) ? articles : [articles]).filter(Boolean);
+  const omit = o.omit || [];
+
+  // Ce qui est DÉJÀ dans les index : les seeds, plus l'article sous test sauf
+  // si l'on simule un index en retard.
+  const indexed = list.filter((a) => a.__seeded || o.includeArticle !== false);
+  const files = [];
+  const locs = [SITE + '/', SITE + '/blog/'];
+
+  const itemsFor = (predicate, withCategory) => indexed
+    .filter(predicate)
+    .map((a) => ({
+      meta: (withCategory ? a.CATEGORY + ' · ' : '') +
+        frenchDateOf(a) + ' · ' + a.READING_TIME + ' min',
+      href: '/' + slugOf(a) + '.html',
+      title: a.TITLE,
+      excerpt: a.ARTICLE_EXCERPT
+    }));
+
+  const cards = [];
+  CATEGORY_SLUGS.forEach((slug) => {
+    const items = itemsFor((a) => slugOf(a).indexOf('blog/' + slug + '/') === 0, false);
+    files.push({ path: 'blog/' + slug + '/index.html', content: indexPageFixture({ items: items }) });
+    locs.push(SITE + '/blog/' + slug + '/');
+    cards.push({ slug: slug, name: CATEGORY_NAMES[slug], count: items.length + (items.length > 1 ? ' articles' : ' article') });
+  });
+
+  // Le hub ne montre qu'une SÉLECTION d'articles : son nombre d'entrées n'a
+  // aucun rapport avec le nombre d'articles d'une catégorie.
+  let hubItems = itemsFor(() => true, true);
+  if (o.hubLimit !== undefined && o.hubLimit !== null) {
+    hubItems = hubItems.slice(-Math.max(0, o.hubLimit));
+  }
+  files.push({
+    path: HUB_PATH,
+    content: indexPageFixture({ title: 'Blog', cards: cards, items: hubItems })
+  });
+
+  indexed.forEach((a) => locs.push(SITE + '/' + slugOf(a) + '.html'));
+  files.push({ path: SITEMAP_FILE, content: sitemapFixture(locs) });
+  return files.filter((f) => omit.indexOf(f.path) === -1);
+}
+
+/**
+ * Copie l'étatcourant du dépôt mocké, pour rejouer une publication dans un
+ * contexte neuf qui repart de l'état réellement atteint.
+ */
+function repoSnapshot(fetchMock) {
+  return INDEX_FILES.map((p) => ({ path: p, content: fetchMock.file(p) })).filter((f) => f.content !== null);
+}
+
+const INDEX_FILES = CATEGORY_SLUGS.map((s) => 'blog/' + s + '/index.html')
+  .concat([HUB_PATH, SITEMAP_FILE]);
+
 /**
  * Construit un contexte complet.
+ *
+ * Le dépôt mocké sert les 7 fichiers d'index (5 catégories, hub, sitemap) dans
+ * un état DÉJÀ réconcilié : la réconciliation ne doit donc produire aucune
+ * écriture dans les scénarios historiques. `indexes: false` retire ces routes
+ * (utile pour observer un refus réseau sur les index) et
+ * `indexes: { includeArticle: false }` simule un index en retard.
+ *
  * @param {{articles?:Array, config?:Object, props?:Object, routes?:Array,
- *          lockAvailable?:boolean, activeCell?:Object, sheets?:Object}} [opt]
+ *          lockAvailable?:boolean, activeCell?:Object, sheets?:Object,
+ *          indexes?:boolean|Object, fetchOptions?:Object}} [opt]
  */
 function setup(opt) {
   const o = opt || {};
   const articles = o.articles || [makeArticle()];
-  const fetchMock = makeFetchMock(o.routes || [templateRoute()]);
+  const repoOptions = o.indexes === undefined ? {} : o.indexes;
+  const withIndexes = o.indexes !== false;
+
+  const baseFetch = makeFetchMock(o.routes || [templateRoute()]);
+  const files = o.indexFiles || indexRepo(articles, repoOptions);
+  const fetchMock = withIndexes
+    ? makeGitMock(files, o.routes || [templateRoute()], o.fetchOptions)
+    : baseFetch;
+
   const sheets = o.sheets === null ? {} : Object.assign({
     Articles: articlesSheet(articles),
     Logs: logsSheet()
@@ -156,7 +314,8 @@ function setup(opt) {
     lock: created.helpers.lock,
     sleeps: created.helpers.sleeps,
     ui: created.helpers.ui,
-    fetch: fetchMock
+    fetch: fetchMock,
+    base: baseFetch
   };
 }
 
@@ -1034,6 +1193,332 @@ test('TEST-001 : le rendu complet fonctionne si les deux verrous sont ouverts', 
   includes(decoded, 'index, follow', 'robots basculés en production');
   notOk(decoded.indexOf('{{') !== -1, 'aucun placeholder résiduel');
   eq(row(s.ctx, 'TEST-001').STATUS, 'PUBLISHED', 'PUBLISHED en feuilles de test');
+});
+
+/* ========================================================================== */
+/* Réconciliation des index statiques du Blog                                  */
+/* ========================================================================== */
+
+suite('Index Blog');
+
+/** Article prêt à publier, dans une catégorie à part. */
+function tvaArticle(over) {
+  return makeArticle(Object.assign({ PUBLISHED_AT: '2026-07-14' }, over || {}));
+}
+
+/** Routes minimales : gabarit + création de l'article. */
+function publishRoutes(articlePath) {
+  const route = '/contents/' + articlePath;
+  return [
+    templateRoute(),
+    { method: 'get', path: route, code: 404, body: { message: 'Not Found' } },
+    { method: 'put', path: route, body: putResponse(articlePath, 'x', 'sha-art', 'commit-art') }
+  ];
+}
+
+/** Les 4 écritures de la séquence, dans l'ordre où elles ont eu lieu. */
+function putPaths(s) {
+  return s.fetch.calls.filter((c) => c.method === 'put').map((c) => c.path.split('?')[0]);
+}
+
+test('T1 : la carte générée reprend exactement le markup de production', () => {
+  const s = setup({ articles: [tvaArticle()], routes: publishRoutes(ARTICLE_PATH) });
+  const item = call(s.ctx, 'buildArticleListItem', {
+    TITLE: 'Facture TVA : le guide complet',
+    SLUG: 'article-de-test',
+    CATEGORY: 'TVA Maroc',
+    PUBLISHED_AT: '2026-07-14',
+    READING_TIME: '6',
+    ARTICLE_EXCERPT: 'Extrait d\'article distinct de la description.'
+  }, { withCategory: true });
+
+  ok(item.ok, 'carte construite');
+  eq(item.href, '/blog/tva/article-de-test.html', 'href canonique');
+  eq(item.html, articleListItem(
+    'TVA Maroc · 14 juillet 2026 · 6 min',
+    '/blog/tva/article-de-test.html',
+    'Facture TVA : le guide complet',
+    'Extrait d&#39;article distinct de la description.'
+  ), 'markup de la carte (échappement compris)');
+
+  // La page de catégorie ne préfixe PAS la catégorie ; le hub le fait.
+  const cat = call(s.ctx, 'buildArticleListItem', {
+    TITLE: 'Facture TVA : le guide complet', SLUG: 'article-de-test', CATEGORY: 'TVA Maroc',
+    PUBLISHED_AT: '2026-07-14', READING_TIME: '6', ARTICLE_EXCERPT: 'x'
+  }, { withCategory: false });
+  ok(cat.html.indexOf('TVA Maroc ·') === -1, 'la page de catégorie omet la catégorie');
+  ok(cat.html.indexOf('<div class="meta">14 juillet 2026 · 6 min</div>') !== -1, 'méta de catégorie');
+});
+
+test('T2 : index en retard → les 3 index sont écrits, dans l\'ordre imposé', () => {
+  const a = tvaArticle();
+  const s = setup({
+    articles: [a],
+    indexes: { includeArticle: false },
+    activeCell: { row: 2 },
+    routes: publishRoutes(ARTICLE_PATH)
+  });
+
+  // État de départ : l'article est absent des trois index.
+  notOk(listItems(s.fetch.file('blog/tva/index.html')).some((l) => l.indexOf('/blog/tva/article-de-test.html') !== -1), 'absent de l\'index de catégorie');
+  notOk(s.fetch.file(HUB_PATH).indexOf('/blog/tva/article-de-test.html') !== -1, 'absent du hub');
+  notOk(sitemapLocs(s.fetch.file(SITEMAP_FILE)).indexOf(SITE + '/blog/tva/article-de-test.html') !== -1, 'absent du sitemap');
+
+  const result = call(s.ctx, 'publishSelectedArticle');
+  ok(result.ok, 'publication : ' + result.code + ' ' + result.message);
+  eq(result.status, 'PUBLISHED', 'statut');
+  eq(result.indexed, true, 'index réconcilié');
+  eq(result.indexWrites, 3, '3 index écrits');
+
+  // SÉQUENCE IMPOSÉE : article → catégorie → hub → sitemap.
+  eqList(putPaths(s), [
+    '/repos/ysonouari/INVOOFFICE/contents/blog/tva/article-de-test.html',
+    '/repos/ysonouari/INVOOFFICE/contents/blog/tva/index.html',
+    '/repos/ysonouari/INVOOFFICE/contents/blog/index.html',
+    '/repos/ysonouari/INVOOFFICE/contents/sitemap-fr.xml'
+  ], 'ordre exact des écritures');
+
+  // Contenu réellement écrit sur le disque mocké.
+  const cat = s.fetch.file('blog/tva/index.html');
+  eq(listItems(cat).length, 1, 'l\'index de catégorie contient la carte');
+  ok(listItems(cat)[0].indexOf('14 juillet 2026 · 6 min') !== -1, 'méta sans catégorie');
+  ok(cat.indexOf('TVA Maroc · 14 juillet') === -1, 'pas de catégorie dans l\'index de catégorie');
+
+  const hub = s.fetch.file(HUB_PATH);
+  eq(listItems(hub).length, 1, 'le hub contient la carte');
+  ok(listItems(hub)[0].indexOf('TVA Maroc · 14 juillet 2026 · 6 min') !== -1, 'méta avec catégorie dans le hub');
+
+  const sm = s.fetch.file(SITEMAP_FILE);
+  ok(sitemapLocs(sm).indexOf(SITE + '/blog/tva/article-de-test.html') !== -1, '<loc> ajouté');
+  ok(sm.indexOf('<lastmod>2026-07-14</lastmod>') !== -1, '<lastmod> = date de publication');
+  ok(sm.indexOf('<priority>0.8</priority>') !== -1, 'priorité conforme au format existant');
+  ok(sm.indexOf('</urlset>') !== -1, '</urlset> préservé');
+});
+
+test('T3 : index déjà à jour → aucune écriture, résultat UNCHANGED', () => {
+  const a = tvaArticle();
+
+  // 1re publication : index en retard, donc 3 écritures d'index.
+  const s1 = setup({
+    articles: [a],
+    indexes: { includeArticle: false },
+    activeCell: { row: 2 },
+    routes: publishRoutes(ARTICLE_PATH)
+  });
+  const first = call(s1.ctx, 'publishSelectedArticle');
+  ok(first.ok, 'première publication : ' + first.code + ' ' + first.message);
+  eq(first.indexWrites, 3, '3 écritures à la première publication');
+
+  // 2e publication dans un contexte NEUF, qui repart de l'état ATTEINT :
+  // les index tels qu'ils sont sur le disque, et l'article tel qu'il a été
+  // écrit (récupéré dans la charge utile du PUT, seul endroit où il existe).
+  const s2 = setup({
+    articles: [a],
+    indexFiles: repoSnapshot(s1.fetch).concat([{ path: ARTICLE_PATH, content: publishedHtml(s1) }]),
+    activeCell: { row: 2 },
+    routes: [
+      templateRoute(),
+      { method: 'get', path: ARTICLE_ROUTE, body: contentsResponse(ARTICLE_PATH, publishedHtml(s1), 'sha-art') }
+    ]
+  });
+
+  const again = call(s2.ctx, 'publishSelectedArticle');
+  ok(again.ok, 'republication : ' + again.code);
+  eq(again.code, 'UNCHANGED', 'article identique');
+  eq(again.indexed, true, 'toujours réconcilié');
+  eq(again.indexWrites, 0, 'AUCUNE écriture d\'index');
+  eq(putPaths(s2).length, 0, 'aucun PUT du tout');
+  eq(s2.fetch.indexCalls.filter((c) => c.method === 'put').length, 0, 'aucun PUT d\'index');
+});
+
+test('T4 : le sitemap n\'est jamais dupliqué', () => {
+  const s = setup({ articles: [tvaArticle()], indexes: false });
+  const loc = SITE + '/blog/tva/article-de-test.html';
+  const base = sitemapFixture([SITE + '/', SITE + '/blog/', SITE + '/blog/tva/']);
+
+  const once = call(s.ctx, 'insertIntoSitemap', base, loc, '2026-07-14');
+  ok(once.ok, 'première insertion valide');
+  eq(once.changed, true, 'première insertion : le contenu change');
+
+  const twice = call(s.ctx, 'insertIntoSitemap', once.html, loc, '2026-07-14');
+  ok(twice.ok, 'seconde insertion valide');
+  eq(twice.changed, false, 'déjà présent : aucun changement');
+  eq(twice.html, once.html, 'contenu strictement identique');
+  eq(sitemapLocs(once.html).filter((l) => l === loc).length, 1, 'un seul <loc>');
+  // Le format existant est respecté : une entrée d'article tient sur une ligne.
+  const line = once.html.split('\n').filter((l) => l.indexOf(loc) !== -1)[0];
+  ok(line.indexOf('<changefreq>monthly</changefreq>') !== -1, 'changefreq mensuel');
+  ok(once.html.split('\n').filter((l) => l.indexOf('<urlset') === 0).length === 1, 'un seul urlset');
+  // Une URL absente est refusée, pas écrite à moitié.
+  eq(call(s.ctx, 'insertIntoSitemap', base, '', '2026-07-14').ok, false, 'URL absente refusée');
+
+  // --- Mise en forme : l'entrée doit être indiscernable des entréesvoisines ---
+  // Le sitemap de production indente chaque <url> de 2 espaces et laisse
+  // </urlset> seul sur sa ligne. Un saut de ligne en trop produirait une ligne
+  // vide ; l'absence du saut de fin collerait </urlset> à l'entrée.
+  const onceLines = once.html.split('\n');
+  const insertedAt = onceLines.findIndex((l) => l.indexOf(loc) !== -1);
+  eq(onceLines[insertedAt].slice(0, 2), '  ', 'entrée indentée de 2 espaces');
+  eq(onceLines[insertedAt].slice(2, 6), '<url', 'rien avant <url> hormis l\'indentation');
+  ok(onceLines[insertedAt].indexOf('</urlset>') === -1, '</urlset> absent de la ligne d\'entrée');
+  eq(onceLines[insertedAt + 1], '</urlset>', '</urlset> sur sa propre ligne');
+  ok(insertedAt > 0, 'l\'entrée a été insérée');
+  ok(onceLines[insertedAt - 1] !== '', 'aucune ligne vide avant l\'entrée');
+  // La ligne précédente est bien la dernière entrée d'origine, et le contenu
+  // de production est préservé ailleurs : rien d'autre n'a bougé.
+  ok(onceLines[insertedAt - 1].indexOf(SITE + '/blog/tva/</loc>') !== -1,
+    'l\'entrée précédente est la dernière entrée d\'origine');
+  eq(sitemapLocs(once.html).filter((l) => l === loc).length, 1, 'URL insérée exactement une fois');
+});
+
+test('T5 : index de catégorie absent → avertissement, article PUBLISHED, aucun PUT sur ce fichier', () => {
+  const a = tvaArticle();
+  const s = setup({
+    articles: [a],
+    indexes: { includeArticle: false, omit: ['blog/tva/index.html'] },
+    activeCell: { row: 2 },
+    routes: publishRoutes(ARTICLE_PATH)
+  });
+
+  const result = call(s.ctx, 'publishSelectedArticle');
+  ok(result.ok, 'l\'article EST publié : ' + result.code);
+  eq(result.status, 'PUBLISHED', 'statut PUBLISHED');
+  eq(row(s.ctx, 'A-1').STATUS, 'PUBLISHED', 'PUBLISHED en feuilles de test');
+  eq(result.indexed, false, 'index NON réconcilié');
+  eq(result.indexWrites, 2, 'hub et sitemap ont été réconciliés malgré tout');
+  ok(result.warnings.some((w) => w.code === 'IX1'), 'avertissement IX1 (index de catégorie)');
+
+  // Les étapes suivantes ne sont PAS annulées par l'échec de la catégorie.
+  ok(s.fetch.file(HUB_PATH).indexOf('/blog/tva/article-de-test.html') !== -1, 'le hub a bien été mis à jour');
+  ok(sitemapLocs(s.fetch.file(SITEMAP_FILE)).indexOf(SITE + '/blog/tva/article-de-test.html') !== -1, 'le sitemap aussi');
+  // Le compteur est LAISSÉ INTACT : sans index de catégorie, il n'existe aucune
+  // source de vérité. Un compteur deviné serait pire qu'un compteur en retard.
+  eq(hubCount(s.fetch.file(HUB_PATH), 'tva'), '0 article', 'compteur non deviné');
+
+  // Aucun PUT vers un fichier absent, et rien n\'est inventé.
+  notOk(putPaths(s).some((p) => p.indexOf('/blog/tva/index.html') !== -1), 'aucun PUT sur l\'index de catégorie');
+  notOk(s.fetch.has('blog/tva/index.html'), 'le fichier n\'a pas été créé');
+  includes(call(s.ctx, 'formatPublishReport', result), 'NON RÉCONCILIÉ', 'le compte rendu opérateur le dit');
+  ok(logRows(s.sheets).some((r) => r[1] === 'WARNING'), 'un WARNING est journalisé');
+  eq(result.error || '', '', 'ce n\'est pas une erreur : l\'article est publié');
+});
+
+test('T6 : le compteur du hub suit l\'index de catégorie, pas la liste du hub', () => {
+  // Index de catégorie « Facturation » exhaustif (3 articles) alors que le hub
+  // n'en montre qu'UN : compter la liste du hub donnerait 2 au lieu de 4.
+  const f1 = makeArticle({ ID: 'F-1', TITLE: 'Facture 1', SLUG: 'f-1', CATEGORY: 'Facturation', PUBLISHED_AT: '2026-05-02', __seeded: true });
+  const f2 = makeArticle({ ID: 'F-2', TITLE: 'Facture 2', SLUG: 'f-2', CATEGORY: 'Facturation', PUBLISHED_AT: '2026-05-03', __seeded: true });
+  const f3 = makeArticle({ ID: 'F-3', TITLE: 'Facture 3', SLUG: 'f-3', CATEGORY: 'Facturation', PUBLISHED_AT: '2026-05-04', __seeded: true });
+  const target = makeArticle({ ID: 'F-4', TITLE: 'Facture 4', SLUG: 'f-4', CATEGORY: 'Facturation', PUBLISHED_AT: '2026-05-05' });
+  const s = setup({
+    articles: [f1, f2, f3, target],
+    indexes: { includeArticle: false, hubLimit: 1 },
+    activeCell: { row: 5 },
+    routes: publishRoutes('blog/facturation/f-4.html')
+  });
+
+  const hubBefore = s.fetch.file(HUB_PATH);
+  eq(listItems(s.fetch.file('blog/facturation/index.html')).length, 3, 'l\'index de catégorie en a 3');
+  eq(listItems(hubBefore).length, 1, 'le hub n\'en montre qu\'un : les deux listes divergent');
+  eq(hubCount(hubBefore, 'facturation'), '3 articles', 'compteur initial aligné sur la catégorie');
+  // Les 4 autres compteurs sont figés : ils ne doivent pas bouger.
+  const othersBefore = ['auto-entrepreneur', 'devis', 'guides', 'tva'].map((s2) => hubCount(hubBefore, s2)).join('|');
+
+  const result = call(s.ctx, 'publishSelectedArticle');
+  ok(result.ok, 'publication : ' + result.code);
+  eq(result.indexed, true, 'index réconcilié');
+
+  const hubAfter = s.fetch.file(HUB_PATH);
+  eq(listItems(s.fetch.file('blog/facturation/index.html')).length, 4, 'index de catégorie : 4');
+  eq(listItems(hubAfter).length, 2, 'le hub : 2 seulement');
+  eq(hubCount(hubAfter, 'facturation'), '4 articles', 'compteur = index de catégorie (4), PAS la liste du hub (2)');
+  eq(['auto-entrepreneur', 'devis', 'guides', 'tva'].map((s2) => hubCount(hubAfter, s2)).join('|'), othersBefore, 'les 4 autres compteurs sont intacts');
+  // Accord singulier au singulier.
+  const solo = setup({
+    articles: [tvaArticle()],
+    indexes: { includeArticle: false },
+    activeCell: { row: 2 },
+    routes: publishRoutes(ARTICLE_PATH)
+  });
+  call(solo.ctx, 'publishSelectedArticle');
+  eq(hubCount(solo.fetch.file(HUB_PATH), 'tva'), '1 article', '« 1 article », pas « 1 articles »');
+  // Sans source de vérité, rien n'est deviné.
+  const noCounts = setup({ articles: [tvaArticle()], indexes: false });
+  const hub = indexPageFixture({ cards: [{ slug: 'tva', name: 'TVA Maroc', count: '7 articles' }], items: [] });
+  eq(call(noCounts.ctx, 'updateCategoryCounts', hub, {}).html, hub, 'updateCategoryCounts sans compteurs ne touche à rien');
+  eq(call(noCounts.ctx, 'updateCategoryCounts', hub).html, hub, 'appel à 1 argument : hub intact');
+  eq(call(noCounts.ctx, 'updateCategoryCounts', hub, { tva: 7 }).changed, false, 'compteur déjà juste : aucun changement');
+  eq(call(noCounts.ctx, 'updateCategoryCounts', hub, { tva: 8 }).html.indexOf('8 articles') !== -1, true, 'compteur mis à jour quand la source est fournie');
+});
+
+test('T7 : un article absent de la liste est inséré en tête, l\'ordre des autres est préservé', () => {
+  const existing = makeArticle({ ID: 'E-1', TITLE: 'Ancien', SLUG: 'ancien', PUBLISHED_AT: '2026-01-05', __seeded: true });
+  const target = tvaArticle();
+  const s = setup({
+    articles: [existing, target],
+    indexes: { includeArticle: false },
+    activeCell: { row: 3 },
+    routes: publishRoutes(ARTICLE_PATH)
+  });
+
+  const before = listItems(s.fetch.file('blog/tva/index.html'));
+  eq(before.length, 1, 'un article préexistant');
+  ok(before[0].indexOf('/blog/tva/ancien.html') !== -1, 'c\'est l\'ancien');
+
+  call(s.ctx, 'publishSelectedArticle');
+
+  const after = listItems(s.fetch.file('blog/tva/index.html'));
+  eq(after.length, 2, 'deux articles');
+  ok(after[0].indexOf('/blog/tva/article-de-test.html') !== -1, 'le nouveau passe en tête');
+  ok(after[1].indexOf('/blog/tva/ancien.html') !== -1, 'l\'ancien est conservé et intact');
+  eq(after[1], before[0], 'l\'entrée préexistante n\'a pas bougé d\'un octet');
+});
+
+test('T8 : ordre des appels garanti même quand l\'article est déjà à jour', () => {
+  // L\'ordre porte sur les LECTURES : la réconciliation doit lire la catégorie,
+  // puis le hub, puis le sitemap, dans cet ordre, à chaque publication.
+  const a = tvaArticle();
+  const s = setup({ articles: [a], activeCell: { row: 2 }, routes: publishRoutes(ARTICLE_PATH) });
+  call(s.ctx, 'publishSelectedArticle');
+
+  const indexReads = s.fetch.calls
+    .filter((c) => c.method === 'get' && c.index)
+    .map((c) => c.path.split('?')[0]);
+  eqList(indexReads, [
+    '/repos/ysonouari/INVOOFFICE/contents/blog/tva/index.html',
+    '/repos/ysonouari/INVOOFFICE/contents/blog/index.html',
+    '/repos/ysonouari/INVOOFFICE/contents/sitemap-fr.xml'
+  ], 'catégorie, puis hub, puis sitemap');
+
+  // L\'écriture de l\'article précède la première lecture d\'index.
+  const firstIndexRead = s.fetch.calls.findIndex((c) => c.method === 'get' && c.index);
+  const articlePut = s.fetch.calls.findIndex((c) => c.method === 'put' && c.path.indexOf(ARTICLE_PATH) !== -1);
+  ok(articlePut !== -1 && articlePut < firstIndexRead, 'l\'article est écrit AVANT toute lecture d\'index');
+});
+
+test('T9 : conflit SHA sur un index → relecture du SHA puis retry borné', () => {
+  const a = tvaArticle();
+  const s = setup({
+    articles: [a],
+    indexes: { includeArticle: false },
+    activeCell: { row: 2 },
+    routes: publishRoutes(ARTICLE_PATH),
+    // Un seul 409, sur le PUT de l'index de catégorie.
+    fetchOptions: { failOnce: { path: '/blog/tva/index.html', method: 'put', status: 409 } }
+  });
+
+  const result = call(s.ctx, 'publishSelectedArticle');
+  ok(result.ok, 'la publication aboutit malgré le conflit : ' + result.code + ' ' + result.message);
+  eq(result.indexed, true, 'index réconcilié après retry');
+
+  const tvaPuts = s.fetch.calls.filter((c) => c.method === 'put' && c.path.indexOf('/blog/tva/index.html') !== -1);
+  eq(tvaPuts.length, 2, 'conflit puis retry : exactement 2 PUT');
+  // Le retry doit transporter le SHA RÉEL relu, pas celui du conflit.
+  ok(JSON.parse(tvaPuts[1].payload).sha !== undefined, 'le retry envoie un sha');
+  // La catégorie a fini par être écrite, et le hub a été compté dessus.
+  eq(listItems(s.fetch.file('blog/tva/index.html')).length, 1, 'index de catégorie écrit après le retry');
+  eq(hubCount(s.fetch.file(HUB_PATH), 'tva'), '1 article', 'compteur du hub correct (catégorie réparée)');
+  eq(result.indexWrites, 3, 'les 3 index ont bien été écrits');
 });
 
 /* -------------------------------------------------------------------------- */
