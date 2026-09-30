@@ -947,8 +947,26 @@ test('les deux entrées de publication sont au menu, après la validation', () =
 test('aucune entrée de scheduler ni de publication par lot', () => {
   const s = setup();
   call(s.ctx, 'onOpen');
-  const labels = s.ui.items.map((i) => i.label).join(' | ');
-  notOk(/planifi|schedul|cron/i.test(labels), 'aucun scheduler exposé');
+  const items = s.ui.items.filter((i) => i.fn);
+
+  // Un MOTEUR de planification reste interdit : aucune entree de menu, hormis
+  // le dialogue de configuration, ne doit pointer vers un scheduler, une
+  // publication par lot, une activation automatique ou un declencheur.
+  const CONFIG_DIALOG = 'openSchedulerConfigDialog';
+  items.forEach((i) => {
+    if (i.fn === CONFIG_DIALOG) return;
+    notOk(
+      /schedul|cron|autopubl|batch|runall|publishtall|trigger/i.test(i.fn),
+      'aucun moteur dans ' + i.fn
+    );
+  });
+
+  // Seule entree de planification admise : le dialogue de CONFIGURATION
+  // valide par le Product Owner, qui ne cree aucun declencheur (prouve
+  // par scheduler.test.cjs : ScriptApp reste vide).
+  const planning = items.filter((i) => /planifi|schedul|cron/i.test(i.label + ' ' + i.fn));
+  eq(planning.length, 1, 'une seule entree de planification');
+  eq(planning[0].fn, CONFIG_DIALOG, 'dialogue de configuration');
 });
 
 test('les actions de menu historiques restent câblées', () => {

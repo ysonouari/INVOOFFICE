@@ -6,6 +6,7 @@
  *
  * PHASE 4 — actions disponibles :
  *   - Configurer les Script Properties
+ *   - Configurer la planification (interface seule : voir Scheduler.gs)
  *   - Initialiser les feuilles (Articles / Config / Logs)
  *   - Tester la connexion GitHub (LECTURE SEULE)
  *   - Vérifier le gabarit d'article
@@ -29,6 +30,7 @@ function onOpen() {
     SpreadsheetApp.getUi()
       .createMenu('🤖 Blog INVOOFFICE')
       .addItem('⚙️ Configuration', 'menuConfiguration')
+      .addItem('🗓️ Planification / Automatisation', 'openSchedulerConfigDialog')
       .addItem('📋 Initialiser les feuilles', 'menuBootstrapSheets')
       .addSeparator()
       .addItem('🔌 Tester la connexion GitHub', 'menuTestGithub')

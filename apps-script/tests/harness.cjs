@@ -38,6 +38,7 @@ const MODULES = [
   'Logger.gs',
   'Renderer.gs',
   'Publisher.gs',
+  'Scheduler.gs',
   'BlogIndexes.gs',
   'Code.gs'
 ];
@@ -378,6 +379,22 @@ function createContext(opts) {
       }
     },
     Logger: {},
+    /**
+     * Doublure ScriptApp : LECTURE SEULE et non fonctionnelle.
+     * Aucun déclencheur n'est créé ni supprimé par le code de production
+     * (Scheduler.gs se contente de lire). La suite vérifie qu'aucun appel de
+     * création/suppression n'est effectué ; toute tentative doit échouer.
+     * `setProjectTriggers` est une utilité de TEST : elle injecte un état
+     * triggers arbitraire pour vérifier le rendu du compteur.
+     */
+    ScriptApp: {
+      __projectTriggers: [],
+      // `this` et non l'identifiant `ScriptApp` : ce dernier n'existe pas dans
+      // la portée du module (ce n'est qu'une propriété du sandbox).
+      getProjectTriggers() { return this.__projectTriggers.slice(); },
+      setProjectTriggers(list) { this.__projectTriggers = (list || []).slice(); },
+      newTrigger() { throw new Error('newTrigger interdit : aucun declencheur ne doit etre cree'); }
+    },
     MailApp: { sendEmail: () => { throw new Error('email interdit dans les tests'); } },
     Browser: {},
     JSON,

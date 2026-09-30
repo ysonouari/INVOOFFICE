@@ -8,7 +8,7 @@
     "start": "node server.js",
     "preview": "node server.js",
     "test": "npx playwright test --config=tests/playwright.config.ts",
-    "test:apps-script": "node apps-script/tests/renderer.test.cjs && node apps-script/tests/publisher.test.cjs && node apps-script/tests/delete.test.cjs"
+    "test:apps-script": "node apps-script/tests/renderer.test.cjs && node apps-script/tests/publisher.test.cjs && node apps-script/tests/delete.test.cjs && node apps-script/tests/scheduler.test.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.0",
