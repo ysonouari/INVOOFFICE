@@ -40,10 +40,19 @@
 .article-page .callout { background: var(--panel-2); border-left: 3px solid var(--accent-2); border-radius: 0 var(--radius) var(--radius) 0; padding: var(--space-6) 18px; margin: 0 0 var(--space-8); font-size: var(--fs-md-2); color: var(--text); line-height: 1.65; }
 .article-page .callout-tip { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: var(--space-6) 18px; margin: 0 0 var(--space-8); font-size: var(--fs-md-2); color: var(--muted); line-height: 1.65; }
 
-/* --- Tableau comparatif ---------------------------------------------------- */
-.article-page .compare-table { width: 100%; border-collapse: collapse; margin: 0 0 var(--space-8); font-size: var(--fs-md); }
-.article-page .compare-table th { text-align: left; padding: var(--space-3) var(--space-4); background: var(--panel-2); border-bottom: 1px solid var(--border); color: var(--text); font-weight: 600; }
-.article-page .compare-table td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-soft); color: var(--muted); }
+/* --- Tableaux d'article ---------------------------------------------------- */
+/* Règle générique, et non `.compare-table` : la colonne CONTENT est injectée
+   BRUTE (Renderer.gs — RAW_HTML_PLACEHOLDERS en mode 'raw'), donc un `<table>`
+   rédigé dans Google Sheets sans classe arrive ici sans le moindre style.
+   Les 9 tableaux historiques portent `class="compare-table"` : ils restent
+   couverts, car ils sont eux aussi des `.article-page table` — rendu identique.
+   Aucun nouveau token ; `--panel-2` / `--border` / `--border-soft` / `--muted`
+   / `--text` existent déjà et diffèrent par thème (`data-theme`). */
+.article-page table { width: 100%; border-collapse: collapse; margin: 0 0 var(--space-8); font-size: var(--fs-md); }
+.article-page th,
+.article-page td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-soft); text-align: left; color: var(--muted); }
+.article-page thead th { background: var(--panel-2); border-bottom: 1px solid var(--border); color: var(--text); font-weight: 600; }
+.article-page tbody tr:nth-child(even) { background: var(--panel-2); }
 
 /* --- Bloc « Articles similaires » (template + articles) -------------------- */
 .article-page .related { margin-top: var(--space-11); padding-top: var(--space-9); border-top: 1px solid var(--border-soft); }
@@ -120,4 +129,9 @@
 
 @media (max-width: 480px) {
   .blog-page .cat-grid { grid-template-columns: repeat(2, 1fr); }
+  /* `overflow-x` est IGNORÉ sur une boîte `display: table` (la valeur calculée
+     reste `visible`) : un conteneur de défilement exige un bloc. D'où
+     `display: block`. Sans effet quand le tableau tient dans la largeur
+     disponible — mesuré à 0 px de différence à 375 px. */
+  .article-page table { display: block; overflow-x: auto; }
 }

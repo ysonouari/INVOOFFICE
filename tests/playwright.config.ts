@@ -43,6 +43,7 @@ export default defineConfig({
         '**/landing.spec.ts',
         '**/seo-landing.spec.ts',
         '**/seo-architecture.spec.ts',
+        '**/blog-design-system.spec.ts',
       ],
     },
     // Étape 3 : tests non authentifiés
@@ -52,7 +53,12 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 800 },
       },
-      testMatch: ['**/landing.spec.ts', '**/seo-landing.spec.ts', '**/seo-architecture.spec.ts'],
+      testMatch: [
+        '**/landing.spec.ts',
+        '**/seo-landing.spec.ts',
+        '**/seo-architecture.spec.ts',
+        '**/blog-design-system.spec.ts',
+      ],
     },
   ],
   webServer: {
