@@ -221,6 +221,26 @@ function indexRepo(articles, options) {
   const files = [];
   const locs = [SITE + '/', SITE + '/blog/'];
 
+  // Le dépôt mocké contient AUSSI les fichiers des articles DÉJÀ PUBLIÉS, c'est-à-dire
+  // de tous les articles listés dans les index SAUF celui en cours de publication.
+  // Le contrôle de liens morts du Publisher (`verifyFooterBlockLinks`) exige
+  // qu'un index ne puisse pointer que vers un fichier RÉELLEMENT présent : sans
+  // ces fichiers, la fixture produirait des liens morts et toute publication
+  // serait refusée. La cible est volontairement ABSENTE du dépôt — c'est ce qui
+  // exerce le chemin de création (404) plutôt que celui de mise à jour.
+  const targetId = o.targetId !== undefined && o.targetId !== null
+    ? o.targetId
+    : (o.activeCellRow !== undefined && o.activeCellRow !== null
+      ? (list[o.activeCellRow - 2] || {}).ID
+      : undefined);
+  indexed.filter((a) => a.ID !== targetId).forEach((a) => {
+    files.push({
+      path: slugOf(a) + '.html',
+      content: '<!DOCTYPE html><html lang="fr"><head><title>' + a.TITLE +
+        '</title></head><body><p>Article deja publie.</p></body></html>'
+    });
+  });
+
   const itemsFor = (predicate, withCategory) => indexed
     .filter(predicate)
     .map((a) => ({
@@ -286,7 +306,10 @@ function setup(opt) {
   const withIndexes = o.indexes !== false;
 
   const baseFetch = makeFetchMock(o.routes || [templateRoute()]);
-  const files = o.indexFiles || indexRepo(articles, repoOptions);
+  const files = o.indexFiles || indexRepo(articles, Object.assign({}, repoOptions, {
+    targetId: o.targetId,
+    activeCellRow: o.activeCell ? o.activeCell.row : null
+  }));
   const fetchMock = withIndexes
     ? makeGitMock(files, o.routes || [templateRoute()], o.fetchOptions)
     : baseFetch;
@@ -491,7 +514,8 @@ test('gabarit introuvable : ERROR + message, aucun write', () => {
   eq(result.code, 'TEMPLATE', 'code');
   eq(status(s.ctx, 'A-1'), 'ERROR', 'statut');
   ok(row(s.ctx, 'A-1').ERROR.length > 0, 'ERROR renseigné');
-  eq(s.fetch.calls.length, 1, 'un seul appel (lecture gabarit)');
+  assertReadOnly(s, 'échec gabarit');
+  eq(templateWasRead(s), 1, 'le gabarit a bien été lu');
 });
 
 test('rendu en échec : ERROR + codes du moteur', () => {
@@ -505,7 +529,7 @@ test('rendu en échec : ERROR + codes du moteur', () => {
   eq(result.code, 'RENDER', 'code');
   eq(status(s.ctx, 'A-1'), 'ERROR', 'statut');
   includes(row(s.ctx, 'A-1').ERROR, 'V5', 'code V5 (CONTENT) reported');
-  eq(s.fetch.calls.length, 1, 'aucun write tenté');
+  assertReadOnly(s, 'échec de rendu');
 });
 
 test('validation de production : un lien mort dans le corps bloque la publication', () => {
@@ -543,7 +567,7 @@ test('READING_TIME absent : ERROR (le temps de lecture est éditorial, jamais ca
   notOk(result.ok, 'résultat');
   eq(result.code, 'RENDER', 'code');
   includes(row(s.ctx, 'A-1').ERROR, 'R3b', 'code R3b (temps de lecture)');
-  eq(s.fetch.calls.length, 1, 'aucune écriture');
+  assertReadOnly(s, 'temps de lecture absent');
 });
 
 test('PUBLISHED_AT vide : la date du jour est posée au format attendu par le moteur', () => {
@@ -598,7 +622,8 @@ test('TEST_MODE=TRUE : rendu et validation exécutés, AUCUNE écriture', () => 
   eq(result.code, 'TEST_MODE', 'code');
   ok(result.testMode, 'indicateur mode test');
   ok(result.validation && result.validation.ok, 'la validation de production a bien tourné');
-  eq(s.fetch.calls.length, 1, 'seule la lecture du gabarit');
+  assertReadOnly(s, 'mode test');
+  eq(templateWasRead(s), 1, 'le gabarit a été lu');
   eq(status(s.ctx, 'A-1'), 'READY', 'statut restauré (publiable)');
   eq(row(s.ctx, 'A-1').ERROR, '', 'ERROR vide');
 });
@@ -613,7 +638,7 @@ test('GITHUB_WRITE_ENABLED=FALSE : refus, aucun write', () => {
   const result = call(s.ctx, 'publishSelectedArticle');
   notOk(result.ok, 'résultat');
   eq(result.code, 'WRITES_DISABLED', 'code');
-  eq(s.fetch.calls.length, 1, 'aucun write');
+  assertReadOnly(s, 'écritures désactivées');
   eq(status(s.ctx, 'A-1'), 'READY', 'statut restauré');
 });
 
@@ -627,7 +652,7 @@ test('Config absente : refus fermé (fail closed)', () => {
   const result = call(s.ctx, 'publishSelectedArticle');
   notOk(result.ok, 'résultat');
   eq(result.code, 'GATE', 'code');
-  eq(s.fetch.calls.length, 1, 'aucun write');
+  assertReadOnly(s, 'config absente');
   eq(status(s.ctx, 'A-1'), 'READY', 'statut restauré');
 });
 
@@ -918,7 +943,8 @@ test('deux exécutions en mode test ne produisent aucun write', () => {
   call(s.ctx, 'publishSelectedArticle');
   const r2 = call(s.ctx, 'publishSelectedArticle');
   eq(r2.code, 'TEST_MODE', 'deuxième passage toujours refusé');
-  eq(s.fetch.calls.length, 2, 'seules les deux lectures du gabarit');
+  assertReadOnly(s, 'deuxième passage');
+  eq(templateWasRead(s), 2, 'chaque passage a lu le gabarit');
   eq(status(s.ctx, 'A-1'), 'READY', 'statut toujours publiable');
 });
 
@@ -1142,9 +1168,13 @@ test('TEST-001 complet : READY + TEST_MODE, rendu et validation OK, 0 write', ()
   // 6. aucune écriture GitHub
   eq(publishCalls.filter((c) => c.method !== 'get').length, 0, '0 write (0 PUT/POST/PATCH/DELETE)');
   eq(s.fetch.calls.filter((c) => c.method !== 'get').length, 0, '0 write sur la session entière');
-  eq(publishCalls.length, 1, 'le Publisher n’a fait qu’une requête');
-  ok(publishCalls[0].path.indexOf(TEMPLATE_ROUTE) !== -1, 'l’unique appel est le GET du gabarit');
-  ok(publishCalls[0].path.indexOf('?ref=master') !== -1, 'lecture sur la branche master');
+  // Le rendu exige désormais les index de catégorie (voisinage) : la sonde fait
+  // donc plusieurs lectures. Seule l'ABSENCE d'écriture est un invariant ici ;
+  // l'ordre exact des lectures est couvert par T8.
+  eq(publishCalls.filter((c) => c.method === 'get').length, publishCalls.length, 'que des lectures');
+  const firstTemplate = publishCalls.filter((c) => c.path.indexOf(TEMPLATE_ROUTE) !== -1)[0];
+  ok(firstTemplate !== undefined, 'le GET du gabarit fait partie des lectures');
+  ok(firstTemplate.path.indexOf('?ref=master') !== -1, 'lecture sur la branche master');
   ok(s.fetch.calls[0].path.indexOf(TEMPLATE_ROUTE) !== -1, 'la sonde a lu le même gabarit');
 
   // 7. aucun appel réel : toute route non mockée lève
@@ -1217,6 +1247,162 @@ test('TEST-001 : le rendu complet fonctionne si les deux verrous sont ouverts', 
 /* Réconciliation des index statiques du Blog                                  */
 /* ========================================================================== */
 
+/* ========================================================================== */
+/* Contexte de voisinage : ACCUMULATION cross-catégories                       */
+/* ========================================================================== */
+
+suite('Contexte de voisinage');
+
+/** Article publié, déjà listé dans les index. */
+function seed(id, category, slug, dateIso) {
+  return makeArticle({
+    ID: id, TITLE: id + ' titre', CATEGORY: category, SLUG: slug,
+    PUBLISHED_AT: dateIso, ARTICLE_EXCERPT: 'Extrait ' + id, __seeded: true
+  });
+}
+
+const SELF = makeArticle({ ID: 'A-9', SLUG: 'cible', PUBLISHED_AT: '2026-07-20' });
+
+/** Chemins des index de catégorie effectivement lus, dans l'ordre réel. */
+function indexesRead(s) {
+  return s.fetch.calls
+    .filter((c) => c.method === 'get')
+    .map((c) => c.path.split('?')[0].replace(/^.*\/contents\//, ''))
+    .filter((p) => /^blog\/[^/]+\/index\.html$/.test(p));
+}
+
+test('régression : les listes cross-catégories s\'ACCUMULENT (1 propre + 3 autres ⇒ 3 cartes)', () => {
+  // AVANT le correctif, la sélection était recalculée sur la SEULE dernière
+  // catégorie lue : ce test rend 2 cartes au lieu de 3 et le prouve.
+  const s = setup({
+    articles: [
+      seed('T-1', 'TVA Maroc', 'tva-1', '2026-01-05'),
+      seed('A-1', 'Auto-entrepreneur', 'ae-1', '2026-01-06'),
+      seed('D-1', 'Devis', 'devis-1', '2026-01-07'),
+      seed('G-1', 'Guides', 'guides-1', '2026-01-08'),
+      SELF
+    ],
+    targetId: 'A-9',
+    indexes: { includeArticle: false }
+  });
+
+  const ctx = call(s.ctx, 'resolveArticleContext', SELF, '2026-07-20');
+  ok(ctx.ok, 'contexte résolu : ' + ctx.error);
+
+  eq(ctx.related.length, 3, '3 cartes, et non les seules cartes de la dernière catégorie lue');
+
+  // Les 3 cartes viennent de 3 catégories DIFFÉRENTES : l'accumulation est donc
+  // prouvée par la diversité, pas seulement par le compte.
+  const cats = ctx.related.map((r) => r.path.split('/')[2]);
+  eq(cats.length, 3, '3 chemins');
+  eq(new Set(cats).size, 3, '3 catégories différentes : ' + cats.join(', '));
+
+  eq(new Set(ctx.related.map((r) => r.path)).size, 3, 'aucun doublon');
+  eqList(ctx.related.map((r) => r.title), ['T-1 titre', 'A-1 titre', 'D-1 titre'],
+    'catégorie propre d\'abord, puis l\'ordre de lecture des autres');
+  notOk(ctx.related.some((r) => r.path === '/blog/tva/cible.html'), 'jamais l\'article lui-même');
+});
+
+test('catégorie propre vide + 2 autres catégories ⇒ 2 cartes', () => {
+  const s = setup({
+    articles: [
+      seed('A-1', 'Auto-entrepreneur', 'ae-1', '2026-01-06'),
+      seed('D-1', 'Devis', 'devis-1', '2026-01-07'),
+      SELF
+    ],
+    targetId: 'A-9',
+    indexes: { includeArticle: false }
+  });
+
+  const ctx = call(s.ctx, 'resolveArticleContext', SELF, '2026-07-20');
+  ok(ctx.ok, 'contexte résolu : ' + ctx.error);
+  eq(ctx.related.length, 2, 'les 2 seules cartes disponibles');
+  eqList(ctx.related.map((r) => r.path), ['/blog/auto-entrepreneur/ae-1.html', '/blog/devis/devis-1.html'],
+    'les deux catégories lues, dans l\'ordre');
+  eq(ctx.previous, null, 'aucun voisin : la catégorie propre est vide');
+  eq(ctx.next, null, 'aucun voisin : la catégorie propre est vide');
+});
+
+test('lecture paresseuse : catégorie propre dense ⇒ AUCUNE lecture des autres', () => {
+  const s = setup({
+    articles: [
+      seed('T-1', 'TVA Maroc', 'tva-1', '2026-01-05'),
+      seed('T-2', 'TVA Maroc', 'tva-2', '2026-01-06'),
+      seed('T-3', 'TVA Maroc', 'tva-3', '2026-01-07'),
+      seed('A-1', 'Auto-entrepreneur', 'ae-1', '2026-01-08'),
+      seed('D-1', 'Devis', 'devis-1', '2026-01-09'),
+      SELF
+    ],
+    targetId: 'A-9',
+    indexes: { includeArticle: false }
+  });
+
+  const ctx = call(s.ctx, 'resolveArticleContext', SELF, '2026-07-20');
+  ok(ctx.ok, 'contexte résolu : ' + ctx.error);
+  eq(ctx.related.length, 3, 'plafond atteint dès la catégorie propre');
+  eqList(indexesRead(s), ['blog/tva/index.html'],
+    'une seule requête : celle de l\'index propre, aucun GET inutile');
+});
+
+test('lecture paresseuse : arrêt EXACT dès la 3e carte, ordre de lecture déterministe', () => {
+  const s = setup({
+    articles: [
+      seed('A-1', 'Auto-entrepreneur', 'ae-1', '2026-01-06'),
+      seed('D-1', 'Devis', 'devis-1', '2026-01-07'),
+      seed('F-1', 'Facturation', 'fact-1', '2026-01-08'),
+      seed('G-1', 'Guides', 'guides-1', '2026-01-09'),
+      SELF
+    ],
+    targetId: 'A-9',
+    indexes: { includeArticle: false }
+  });
+
+  const ctx = call(s.ctx, 'resolveArticleContext', SELF, '2026-07-20');
+  ok(ctx.ok, 'contexte résolu : ' + ctx.error);
+  eq(ctx.related.length, 3, '3 cartes');
+  // `listKnownCategories()` trie les noms : l'ordre de lecture est donc
+  // déterministe et indépendant de l'ordre d'insertion dans CATEGORY_MAP.
+  eqList(indexesRead(s), [
+    'blog/tva/index.html',          // l'index propre, toujours lu
+    'blog/auto-entrepreneur/index.html',
+    'blog/devis/index.html',
+    'blog/facturation/index.html'   // 3e carte atteinte ici
+  ], 'lecture arrêtée sur Facturation : Guides n\'est jamais demandé');
+  eqList(ctx.related.map((r) => r.title), ['A-1 titre', 'D-1 titre', 'F-1 titre'],
+    'les 3 premières catégories lues, dans l\'ordre');
+});
+
+test('404 sur l\'index PROPRE = tolérance, mais une erreur de lecture BLOQUE', () => {
+  // L'index propre est absent ET déclaré en 404, comme en production.
+  const tolerated = setup({
+    articles: [SELF],
+    targetId: 'A-9',
+    indexes: { includeArticle: false, omit: ['blog/tva/index.html'] },
+    routes: [templateRoute(), { method: 'get', path: '/contents/blog/tva/index.html', code: 404, body: { message: 'Not Found' } }]
+  });
+  const okCtx = call(tolerated.ctx, 'resolveArticleContext', SELF, '2026-07-20');
+  ok(okCtx.ok, 'un 404 est une absence, pas une panne : ' + okCtx.error);
+  eqList(okCtx.related, [], 'aucun candidat');
+  eq(okCtx.previous, null, 'aucun voisin');
+  eq(okCtx.next, null, 'aucun voisin');
+
+  // Même fichier absent, mais le serveur répond 500 : c'est une panne de
+  // lecture, et elle doit arrêter la publication.
+  const broken = setup({
+    articles: [SELF],
+    targetId: 'A-9',
+    indexes: { includeArticle: false, omit: ['blog/tva/index.html'] },
+    routes: [templateRoute(), { method: 'get', path: '/contents/blog/tva/index.html', code: 500, body: { message: 'Server Error' } }]
+  });
+  const badCtx = call(broken.ctx, 'resolveArticleContext', SELF, '2026-07-20');
+  notOk(badCtx.ok, 'une erreur de lecture non-404 BLOQUE');
+  includes(badCtx.error, 'blog/tva/index.html', 'le message nomme le fichier fautif');
+});
+
+/* ========================================================================== */
+/* Réconciliation des index statiques du Blog                                  */
+/* ========================================================================== */
+
 suite('Index Blog');
 
 /** Article prêt à publier, dans une catégorie à part. */
@@ -1232,6 +1418,25 @@ function publishRoutes(articlePath) {
     { method: 'get', path: route, code: 404, body: { message: 'Not Found' } },
     { method: 'put', path: route, body: putResponse(articlePath, 'x', 'sha-art', 'commit-art') }
   ];
+}
+
+/** Le gabarit a bien été lu (et pas plus d'une fois par exécution). */
+function templateWasRead(s) {
+  return s.fetch.calls.filter(
+    (c) => c.method === 'get' && c.path.indexOf('/blog/template-article.html') !== -1
+  ).length;
+}
+
+/**
+ * Aucune écriture n'a été tentée : seules des LECTURES sont autorisées.
+ *
+ * Le nombre exact de lectures n'est plus une valeur d'assertion — il dépend du
+ * nombre de catégories (le voisinage lit l'index de la catégorie, puis les
+ * autres tant qu'il n'a pas 3 cartes). L'invariant vérifié ici est « 0 PUT », et
+ * l'ordre des lectures est couvert précisément par T8.
+ */
+function assertReadOnly(s, label) {
+  eq(s.fetch.calls.filter((c) => c.method !== 'get').length, 0, label + ' : aucune écriture');
 }
 
 /** Les 4 écritures de la séquence, dans l'ordre où elles ont eu lieu. */
@@ -1391,15 +1596,21 @@ test('T4 : le sitemap n\'est jamais dupliqué', () => {
 
 test('T5 : index de catégorie absent → avertissement, article PUBLISHED, aucun PUT sur ce fichier', () => {
   const a = tvaArticle();
+  // Un fichier ABSENT se simule par une route GET explicite en 404 : c'est le
+  // contrat réel de `getFile()` (404 → null). Omettre le fichier sans déclarer
+  // la route ferait échouer la lecture, ce qui testerait autre chose.
+  const routes = publishRoutes(ARTICLE_PATH).concat([
+    { method: 'get', path: '/contents/blog/tva/index.html', code: 404, body: { message: 'Not Found' } }
+  ]);
   const s = setup({
     articles: [a],
     indexes: { includeArticle: false, omit: ['blog/tva/index.html'] },
     activeCell: { row: 2 },
-    routes: publishRoutes(ARTICLE_PATH)
+    routes: routes
   });
 
   const result = call(s.ctx, 'publishSelectedArticle');
-  ok(result.ok, 'l\'article EST publié : ' + result.code);
+  ok(result.ok, 'l\'article EST publié : ' + result.code + ' / ' + result.message + ' / ' + result.error);
   eq(result.status, 'PUBLISHED', 'statut PUBLISHED');
   eq(row(s.ctx, 'A-1').STATUS, 'PUBLISHED', 'PUBLISHED en feuilles de test');
   eq(result.indexed, false, 'index NON réconcilié');
@@ -1493,8 +1704,11 @@ test('T7 : un article absent de la liste est inséré en tête, l\'ordre des aut
 });
 
 test('T8 : ordre des appels garanti même quand l\'article est déjà à jour', () => {
-  // L\'ordre porte sur les LECTURES : la réconciliation doit lire la catégorie,
-  // puis le hub, puis le sitemap, dans cet ordre, à chaque publication.
+  // L'ordre porte sur les LECTURES. Le voisinage éditorial se résout AVANT le
+  // rendu, donc avant toute écriture : l'index de la catégorie d'abord, puis —
+  // seulement si la catégorie ne fournit pas RELATED_LIMIT cartes — les autres
+  // catégories par ordre alphabétique, et enfin la réconciliation (catégorie,
+  // hub, sitemap) qui, elle, suit l'écriture de l'article.
   const a = tvaArticle();
   const s = setup({ articles: [a], activeCell: { row: 2 }, routes: publishRoutes(ARTICLE_PATH) });
   call(s.ctx, 'publishSelectedArticle');
@@ -1504,14 +1718,27 @@ test('T8 : ordre des appels garanti même quand l\'article est déjà à jour', 
     .map((c) => c.path.split('?')[0]);
   eqList(indexReads, [
     '/repos/ysonouari/INVOOFFICE/contents/blog/tva/index.html',
+    '/repos/ysonouari/INVOOFFICE/contents/blog/auto-entrepreneur/index.html',
+    '/repos/ysonouari/INVOOFFICE/contents/blog/devis/index.html',
+    '/repos/ysonouari/INVOOFFICE/contents/blog/facturation/index.html',
+    '/repos/ysonouari/INVOOFFICE/contents/blog/guides/index.html',
+    '/repos/ysonouari/INVOOFFICE/contents/blog/tva/index.html',
     '/repos/ysonouari/INVOOFFICE/contents/blog/index.html',
     '/repos/ysonouari/INVOOFFICE/contents/sitemap-fr.xml'
-  ], 'catégorie, puis hub, puis sitemap');
+  ], 'voisinage (catégorie puis complément), puis réconciliation : catégorie, hub, sitemap');
 
-  // L\'écriture de l\'article précède la première lecture d\'index.
-  const firstIndexRead = s.fetch.calls.findIndex((c) => c.method === 'get' && c.index);
-  const articlePut = s.fetch.calls.findIndex((c) => c.method === 'put' && c.path.indexOf(ARTICLE_PATH) !== -1);
-  ok(articlePut !== -1 && articlePut < firstIndexRead, 'l\'article est écrit AVANT toute lecture d\'index');
+  // Les lectures de voisinage précèdent l'écriture de l'article (il faut les
+  // voisins pour RENDRE l'article) ; l'écriture précède en revanche toute
+  // lecture de RÉCONCILIATION (catégorie, hub, sitemap).
+  const reconStart = s.fetch.calls.findIndex((c) => c.method === 'put' && c.path.indexOf(ARTICLE_PATH) !== -1);
+  const afterWrite = s.fetch.calls.slice(reconStart + 1);
+  const recon = afterWrite.filter((c) => c.method === 'get' && c.index).map((c) => c.path.split('?')[0]);
+  eqList(recon, [
+    '/repos/ysonouari/INVOOFFICE/contents/blog/tva/index.html',
+    '/repos/ysonouari/INVOOFFICE/contents/blog/index.html',
+    '/repos/ysonouari/INVOOFFICE/contents/sitemap-fr.xml'
+  ], 'après l\'écriture : catégorie, puis hub, puis sitemap');
+  ok(reconStart !== -1, 'l\'article a bien été écrit');
 });
 
 test('T9 : conflit SHA sur un index → relecture du SHA puis retry borné', () => {

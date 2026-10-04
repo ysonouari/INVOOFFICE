@@ -351,12 +351,21 @@ function buildRelatedArticles(related, opt) {
 }
 
 /**
+ * Emplacement d'un côté absent de la navigation (décision E3).
+ * `.prev-next` est un flex `justify-content: space-between` : sans
+ * emplacement, le « Suivant » du premier article d'une catégorie se colle à
+ * gauche au lieu d'être à droite, et la navigation diffère visuellement de celle
+ * des articles qui ont deux voisins.
+ */
+var EMPTY_NAV_SLOT = '<span></span>';
+
+/**
  * Lien précédent / suivant. Libellés génériques (PO-4) : aucune colonne
  * supplémentaire, le titre du voisin est la seule donnée variable.
  *
  * @param {{title:string,path?:string,url?:string}|null} neighbour
  * @param {'previous'|'next'} kind
- * @return {string} HTML de confiance
+ * @return {string} HTML de confiance ('' si le voisin n'existe pas)
  */
 function buildArticleLink(neighbour, kind) {
   if (!neighbour) return '';
@@ -599,15 +608,104 @@ function stripDevComment(html) {
  *
  * Ancré sur `.back-blog` : le lien « Blog » du fil d'Ariane et celui du pied
  * de page pointent vers le HUB et ne doivent pas être redirigés.
+ *
+ * Le HREF et le LIBELLÉ sont tous deux réécrits (décision E4). Le gabarit ne
+ * contient qu'un libellé constant — « ← Retour au blog » — que la seule règle 5
+ * d'origine ne touchait pas : les articles générés affichaient donc « Retour au
+ * blog » en pointant pourtant sur leur catégorie. Le libellé retenu, « ← Retour
+ * à la catégorie {Nom} », est celui des trois articles déjà produits par un
+ * ancien pipeline (`auto-entrepreneur/*`, `tva/*`, `devis/…`) : aucune donnée
+ * éditoriale nouvelle n'est introduite.
+ *
+ * Le remplacement passe par une FONCTION et non une chaîne `$1` : le nom de
+ * catégorie est échappé par `escHtml()` et une séquence `$` y serait
+ * interprétée comme une référence de groupe.
+ *
+ * @param {string} html
+ * @param {{slug:string,name:string}} category
+ * @return {string}
  */
-function backLinkToCategory(html, categorySlug) {
+function backLinkToCategory(html, category) {
+  var slug = String(category && category.slug ? category.slug : '').trim();
+  var name = String(category && category.name ? category.name : '').trim();
+  if (!slug || !name) {
+    throw new Error('Catégorie incomplète : règle 5 inapplicable.');
+  }
   var pattern = new RegExp(
-    '(<div class="back-blog"[^>]*>\\s*<a href=")/blog/(")', 'i');
-  var out = String(html || '').replace(pattern, '$1/blog/' + escHtml(categorySlug) + '/$2');
+    '(<div class="back-blog"[^>]*>\\s*<a href=")/blog/("[^>]*>)[^<]*(<\\/a>)', 'i');
+  var out = String(html || '').replace(pattern, function (match, pre, mid, post) {
+    return pre + '/blog/' + escHtml(slug) + '/' + mid +
+      '← Retour à la catégorie ' + escHtml(name) + post;
+  });
   if (out === html) {
     throw new Error('Gabarit : bloc .back-blog introuvable (règle 5 inapplicable).');
   }
   return out;
+}
+
+/**
+ * Repère l'index, dans `html`, du `</div>` qui ferme le `<div>` ouvert à
+ * `start`. Le comptage de profondeur évite toute hypothèse sur le contenu
+ * intermédiaire (cartes imbriquées, balises Libellées).
+ *
+ * @return {number} index juste APRÈS le `</div>` fermant, -1 si non fermé
+ */
+function findClosingDiv(html, start) {
+  var re = /<div\b[^>]*>|<\/div>/g;
+  re.lastIndex = start;
+  var depth = 0;
+  var m;
+  while ((m = re.exec(html)) !== null) {
+    if (m[0].charAt(1) === '/') {
+      depth--;
+      if (depth === 0) return m.index + m[0].length;
+    } else {
+      depth++;
+    }
+  }
+  return -1;
+}
+
+/**
+ * Règle 5c — « Articles similaires » : le bloc, TITRE COMPRIS, n'est pas émis
+ * lorsqu'aucune carte n'a été rendue (décision E2).
+ *
+ * Le gabarit écrit toujours `<h3>Articles similaires</h3>` ; la grille vide
+ * laissait donc un titre orphelin au-dessus de rien. Le retrait se fait en
+ * post-traitement, après substitution, et le gabarit reste inchangé — il
+ * conserve ainsi ses placeholders, exigence de `validateTemplate()`.
+ *
+ * @param {string} html
+ * @return {string}
+ */
+function stripEmptyRelated(html) {
+  var source = String(html || '');
+  // Des cartes existent : le bloc est conservé tel quel.
+  if (/<div class="related-card">/.test(source)) return source;
+
+  var open = /<div class="related">/.exec(source);
+  if (!open) {
+    throw new Error('Gabarit : bloc .related introuvable (règle 5c inapplicable).');
+  }
+  var start = open.index;
+  var end = findClosingDiv(source, start);
+  if (end === -1) {
+    throw new Error('Gabarit : bloc .related non fermé (règle 5c inapplicable).');
+  }
+  var removed = source.slice(start, end);
+  if (!/<div class="related-grid">\s*<\/div>/.test(removed)) {
+    throw new Error('Gabarit : .related sans carte et sans grille vide (règle 5c).');
+  }
+
+  // Le commentaire de gabarit « <!-- RELATED ARTICLES --> » qui précède le
+  // bloc devient orphelin : il est retiré avec lui.
+  var lead = /[ \t]*<!--\s*RELATED ARTICLES\s*-->[ \t]*(\r?\n[ \t]*)?$/
+    .exec(source.slice(0, start));
+  if (lead) start -= lead[0].length;
+
+  // Le saut de ligne qui suit le bloc est conservé : la mise en page du
+  // gabarit reste inchangée pour ce qui suit.
+  return source.slice(0, start) + source.slice(end);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -744,8 +842,9 @@ function renderArticleHtml(article, options) {
   }
 
   var relatedHtml = buildRelatedArticles(opts.related, { newline: newline });
-  var prevLink = buildArticleLink(opts.previous, 'previous');
-  var nextLink = buildArticleLink(opts.next, 'next');
+  // E3 : un côté absent devient un emplacement vide, jamais une chaîne vide.
+  var prevLink = buildArticleLink(opts.previous, 'previous') || EMPTY_NAV_SLOT;
+  var nextLink = buildArticleLink(opts.next, 'next') || EMPTY_NAV_SLOT;
 
   /* --- 5. Table de substitution ---------------------------------------- */
   var single = {
@@ -789,7 +888,8 @@ function renderArticleHtml(article, options) {
     html = deepenAssets(html);          // règle 2
     html = publishRobots(html);         // règle 3
     html = stripDevComment(html);       // règle 4
-    html = backLinkToCategory(html, category.slug); // règle 5
+    html = backLinkToCategory(html, category);   // règle 5
+    html = stripEmptyRelated(html);             // règle 5c
   } catch (e) {
     return { ok: false, errors: [{ code: 'R5b', message: e.message }], warnings: warnings };
   }

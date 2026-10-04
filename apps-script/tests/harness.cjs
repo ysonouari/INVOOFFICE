@@ -37,6 +37,7 @@ const MODULES = [
   'TemplateLoader.gs',
   'Logger.gs',
   'Renderer.gs',
+  'ArticleNeighbours.gs',
   'Publisher.gs',
   'Scheduler.gs',
   'BlogIndexes.gs',
@@ -645,9 +646,21 @@ function makeGitMock(indexFiles, routes, opt) {
   const repo = makeRepoMock(indexFiles, { fallback: null });
   const queue = makeFetchMock(routes || []);
   const calls = [];
-  const seeded = (indexFiles || []).map((f) => f.path);
   const o = opt || {};
   const failOnce = o.failOnce || null;
+  // « Lecture d'index » est une propriété du CHEMIN, pas du dépôt ensemencé :
+  // seuls les index de catégorie, le hub et le sitemap en sont. Les fichiers
+  // article sont eux aussi ensemencés (le contrôle de liens morts du Publisher
+  // exige qu'un index ne pointe que vers un fichier réel) mais un GET sur un
+  // article n'est pas une lecture d'index.
+  const isIndexPath = (p) =>
+    p === 'sitemap-fr.xml' ||
+    p === 'blog/index.html' ||
+    /^blog\/[^/]+\/index\.html$/.test(p);
+  // Le ROUTAGE reste « servi si le fichier est ENSEMENCÉ » : le gabarit et
+  // l'article passent par les routes ponctuelles, donc une route non déclarée
+  // demeure une erreur franche.
+  const seeded = (indexFiles || []).map((f) => f.path);
   let fired = false;
 
   const fetchImpl = (url, params) => {
@@ -658,18 +671,13 @@ function makeGitMock(indexFiles, routes, opt) {
     const withQuery = raw.replace(/^https?:\/\/[^/]+/, '');
     const bare = withQuery.split('?')[0];
     const rel = CONTENTS_PATH_RE.test(bare) ? bare.replace(CONTENTS_PATH_RE, '') : null;
-    // Un chemin n'est servi par le dépôt mocké que s'il a été ENSEMENCÉ :
-    // le gabarit et l'article restent couverts par les routes ponctuelles, donc
-    // une route non déclarée demeure une erreur franche.
-    const isIndex = rel !== null && seeded.indexOf(rel) !== -1;
-
     // Journal unique, dans l'ordre réel des appels.
     calls.push({
       url: raw,
       path: withQuery,
       method: method,
       payload: params && params.payload ? params.payload : null,
-      index: isIndex
+      index: rel !== null && isIndexPath(rel)
     });
 
     if (failOnce && !fired &&
@@ -684,13 +692,18 @@ function makeGitMock(indexFiles, routes, opt) {
       };
     }
 
-    if (isIndex) return repo(url, params);
+    if (rel !== null && seeded.indexOf(rel) !== -1) return repo(url, params);
     return queue(url, params);
   };
 
   fetchImpl.fetch = fetchImpl;
   fetchImpl.calls = calls;
-  fetchImpl.indexCalls = calls.filter((c) => c.index);
+  // `indexCalls` doit être un GETTER : un simple `calls.filter(...)` figeait
+  // le tableau à la création du mock, donc VIDE pour tout test écrivant après
+  // (et donc invisible au lieu de simplement faux).
+  Object.defineProperty(fetchImpl, 'indexCalls', {
+    get: () => calls.filter((c) => c.index)
+  });
   fetchImpl.base = queue;
   fetchImpl.file = repo.file;
   fetchImpl.has = repo.has;

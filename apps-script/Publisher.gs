@@ -36,6 +36,9 @@ var PUBLISH_LOCK_MS = 1000;
 /** Nombre de relectures du SHA après un conflit 409 (1 = borné, déterministe). */
 var PUBLISH_CONFLICT_RETRIES = 1;
 
+/** Cartes maximum dans « Articles similaires » (grille du gabarit). */
+var RELATED_LIMIT = 3;
+
 /**
  * Attente du verrou de script pour une SUPPRESSION (D5).
  *
@@ -205,14 +208,42 @@ function runPublishPipeline(id, opts) {
     return failToError(id, article, 'TEMPLATE', template.error);
   }
 
+/* --- 2b. Voisinage éditorial (index de catégorie = source de vérité) --- */
+  var context = resolveArticleContext(article, publishedAt);
+  if (!context.ok) {
+    // Catégorie inconnue : le voisinage en a besoin, mais le MESSAGE doit rester
+    // celui du moteur (code V3, libellé exact). On le laisse donc produire
+    // l'erreur, sans voisinage : l'opérateur retrouve la même sortie qu'avant.
+    if (context.code === 'RENDER') {
+      var diag = renderArticleHtml(article, {
+        templateHtml: template.html,
+        publishedAt: publishedAt
+      });
+      if (!diag.ok) {
+        return failToError(id, article, 'RENDER', describeRenderErrors(diag.errors));
+      }
+    }
+    return failToError(id, article, context.code || 'INDEX', context.error);
+  }
+
   /* --- 3. Rendu + validation du contrat de production ------------------- */
   var render = renderArticleHtml(article, {
     templateHtml: template.html,
-    publishedAt: publishedAt
+    publishedAt: publishedAt,
+    related: context.related,
+    previous: context.previous,
+    next: context.next
   });
   if (!render.ok) {
     return failToError(id, article, 'RENDER', describeRenderErrors(render.errors));
   }
+
+  /* --- 3b. Aucun lien mort vers un fichier absent (échec fermé) ---------- */
+  var links = verifyFooterBlockLinks(render.html);
+  if (!links.ok) {
+    return failToError(id, article, 'LINK', links.error);
+  }
+
 
   /* --- 4. Verrous d'écriture, APRÈS rendu et validation ----------------- */
   var gate = publishGate();
@@ -984,15 +1015,49 @@ function renderDeleteDialogHtml(article, identity) {
     'style="padding:6px 14px;color:#fff;background:#b91c1c;border:1px solid #b91c1c;',
     'border-radius:3px;cursor:pointer">SUPPRIMER DÉFINITIVEMENT</button>',
     '</div>',
+    // Zone de résultat : SEUL canal de retour visible du dialogue. Ni `alert()`
+    // (avalé par le sandbox de l'iframe HtmlService) ni un libellé de bouton ne
+    // permettent à l'opérateur de lire un refus (code + message).
+    '<div id="result" role="status" aria-live="polite" style="margin-top:12px"></div>',
     '<script>',
     'function cancelDelete(){google.script.host.close()}',
-    'document.getElementById("cancel").addEventListener("click",cancelDelete);',
-    'document.getElementById("confirm").addEventListener("click",function(){',
-    'var b=this;b.disabled=true;',
+    'var bConfirm=document.getElementById("confirm");',
+    'var bCancel=document.getElementById("cancel");',
+    'var bResult=document.getElementById("result");',
+    'var D5_COLORS={busy:["#b45309","#fffbeb"],ok:["#15803d","#f0fdf4"],ko:["#b91c1c","#fef2f2"]};',
+    'function d5Say(kind,text){',
+    'var c=D5_COLORS[kind];',
+    'bResult.textContent=text;',
+    'bResult.style.cssText="margin-top:12px;padding:8px;border-radius:3px;',
+    'white-space:pre-wrap;word-break:break-word;color:"+c[0]+";background:"+c[1]+";',
+    'border:1px solid "+c[0]+";";',
+    // Le dialogue ne se referme jamais tout seul : « Fermer » force une lecture.
+    'bCancel.textContent="Fermer";',
+    'try{if(bResult.scrollIntoView)bResult.scrollIntoView()}catch(e){}',
+    '}',
+    'bCancel.addEventListener("click",cancelDelete);',
+    'bConfirm.addEventListener("click",function(){',
+    'var b=this;',
+    'if(b.disabled)return;',
+    // Verrou anti-double soumission : le bouton ne revient jamais actif, que la
+    // suppression réussisse ou échoue. Aucune nouvelle tentative sans diagnostic.
+    'b.disabled=true;',
+    'd5Say("busy","Suppression en cours…");',
     'google.script.run.withSuccessHandler(function(r){',
-    'document.getElementById("cancel").textContent=r&&r.ok?"Fermer":"Annulé";',
-    'b.disabled=false;',
-    '}).withFailureHandler(function(e){alert(String(e))})',
+    'if(r&&r.ok){',
+    'd5Say("ok",r.message?"Suppression : RÉUSSIE\\n"+r.message:"Suppression : RÉUSSIE");',
+    'return;',
+    '}',
+    // REFUS : le code et le message sont affichés, jamais masqués ni remplacés.
+    'd5Say("ko","Suppression : ÉCHEC ("+(r&&r.code?r.code:"ERREUR")+")\\n"',
+    '+(r&&r.message?r.message:"Aucun détail renvoyé par le serveur."));',
+    '}).withFailureHandler(function(e){',
+    'var msg=e&&e.message?String(e.message):String(e);',
+    // L'exception est à la fois affichée ET tracée : plus rien n'est avalé.
+    'console.error("[D5 delete] "+msg);',
+    'd5Say("ko","Suppression : ÉCHEC (exception)\\n"+msg);',
+    // Pas de `;` ici : la chaîne doit rester ouverte sur `.deleteArticleById(...)`.
+    '})',
     '.deleteArticleById(' + JSON.stringify(String(article.ID)) + ');});',
     '</script>',
     '</div>'
@@ -1354,4 +1419,171 @@ function formatPublishReport(result) {
     });
   }
   return lines.join('\n');
+}
+
+/* -------------------------------------------------------------------------- */
+/* Voisinage éditorial (les trois blocs de fin de page)                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Construit le contexte de voisinage d'un article à partir des INDEX DE
+ * CATÉGORIE publiés (source de vérité : ArticleNeighbours.gs).
+ *
+ * L'article en cours de rendu n'est PAS encore dans l'index — celui-ci n'est
+ * mis à jour qu'APRÈS, par `updateIndexesForArticle()`. Il est donc injecté
+ * dans la liste avant le calcul des voisins, sans quoi `pickNeighbours()` ne le
+ * trouverait pas et rendrait systématiquement deux voisins nuls. Sa position
+ * d'index est -1 : à date égale, un article neuf passe donc devant, ce qui est
+ * le comportement attendu du premier élément d'une série.
+ *
+ * ÉCHEC FERMÉ : un index illisible ou une catégorie inconnue ARRÊTE la
+ * publication. Aucun rendu dégradé n'est accepté — publier un article sans ses
+ * trois blocs reproduirait exactement le défaut que cette évolution corrige, et
+ * un lien mort resterait invisible jusqu'à la visite du lecteur.
+ *
+ * @param {Object} article ligne `Articles`
+ * @param {string} publishedAt date de publication ISO, conservée si déjà posée
+ * @return {{ok:boolean, error?:string, related?:Array, previous:?Object, next:?Object}}
+ */
+function resolveArticleContext(article, publishedAt) {
+  var categoryName = String(article.CATEGORY || '').trim();
+  var slug;
+  try {
+    slug = resolveCategory(categoryName).slug;
+} catch (e) {
+    // Catégorie inconnue : c'est un défaut de RENDU (le moteur l'aurait signalé
+    // de la même façon), pas une panne de lecture d'index. Le code doit rester
+    // RENDER pour que l'opérateur retrouve la cause à sa source.
+    return { ok: false, code: 'RENDER', error: String(e.message) };
+  }
+var selfHref = sitePath(slug, String(article.SLUG || '').trim());
+
+  var indexPath = APP.BLOG_DIR + '/' + slug + '/index.html';
+  var own = readCategoryIndex(indexPath);
+  if (!own.ok) {
+    return { ok: false, error: own.error };
+  }
+  // 404 sur l'index PROPRE : la catégorie n'a encore aucun article publié. Ce
+  // n'est pas une erreur — c'est notamment l'état d'une catégorie créée dans
+  // CATEGORY_MAP et pas encore utilisée. Le contraire créerait un blocage à
+  // deux mains : le tout premier article de la catégorie ne pourrait jamais être
+  // publié, puisque son index est créé par la réconciliation qui le suit. Le
+  // bloc « Articles similaires » est simplement omis (règle 5c) et les deux
+  // côtés de la navigation reçoivent un emplacement vide (E3).
+  var ownList = own.html === null ? [] : parseIndexArticles(own.html);
+
+  var selfEntry = {
+    href: selfHref,
+    title: String(article.TITLE || '').trim(),
+    excerpt: '',
+    dateIso: String(publishedAt || '').trim(),
+    position: -1
+  };
+  // L'article ne peut être injecté que s'il N'EST PAS déjà listé. Le cas
+  // contraire est réel — une republication, ou un index déjà réconcilié — et
+  // l'injecter une seconde fois produirait un voisin identique à l'article
+  // lui-même, donc un lien « Article suivant » vers soi.
+  var alreadyListed = ownList.some(function (item) { return item.href === selfHref; });
+  var pool = alreadyListed ? ownList : ownList.concat([selfEntry]);
+
+  var neighbours = pickNeighbours(pool, selfHref);
+
+  // Complément par les autres catégories : lectures LAZY et CROISSANTES.
+  //
+  // Les listes lues s'ACCUMULENT dans `otherLists` ; la sélection est calculée
+  // UNE SEULE FOIS, à la fin, sur l'ensemble accumulé. Calculer la sélection à
+  // chaque tour ne paraît pas économie — une sélection par catégorie — mais ça
+  // perd les candidats des catégories précédentes : le résultat final ne
+  // dépendait plus que de la DERNIÈRE catégorie lue.
+  //
+  // La boucle s'arrête dès que `countReachableCandidates()` annonceRELATED_LIMIT
+  // candidats. Comme ce compteur applique exactement la même déduplication que
+  // `pickRelated()`, l'arrêt est sûr : si 3 candidats sont atteignables, les 3
+  // cartes seront rendues, et lire une catégorie de plus serait du gaspillage
+  // (une requête GitHub par article publié). Sur une catégorie dense, aucune
+  // lecture n'est faite du tout. `listKnownCategories()` est trié, donc l'ordre
+  // des lectures est déterministe.
+  var otherLists = [];
+  var map = getCategoryMap();
+  var others = listKnownCategories().filter(function (otherName) {
+    return otherName !== categoryName;
+  });
+  for (var i = 0; i < others.length; i++) {
+    if (countReachableCandidates(ownList, otherLists, selfHref) >= RELATED_LIMIT) break;
+    var otherSlug = String(map[others[i]] || '');
+    if (!otherSlug) continue;
+    var otherPath = APP.BLOG_DIR + '/' + otherSlug + '/index.html';
+    var other = readCategoryIndex(otherPath);
+    if (!other.ok) return { ok: false, error: other.error };
+    // 404 sur une AUTRE catégorie : elle n'a aucun article publié, donc rien à
+    // proposer. Ce n'est pas une panne de lecture.
+    if (other.html === null) continue;
+    otherLists.push(parseIndexArticles(other.html));
+  }
+
+  var related = pickRelated(ownList, otherLists, selfHref, RELATED_LIMIT);
+
+  return {
+    ok: true,
+    related: related,
+    previous: neighbours.previous,
+    next: neighbours.next
+  };
+}
+
+/**
+ * Lit un index de catégorie en distinguant les DEUX situations que la lecture
+ * brute ne sépare pas :
+ *
+ *   - `null` : le fichier n'existe pas (404). Ce n'est pas une panne — il n'y a
+ *     simplement rien à proposer dans cette catégorie.
+ *   - `{ok:false}` : la LECTURE a échoué (réseau, 5xx, authentification). La
+ *     publication est alors REFUSÉE : poursuivre sur un index de catégorie
+ *     inaudible reviendrait à publier un article dont les trois blocs sont
+ *     choisis à l'aveugle, ce qui reproduirait le défaut que le voisinage
+ *     éditorial corrige — et un lien mort resterait invisible jusqu'à la visite
+ *     du lecteur.
+ *
+ * @param {string} path chemin de dépôt, ex. blog/tva/index.html
+ * @return {{ok:boolean, html:(string|null), error?:string}}
+ */
+function readCategoryIndex(path) {
+  var file;
+  try {
+    file = getFile(path);
+  } catch (e) {
+    return { ok: false, html: null, error: 'Lecture de l\'index impossible : ' + path + ' (' + redact(String(e && e.message ? e.message : e)) + ')' };
+  }
+  return { ok: true, html: file === null ? null : file.content };
+}
+
+/**
+ * Aucun lien mort dans les deux blocs de bas de page.
+ *
+ * Le contrôle porte sur le HTML RENDU, pas sur l'index : il vérifie donc
+ * exactement ce qui a été écrit, y compris un href produit par le gabarit.
+ *
+* @param {string} html HTML rendu
+ * @param {{exists?:function(string):boolean}} [deps] Injection de `fileExists`.
+ *   Le contrôle est une politique de sécurité de publication : il doit être
+ *   testable SANS réseau. En production, `deps` est omis et `fileExists()`
+ *   (Github.gs) est utilisé.
+ * @return {{ok:boolean, error?:string, checked:string[]}}
+ */
+function verifyFooterBlockLinks(html, deps) {
+  var exists = (deps && typeof deps.exists === 'function') ? deps.exists : fileExists;
+  var paths = extractFooterBlockLinks(html);
+  var missing = [];
+  paths.forEach(function (path) {
+    if (!exists(path)) missing.push(path);
+  });
+  if (missing.length) {
+    return {
+      ok: false,
+      error: 'Lien(s) mort(s) dans les blocs de fin de page : ' + missing.join(', ') +
+        '. Corrigez l’index de catégorie (entrée obsolète) avant de publier.',
+      checked: paths
+    };
+  }
+  return { ok: true, checked: paths };
 }

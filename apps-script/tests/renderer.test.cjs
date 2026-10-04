@@ -473,12 +473,45 @@ test('cartes related générées avec excerpt optionnel', () => {
     'carte sans résumé');
 });
 
-test('related vide ⇒ aucun div vide', () => {
+test('related vide ⇒ le bloc entier est absent, TITRE COMPRIS (contrat E2)', () => {
   const h = renderOk(makeArticle()).html;
-  // Le gabarit INDENTE l'emplacement : « <div class="related-grid">\r\n      \r\n    </div> ».
-  ok(/<div class="related-grid">\s*<\/div>/.test(h), 'grille vide assumée');
-  notContains(h, '<div class="related-card"></div>', 'carte vide');
+  // CHANGEMENT DE CONTRAT (décision E2, 2026-10-04). Le comportement
+  // précédent — « <h3>Articles similaires</h3> » au-dessus d'une grille vide —
+  // est RÉVOQUÉ : le gabarit écrivant toujours le titre, un article sans voisin
+  //liable affichait un en-tête orphelin. Le post-traitement (règle 5c) retire
+  // désormais le bloc, titre compris.
+  notContains(h, '<div class="related">', 'bloc .related retiré');
+  notContains(h, '<div class="related-grid">', 'grille retirée');
+  notContains(h, 'Articles similaires', 'titre orphelin retiré');
+  notContains(h, '<!-- RELATED ARTICLES -->', 'commentaire de gabarit retiré');
+  notContains(h, '<div class="related-card">', 'aucune carte');
   notContains(h, '<p></p>', 'paragraphe vide');
+  // Le reste de la fin de page est INTACT : la suppression est locale.
+  contains(h, '<nav class="prev-next"', 'navigation conservée');
+  contains(h, '<div class="back-blog">', 'retour catégorie conservé');
+  contains(h, '<div class="cta-box">', 'CTA conservé');
+  ok(call(createContext({}).ctx, 'isBalancedHtml', h),
+    'HTML toujours équilibré après retrait');
+});
+
+test('related non vide ⇒ le bloc et son titre sont conservés', () => {
+  const h = renderOk(makeArticle(), {
+    related: [{ title: 'Voisin', path: 'blog/tva/voisin.html', excerpt: 'Résumé.' }]
+  }).html;
+  contains(h, '<div class="related">', 'bloc conservé');
+  contains(h, '<h3>Articles similaires</h3>', 'titre conservé');
+  contains(h, '<div class="related-grid">', 'grille conservée');
+  contains(h, 'related-card', 'carte présente');
+});
+
+test('voisin absent ⇒ slot vide, pas de lien cassé (E3)', () => {
+  const nav = /<nav class="prev-next"[\s\S]*?<\/nav>/.exec(renderOk(makeArticle()).html)[0];
+  notContains(nav, '<a', 'lien résiduel');
+  notContains(nav, 'Article précédent', 'libellé orphelin');
+  notContains(nav, 'Article suivant', 'libellé orphelin');
+  // E3 : deux emplacements vides, un par côté, pour que « Suivant » reste à
+  // droite (flex + space-between) sur le premier article d'une catégorie.
+  contains(nav, '<span></span>', 'emplacement vide émis');
 });
 
 test('précédent / suivant : libellés génériques, aucun champ supplémentaire', () => {
@@ -488,13 +521,6 @@ test('précédent / suivant : libellés génériques, aucun champ supplémentair
   }).html;
   contains(h, '<a href="/blog/devis/x.html">\u2190 Article précédent</a>', 'lien précédent');
   contains(h, '<a href="/blog/tva/y.html">Article suivant : Article suivant \u2192</a>', 'lien suivant');
-});
-
-test('voisin absent ⇒ slot vide, pas de lien cassé', () => {
-  const nav = /<nav class="prev-next"[\s\S]*?<\/nav>/.exec(renderOk(makeArticle()).html)[0];
-  notContains(nav, '<a', 'lien résiduel');
-  notContains(nav, 'Article précédent', 'libellé orphelin');
-  notContains(nav, 'Article suivant', 'libellé orphelin');
 });
 
 test('origine étrangère refusée dans les liens', () => {
