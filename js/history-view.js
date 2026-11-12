@@ -111,7 +111,7 @@ function getSortArrow(col) {
     'numero-asc':'numero',
   };
   if (map[historyState.sortBy] !== col) return '';
-  return historyState.sortBy.endsWith('-desc') ? ' ▾' : ' ▴';
+  return historyState.sortBy.endsWith('-desc') ? ICONS['chevron-down'] : ICONS['chevron-up'];
 }
 
 function cycleSort(col) {
