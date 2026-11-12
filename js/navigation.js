@@ -1,5 +1,6 @@
 import { nextNumero, isNumeroUnique } from './storage.js';
 import { addLine, recalcTotals, refreshNotesFromRegime } from './lines.js';
+import { resolveLineMode } from './calc.js';
 import { refreshClientsSelect, onClientSelect, getClientById } from './client.js';
 import { getEditingDocId } from './history.js';
 
@@ -144,7 +145,15 @@ export function loadHistoryDocIntoForm(payload){
 
   document.getElementById('linesBody').innerHTML = '';
   const lines = (t.lines && t.lines.length > 0) ? t.lines : [{ desig: '', prix: 0, qte: 1 }];
-  lines.forEach(l => addLine({ desig: l.desig || '', prix: l.prix || 0, qte: l.qte || 1 }));
+  lines.forEach(l => addLine({
+    desig: l.desig || '',
+    prix: l.prix ?? 0,
+    qte: l.qte ?? 1,
+    longueurCm: l.longueurCm ?? '',
+    largeurCm: l.largeurCm ?? '',
+    hauteurCm: l.hauteurCm ?? '',
+    calcMode: resolveLineMode(l, t.calcMode),
+  }));
 
   recalcTotals();
   validateDocNumero();

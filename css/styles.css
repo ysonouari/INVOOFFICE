@@ -324,6 +324,20 @@ table.lines input,table.lines select{
 .col-qte{width:80px;}
 .col-total{width:110px;text-align:right;color:var(--muted);}
 .col-actions{width:40px;}
+/* mode de calcul par ligne : sélecteur + dimensions sous la désignation */
+.line-config{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-top:var(--space-2);}
+table.lines .line-mode{width:132px;flex:0 0 auto;}
+.line-dims{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);flex:1 1 auto;min-width:0;}
+table.lines .line-dims input{width:92px;}
+.line-mesure{color:var(--muted);font-size:var(--fs-sm);white-space:nowrap;}
+.line-prix-unit{display:block;margin-top:2px;font-size:var(--fs-xs);color:var(--muted-2);white-space:nowrap;text-align:right;}
+table.lines input.input-error{border-color:var(--danger);}
+.line-measure-invalid,.line-total-invalid{color:var(--danger);}
+.line-field-appear{animation:line-field-in var(--dur-fast) var(--ease-out);}
+@keyframes line-field-in{
+  from{opacity:0;transform:translateY(-3px);}
+  to{opacity:1;transform:translateY(0);}
+}
 .icon-btn{
   background:transparent;border:none;color:var(--muted-2);font-size:var(--fs-lg);
   width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;
@@ -518,6 +532,8 @@ table.pdf-table thead th{
 table.pdf-table td{padding:6px 6px;border-bottom:1px solid #e5e7eb;font-size:11px;}
 table.pdf-table th.num{text-align:right;}
 table.pdf-table td.num{text-align:right;}
+.pdf-line-sub{margin-top:2px;font-size:9px;line-height:1.35;color:#555;}
+.pdf-price-unit{font-size:8.5px;color:#555;}
 .pdf-totals{margin-top:16px;display:flex;justify-content:flex-end;}
 .pdf-totals table{font-size:11.5px;}
 .pdf-totals td{padding:3px 8px;}
@@ -583,11 +599,11 @@ table.pdf-table td.num{text-align:right;}
   }
   .panel table.lines td input,
   .panel table.lines td select { width: 100%; box-sizing: border-box; }
+  .panel table.lines td .line-mode { width: 100%; flex: 1 1 100%; }
+  .panel table.lines td .line-dims input { width: auto; flex: 1 1 92px; }
 
-  /* Labels via ::before */
-  .panel table.lines td:first-child::before { content: 'Désignation'; display: block; font-size:var(--fs-xs); color: var(--muted-2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
-  .panel table.lines td.col-prix::before { content: 'Prix U.'; display: block; font-size:var(--fs-xs); color: var(--muted-2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
-  .panel table.lines td.col-qte::before { content: 'Qté'; display: block; font-size:var(--fs-xs); color: var(--muted-2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+  /* Labels via ::before (i18n via data-label) */
+  .panel table.lines td[data-label]::before { content: attr(data-label); display: block; font-size:var(--fs-xs); color: var(--muted-2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
   .panel table.lines td.col-total { font-weight: 700; color: var(--text); font-size:var(--fs-base-2); }
   .panel table.lines td.col-total::before { content: 'Total : '; font-weight: 400; color: var(--muted-2); font-size:var(--fs-md); }
 

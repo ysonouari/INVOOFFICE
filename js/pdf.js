@@ -2,6 +2,7 @@ import { DOC_TYPES } from './config.js';
 import { loadCompany, isNumeroUnique } from './storage.js';
 import { escapeHtml, currencySymbol, montantEnLettres, montantEnLettresAr, getContrastColor } from './utils.js';
 import { recalcTotals } from './lines.js';
+import { resolveLineMode, computeMeasure, isLineBillable, round2, formatMeasure, unitForMode, DIMENSION_LABEL_KEYS } from './calc.js';
 import { getSelectedClient } from './client.js';
 import { saveToHistory, getEditingDocId } from './history.js';
 import { showAlertDialog } from './dialog.js';
@@ -178,6 +179,83 @@ function buildFooterLine(c) {
   return [footerParts, legalParts].filter(Boolean).join(' &nbsp;|&nbsp; ');
 }
 
+function pdfCm(value) {
+  if (value === undefined || value === null || String(value).trim() === '') return '\u2014';
+  const n = Number(String(value).trim().replace(',', '.'));
+  if (!Number.isFinite(n)) return '\u2014';
+  return n.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+}
+
+function buildPdfRows(t) {
+  return t.lines.map((l) => {
+    const desig = escapeHtml(l.desig || '');
+    if (!t.showPrices) {
+      return `<tr><td>${desig}</td><td class="num">${l.qte}</td></tr>`;
+    }
+
+    const mode = resolveLineMode(l, t.calcMode);
+    const prix = Math.max(0, parseFloat(l.prix) || 0);
+    const qte = Math.max(0, parseFloat(l.qte) || 0);
+
+    if (mode === 'forfait') {
+      const total = Number.isFinite(l.total) ? l.total : round2(prix * qte);
+      return `<tr><td>${desig}</td><td class="num">${prix.toFixed(2)}</td><td class="num">${qte}</td><td class="num">${total.toFixed(2)}</td></tr>`;
+    }
+
+    const billable = isLineBillable(l);
+    const measure = computeMeasure(mode, l);
+    const valid = !billable || measure.valid;
+    const invalid = new Set(billable ? (measure.invalid || []) : []);
+    const measureValue = billable ? measure.value : 0;
+    const cm = (key) => invalid.has(key) ? '\u2014' : pdfCm(l[key]);
+    const measureText = valid ? formatMeasure(mode, measureValue) : '\u2014';
+    const total = valid ? round2(prix * qte * measureValue) : null;
+    const totalText = total === null ? '\u2014' : total.toFixed(2);
+
+    const dims = [];
+    if (mode === 'm2') {
+      dims.push(`${i18next.t('pdf.th_width')} ${cm('largeurCm')}`);
+      dims.push(`${i18next.t('pdf.th_height')} ${cm('hauteurCm')}`);
+      dims.push(`${i18next.t('pdf.th_surface')} ${measureText}`);
+    } else if (mode === 'ml') {
+      dims.push(`${i18next.t('pdf.th_length')} ${cm('longueurCm')}`);
+      dims.push(`${i18next.t('pdf.th_unit_length')} ${measureText}`);
+    } else {
+      dims.push(`${i18next.t('pdf.th_length')} ${cm('longueurCm')}`);
+      dims.push(`${i18next.t('pdf.th_width')} ${cm('largeurCm')}`);
+      dims.push(`${i18next.t('pdf.th_height')} ${cm('hauteurCm')}`);
+      dims.push(`${i18next.t('pdf.th_volume')} ${measureText}`);
+    }
+
+    const unit = escapeHtml(currencySymbol() + '/' + unitForMode(mode));
+    return `<tr><td>${desig}<div class="pdf-line-sub">${dims.map(escapeHtml).join(' \u00b7 ')}</div></td><td class="num">${prix.toFixed(2)} <span class="pdf-price-unit">${unit}</span></td><td class="num">${qte}</td><td class="num">${totalText}</td></tr>`;
+  });
+}
+
+function buildPdfTableStart(t, thStyle) {
+  if (!t.showPrices) {
+    return `
+      <table class="pdf-table">
+        <colgroup><col style="width:75%"><col style="width:25%"></colgroup>
+        <thead><tr><th style="${thStyle}">${i18next.t('pdf.th_designation')}</th><th class="num" style="${thStyle}">${i18next.t('pdf.th_qty')}</th></tr></thead>
+        <tbody></tbody>
+      </table>`;
+  }
+
+  return `
+      <table class="pdf-table">
+        <colgroup><col style="width:46%"><col style="width:21%"><col style="width:10%"><col style="width:23%"></colgroup>
+        <thead><tr>
+          <th style="${thStyle}">${i18next.t('pdf.th_designation')}</th>
+          <th class="num" style="${thStyle}">${i18next.t('pdf.th_price')}</th>
+          <th class="num" style="${thStyle}">${i18next.t('pdf.th_qty')}</th>
+          <th class="num" style="${thStyle}">${i18next.t('pdf.th_total')}</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>`;
+}
+
+
 export function buildPdfHtml(payload, headerImageUrl){
   const c = payload.company;
   const cfg = DOC_TYPES[payload.type];
@@ -212,11 +290,7 @@ export function buildPdfHtml(payload, headerImageUrl){
   const thColor = c.tableTextColor || getContrastColor(thBg);
   const thStyle = `background:${thBg};color:${thColor};`;
 
-  const rowsHtml = t.lines.map(l=>`
-    <tr>
-      <td>${escapeHtml(l.desig)}</td>
-      ${t.showPrices ? `<td class="num">${l.prix.toFixed(2)}</td><td class="num">${l.qte}</td><td class="num">${l.total.toFixed(2)}</td>` : `<td class="num">${l.qte}</td>`}
-    </tr>`);
+  const rowsHtml = buildPdfRows(t);
 
   let totalsHtml = '';
   if(t.showPrices){
@@ -259,20 +333,7 @@ export function buildPdfHtml(payload, headerImageUrl){
       </div>
       ${payload.client.ref ? `<div class="pdf-ref">${escapeHtml(payload.client.ref)}</div>` : ''}`;
 
-  const tableStartHtml = `
-      <table class="pdf-table">
-        <colgroup>
-          <col style="width:${t.showPrices ? '42%' : '75%'}">
-          ${t.showPrices ? '<col style="width:20%"><col style="width:15%"><col style="width:23%">' : '<col style="width:25%">'}
-        </colgroup>
-        <thead>
-          <tr>
-            <th style="${thStyle}">${i18next.t('pdf.th_designation')}</th>
-            ${t.showPrices ? `<th class="num" style="${thStyle}">${i18next.t('pdf.th_price')}</th><th class="num" style="${thStyle}">${i18next.t('pdf.th_qty')}</th><th class="num" style="${thStyle}">${i18next.t('pdf.th_total')}</th>` : `<th class="num" style="${thStyle}">${i18next.t('pdf.th_qty')}</th>`}
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>`;
+  const tableStartHtml = buildPdfTableStart(t, thStyle);
 
   const finalBlockHtml = totalsHtml + wordsHtml + conditionsHtml +
     (payload.notes ? `<div class="pdf-note">${escapeHtml(payload.notes)}</div>` : '');
@@ -422,6 +483,12 @@ async function validatePayload(payload){
   }
   if(payload.totals.lines.some(l => l.qte <= 0)){
     await showAlertDialog(i18next.t('pdf.alert_zero_qty'));
+    return false;
+  }
+  const invalidLine = payload.totals.lines.find(l => l.billable && !l.measureValid);
+  if (invalidLine) {
+    const fields = (invalidLine.invalidFields || []).map(k => i18next.t(DIMENSION_LABEL_KEYS[k])).join(', ');
+    await showAlertDialog(i18next.t('pdf.alert_invalid_dimensions', { fields }));
     return false;
   }
   if(!isNumeroUnique(payload.type, payload.numero, getEditingDocId())){

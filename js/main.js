@@ -1,6 +1,6 @@
 import { updateBrandLogo } from './brand-logo.js';
 import { showView, onDocTypeChange, initForm, resetForm, loadHistoryDocIntoForm, validateDocNumero } from './navigation.js';
-import { addLine, removeLine, recalcTotals } from './lines.js';
+import { addLine, removeLine, recalcTotals, setLineMode, refreshLinesUI } from './lines.js';
 import { openClientModal, closeClientModal, openClientManagerModal, closeClientManagerModal, onClientSelect, saveClientForm, deleteClientById, refreshClientsSelect } from './client.js';
 import { generatePDF } from './pdf.js';
 import { setEditingDocId, clearEditingDocId, migrateHistoryHeader } from './history.js';
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     document.addEventListener('click', function(e) {
       if (!appNav.classList.contains('open')) return;
-      if (!appNav.contains(e.target) && e.target !== hamburger) {
+      if (!appNav.contains(e.target) && !hamburger.contains(e.target)) {
         setMenuOpen(false);
       }
     });
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.documentElement.lang = next;
     document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr';
     if (document.getElementById('view-nouveau').classList.contains('active')) {
-      recalcTotals();
+      refreshLinesUI();
       refreshClientsSelect();
       onClientSelect();
     }
@@ -269,7 +269,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const linesBody = document.getElementById('linesBody');
   linesBody.addEventListener('input', (e) => {
-    if (e.target.matches('.line-prix, .line-qte')) recalcTotals();
+    if (e.target.matches('.line-prix, .line-qte, .line-larg, .line-haut, .line-long')) recalcTotals();
+  });
+  linesBody.addEventListener('change', (e) => {
+    if (e.target.matches('.line-mode')) {
+      const tr = e.target.closest('tr');
+      if (tr) setLineMode(tr, e.target.value);
+    }
   });
   linesBody.addEventListener('click', (e) => {
     const iconBtn = e.target.closest('.icon-btn');

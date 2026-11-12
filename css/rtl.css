@@ -22,7 +22,13 @@
 }
 
 /* la colonne "total" dans le tableau de lignes */
-[dir="rtl"] .line-total {
+[dir="rtl"] .line-total,
+[dir="rtl"] .line-mesure {
+  direction: ltr;
+  text-align: right;
+}
+
+[dir="rtl"] table.lines input[type="number"] {
   direction: ltr;
   text-align: right;
 }
@@ -99,6 +105,10 @@
 }
 
 [dir="rtl"] .pdf-note {
+  text-align: right;
+}
+
+[dir="rtl"] .pdf-line-sub {
   text-align: right;
 }
 
