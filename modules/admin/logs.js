@@ -59,7 +59,9 @@ function renderFiltered(logs) {
     mark_paid: 'Paiement créé', validate_payment: 'Paiement confirmé',
     update_payment: 'Paiement modifié', refund_payment: 'Paiement remboursé',
     edit_profile: 'Modification profil',
-    change_role: 'Changement rôle', delete_user: 'Suppression'
+    change_role: 'Changement rôle', delete_user: 'Suppression',
+    start_demo: 'Démo lancée', end_demo: 'Démo terminée', reauthorize_demo: 'Démo réautorisée',
+    reset_password: 'Nouveau mot de passe', whatsapp_message: 'Message WhatsApp'
   };
 
   container.innerHTML = `

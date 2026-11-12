@@ -35,7 +35,7 @@ export function showToast(message, type = 'info', duration = 3000) {
   }, duration);
 }
 
-export function confirmAction(title, message, onConfirm) {
+export function confirmAction(title, message, onConfirm, loadingText) {
   const overlay = document.getElementById('confirmOverlay');
   const prevFocus = document.activeElement;
   document.getElementById('confirmTitle').textContent = title;
@@ -73,6 +73,19 @@ export function confirmAction(title, message, onConfirm) {
   document.addEventListener('keydown', onKey);
   overlay.addEventListener('click', onOverlayClick);
   cancel.onclick = () => close();
-  ok.onclick = async () => { close(false); await onConfirm(); restoreFocus(); };
+  ok.onclick = async () => {
+    ok.disabled = true;
+    const prevLabel = ok.textContent;
+    ok.textContent = loadingText || 'Traitement…';
+    try {
+      await onConfirm();
+    } catch (_) {
+      /* l'action gère ses propres erreurs (toast) */
+    }
+    close(false);
+    restoreFocus();
+    ok.disabled = false;
+    ok.textContent = prevLabel;
+  };
   ok.focus();
 }

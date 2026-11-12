@@ -4,6 +4,7 @@
  */
 import { getSupabase } from '../auth/supabase-client.js';
 import { showToast } from '../shared/ui.js';
+import { showNewPasswordDialog } from './password-dialog.js';
 
 function log(action, targetId, details = {}) {
   const supabase = getSupabase();
@@ -46,9 +47,61 @@ export async function grantAccess(userId, name) {
 
 export async function revokeAccess(userId, name) {
   const supabase = getSupabase();
-  await supabase.from('subscriptions').update({ status: 'cancelled' }).eq('user_id', userId).eq('status', 'active');
+  await supabase.from('subscriptions').update({ status: 'cancelled' }).eq('user_id', userId).eq('status', 'active').eq('is_demo', false);
   log('revoke_access', userId, { target_name: name, summary: `Accès retiré à ${name}` });
   showToast(`Accès retiré à ${name}`, 'error');
+}
+
+export async function startDemo(userId, name) {
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc('start_user_demo', { p_target_user_id: userId });
+  if (error) { showToast(error.message || 'Erreur lors du lancement de la démo', 'error'); return; }
+  log('start_demo', userId, { target_name: name, summary: `Démo 24h lancée pour ${name}` });
+  showToast(`Démo 24h lancée pour ${name}`, 'success');
+}
+
+export async function endDemo(userId, name) {
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc('end_user_demo', { p_target_user_id: userId });
+  if (error) { showToast(error.message || 'Erreur lors de l\'arrêt de la démo', 'error'); return; }
+  log('end_demo', userId, { target_name: name, summary: `Démo terminée pour ${name}` });
+  showToast(`Démo terminée pour ${name}`, 'error');
+}
+
+export async function reauthorizeDemo(userId, name) {
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc('reauthorize_user_demo', { p_target_user_id: userId });
+  if (error) { showToast(error.message || 'Erreur lors de la réautorisation de la démo', 'error'); return; }
+  log('reauthorize_demo', userId, { target_name: name, summary: `Démo 24h réautorisée pour ${name}` });
+  showToast(`Démo 24h réautorisée pour ${name}`, 'success');
+}
+
+export async function resetUserPassword(userId, name, email) {
+  const supabase = getSupabase();
+  let data = null;
+  let error = null;
+  try {
+    const res = await supabase.functions.invoke('admin-reset-password', { body: { userId } });
+    data = res.data;
+    error = res.error;
+  } catch (e) {
+    error = e;
+  }
+
+  if (error || !data || !data.password) {
+    let msg = 'Erreur lors de la génération du mot de passe. Vérifiez la connexion et réessayez.';
+    if (error && typeof error === 'object') {
+      const ctx = error.context;
+      if (ctx && typeof ctx === 'object') {
+        if (typeof ctx.error === 'string' && ctx.error) msg = ctx.error;
+        else if (typeof ctx.message === 'string' && ctx.message) msg = ctx.message;
+      }
+    }
+    showToast(msg, 'error');
+    return;
+  }
+
+  showNewPasswordDialog(data.password, email || name);
 }
 
 export async function markAsPaid(userId, name) {

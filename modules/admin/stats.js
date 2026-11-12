@@ -13,18 +13,21 @@ export async function loadStats() {
 
   const { data: profiles } = await supabase.from('profiles').select('status,role,created_at');
   const { data: payments } = await supabase.from('payments').select('amount,status,created_at');
-  const { data: subs } = await supabase.from('subscriptions').select('status');
+  const { data: subs } = await supabase.from('subscriptions').select('status,is_demo,expires_at');
 
   const all = profiles || [];
   const pays = payments || [];
   const activeSubs = (subs || []).filter(s => s.status === 'active');
+  const activeLifetimeSubs = activeSubs.filter(s => s.is_demo !== true);
+  const runningDemos = activeSubs.filter(s => s.is_demo === true && s.expires_at && new Date(s.expires_at) > now);
 
   const total = all.length;
   const active = all.filter(p => p.status === 'active').length;
   const pending = all.filter(p => p.status === 'pending').length;
   const inactive = all.filter(p => p.status === 'inactive').length;
   const admins = all.filter(p => p.role === 'admin').length;
-  const lifetime = activeSubs.length;
+  const lifetime = activeLifetimeSubs.length;
+  const demos = runningDemos.length;
 
   const paid = pays.filter(p => p.status === 'completed');
   const paidTotal = paid.reduce((s, p) => s + (p.amount || 0), 0);
@@ -41,6 +44,7 @@ export async function loadStats() {
     { value: inactive, label: 'Suspendus', cls: 'stat-red' },
     { value: admins, label: 'Admins' },
     { value: lifetime, label: 'Accès à vie', cls: 'stat-accent' },
+    { value: demos, label: 'Démos en cours', cls: 'stat-yellow' },
     { value: todaySignups, label: "Aujourd'hui" },
     { value: monthSignups, label: 'Ce mois' },
     { value: paidCount, label: 'Paiements', sub: formatDH(paidTotal), cls: 'stat-green' },
@@ -80,7 +84,9 @@ async function loadRecentActivity() {
     mark_paid: 'Paiement créé', validate_payment: 'Paiement confirmé',
     update_payment: 'Paiement modifié', refund_payment: 'Paiement remboursé',
     edit_profile: 'Modification profil',
-    change_role: 'Changement rôle', delete_user: 'Suppression'
+    change_role: 'Changement rôle', delete_user: 'Suppression',
+    start_demo: 'Démo lancée', end_demo: 'Démo terminée', reauthorize_demo: 'Démo réautorisée',
+    reset_password: 'Nouveau mot de passe', whatsapp_message: 'Message WhatsApp'
   };
 
   activity.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">

@@ -5,6 +5,8 @@
 import { getSupabase } from '../auth/supabase-client.js';
 import { showToast } from '../shared/ui.js';
 import { escAttr } from './shared.js';
+import { ICONS } from '../../js/icons.js';
+import { DEFAULT_TEMPLATES } from './whatsapp.js';
 
 const DEFAULTS = {
   platform_name: 'INVOOFFICE',
@@ -12,7 +14,10 @@ const DEFAULTS = {
   currency: 'MAD',
   whatsapp_support: '',
   email_support: 'contact@invooffice.com',
-  primary_color: '#6d6cf0'
+  primary_color: '#6d6cf0',
+  wa_msg_demo: DEFAULT_TEMPLATES.demo,
+  wa_msg_lifetime: DEFAULT_TEMPLATES.lifetime,
+  wa_msg_suspension: DEFAULT_TEMPLATES.suspension
 };
 
 export async function loadSettings() {
@@ -21,13 +26,16 @@ export async function loadSettings() {
 
   const { data } = await supabase
     .from('platform_settings')
-    .select('platform_name,lifetime_price,currency,whatsapp_support,email_support,primary_color,payment_instructions,validation_time')
+    .select('platform_name,lifetime_price,currency,whatsapp_support,email_support,primary_color,payment_instructions,validation_time,wa_msg_demo,wa_msg_lifetime,wa_msg_suspension')
     .eq('id', 1)
     .maybeSingle();
 
   if (data) {
     settings = { ...DEFAULTS, ...data };
   }
+  settings.wa_msg_demo = settings.wa_msg_demo || DEFAULT_TEMPLATES.demo;
+  settings.wa_msg_lifetime = settings.wa_msg_lifetime || DEFAULT_TEMPLATES.lifetime;
+  settings.wa_msg_suspension = settings.wa_msg_suspension || DEFAULT_TEMPLATES.suspension;
 
   const form = document.getElementById('settingsForm');
   form.innerHTML = `
@@ -67,11 +75,36 @@ export async function loadSettings() {
       <label for="sValidationTime">Temps de validation</label>
       <input type="text" id="sValidationTime" value="${escAttr(settings.validation_time || '24 à 48 heures')}">
     </div>
+    <div style="grid-column:1/-1;margin-top:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <h3 style="font-size:14px;margin:0;">Modèles de messages WhatsApp</h3>
+        <button type="button" class="btn btn-ghost" id="resetWaTemplates">Réinitialiser les modèles</button>
+      </div>
+      <p style="color:var(--muted);font-size:12px;margin:6px 0 14px;">Variables disponibles : <code>{nom}</code> <code>{email}</code> <code>{lien_app}</code> <code>{fin_demo}</code> — une variable vide retire la phrase correspondante.</p>
+      <div class="field">
+        <label for="sWaDemo">Modèle « Démo »</label>
+        <textarea id="sWaDemo" rows="3" style="width:100%;">${escAttr(settings.wa_msg_demo)}</textarea>
+      </div>
+      <div class="field">
+        <label for="sWaLifetime">Modèle « Accès à vie »</label>
+        <textarea id="sWaLifetime" rows="3" style="width:100%;">${escAttr(settings.wa_msg_lifetime)}</textarea>
+      </div>
+      <div class="field">
+        <label for="sWaSuspension">Modèle « Suspension »</label>
+        <textarea id="sWaSuspension" rows="3" style="width:100%;">${escAttr(settings.wa_msg_suspension)}</textarea>
+      </div>
+    </div>
     <div style="margin-top:16px;">
       <button type="submit" class="btn btn-accent">Enregistrer</button>
-      <span id="settingsStatus" style="margin-left:12px;font-size:13px;color:var(--success);display:none;">✓ Enregistré</span>
+      <span id="settingsStatus" style="margin-left:12px;font-size:13px;color:var(--success);display:none;">${ICONS.check} Enregistré</span>
     </div>
   `;
+
+  document.getElementById('resetWaTemplates').addEventListener('click', () => {
+    document.getElementById('sWaDemo').value = DEFAULT_TEMPLATES.demo;
+    document.getElementById('sWaLifetime').value = DEFAULT_TEMPLATES.lifetime;
+    document.getElementById('sWaSuspension').value = DEFAULT_TEMPLATES.suspension;
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -87,7 +120,10 @@ export async function loadSettings() {
       email_support: document.getElementById('sEmail').value,
       primary_color: document.getElementById('sColor').value,
       payment_instructions: document.getElementById('sInstructions').value,
-      validation_time: document.getElementById('sValidationTime').value
+      validation_time: document.getElementById('sValidationTime').value,
+      wa_msg_demo: document.getElementById('sWaDemo').value,
+      wa_msg_lifetime: document.getElementById('sWaLifetime').value,
+      wa_msg_suspension: document.getElementById('sWaSuspension').value
     };
 
     const { error } = await supabase

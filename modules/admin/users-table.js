@@ -5,9 +5,11 @@
 import { getSupabase } from '../auth/supabase-client.js';
 import { formatDate, formatDH } from './stats.js';
 import { openUserDetail } from './user-detail.js';
-import { activateUser, deactivateUser, grantAccess, revokeAccess, markAsPaid, changeRole, deleteUser } from './user-actions.js';
+import { activateUser, deactivateUser, grantAccess, revokeAccess, markAsPaid, changeRole, deleteUser, startDemo, endDemo, reauthorizeDemo, resetUserPassword } from './user-actions.js';
 import { esc } from './shared.js';
 import { confirmAction } from '../shared/ui.js';
+import { ICONS } from '../../js/icons.js';
+import { openWhatsAppMenu, hasWhatsapp } from './whatsapp.js';
 
 let allUsers = [];
 let currentFilter = 'all';
@@ -22,7 +24,7 @@ export async function loadUsersTable() {
     .order('created_at', { ascending: false });
   const { data: subscriptions } = await supabase
     .from('subscriptions')
-    .select('user_id,plan_id,status,activated_at');
+    .select('user_id,plan_id,status,activated_at,is_demo,expires_at');
   const { data: payments } = await supabase.from('payments').select('user_id,amount,status');
 
   allUsers = (profiles || []).map(p => ({
@@ -35,6 +37,19 @@ export async function loadUsersTable() {
   renderTable();
 }
 
+function hasLifetime(u) {
+  return u.subs.some(s => s.is_demo !== true && s.status === 'active');
+}
+
+function demoSub(u) {
+  return u.subs.find(s => s.is_demo === true);
+}
+
+function isDemoRunning(u) {
+  const demo = demoSub(u);
+  return !!demo && demo.status === 'active' && !!demo.expires_at && new Date(demo.expires_at) > new Date();
+}
+
 function renderFilters() {
   const counts = {
     all: allUsers.length,
@@ -42,7 +57,8 @@ function renderFilters() {
     pending: allUsers.filter(u => u.status === 'pending').length,
     inactive: allUsers.filter(u => u.status === 'inactive').length,
     admin: allUsers.filter(u => u.role === 'admin').length,
-    lifetime: allUsers.filter(u => u.subs.some(s => s.status === 'active')).length
+    lifetime: allUsers.filter(hasLifetime).length,
+    demo: allUsers.filter(isDemoRunning).length
   };
 
   const filters = [
@@ -51,7 +67,8 @@ function renderFilters() {
     { key: 'pending', label: 'En attente' },
     { key: 'inactive', label: 'Suspendus' },
     { key: 'admin', label: 'Admins' },
-    { key: 'lifetime', label: 'Accès vie' }
+    { key: 'lifetime', label: 'Accès vie' },
+    { key: 'demo', label: 'Démo' }
   ];
 
   const container = document.getElementById('userFilters');
@@ -88,7 +105,8 @@ function getFilteredUsers() {
     case 'pending': users = users.filter(u => u.status === 'pending'); break;
     case 'inactive': users = users.filter(u => u.status === 'inactive'); break;
     case 'admin': users = users.filter(u => u.role === 'admin'); break;
-    case 'lifetime': users = users.filter(u => u.subs.some(s => s.status === 'active')); break;
+    case 'lifetime': users = users.filter(hasLifetime); break;
+    case 'demo': users = users.filter(isDemoRunning); break;
   }
 
   return users;
@@ -109,16 +127,14 @@ function renderTable() {
     <div class="admin-table-wrap">
       <table class="admin-table">
         <thead><tr>
-          <th>Nom</th><th>Email</th><th>WhatsApp</th><th>Inscription</th>
+          <th>Email</th><th>WhatsApp</th>
           <th>Statut</th><th>Plan</th><th>Paiement</th><th>Rôle</th><th>Actions</th>
         </tr></thead>
         <tbody>
           ${page.map(u => `
             <tr>
-              <td><strong>${esc(u.full_name || '-')}</strong></td>
               <td style="color:var(--muted);">${esc(u.email || '-')}</td>
               <td>${esc(u.whatsapp || '-')}</td>
-              <td style="font-size:12px;color:var(--muted);">${formatDate(u.created_at)}</td>
               <td>${statusBadge(u.status)}</td>
               <td>${subBadge(u.subs)}</td>
               <td>${paymentBadge(u.pays)}</td>
@@ -142,6 +158,10 @@ function renderTable() {
 
       switch (action) {
         case 'detail': openUserDetail(user); break;
+        case 'whatsapp': openWhatsAppMenu(btn, user); break;
+        case 'resetpwd': confirmAction('Nouveau mot de passe', `Générer un nouveau mot de passe pour ${user.email || user.full_name} ? L'ancien ne fonctionnera plus.`, async () => {
+          await resetUserPassword(userId, user.full_name, user.email);
+        }, 'Génération…'); break;
         case 'activate': await doAction(() => activateUser(userId, user.full_name)); break;
         case 'deactivate': await doAction(() => deactivateUser(userId, user.full_name)); break;
         case 'grant': await doAction(() => grantAccess(userId, user.full_name)); break;
@@ -149,6 +169,18 @@ function renderTable() {
         case 'markpaid': await doAction(() => markAsPaid(userId, user.full_name)); break;
         case 'makeadmin': await doAction(() => changeRole(userId, 'admin', user.full_name)); break;
         case 'makeuser': await doAction(() => changeRole(userId, 'user', user.full_name)); break;
+        case 'startdemo': confirmAction('Démo 24h', `Lancer un accès d'essai de 24 heures pour ${user.full_name} ?`, async () => {
+          await startDemo(userId, user.full_name);
+          await loadUsersTable();
+        }); break;
+        case 'enddemo': confirmAction('Terminer la démo', `Terminer la démo en cours de ${user.full_name} ? L'accès repassera en inactif.`, async () => {
+          await endDemo(userId, user.full_name);
+          await loadUsersTable();
+        }); break;
+        case 'redemo': confirmAction('Réautoriser la démo', `Réautoriser un nouvel accès d'essai de 24 heures pour ${user.full_name} ?`, async () => {
+          await reauthorizeDemo(userId, user.full_name);
+          await loadUsersTable();
+        }); break;
         case 'delete': confirmAction('Supprimer', `Supprimer définitivement ${user.full_name} ? Cette action est irréversible.`, async () => {
           await deleteUser(userId, user.full_name);
           await loadUsersTable();
@@ -172,15 +204,29 @@ async function doAction(fn) {
 
 function renderActions(u) {
   const btns = [];
-  btns.push(`<button class="btn btn-ghost" data-action="detail" data-user-id="${u.id}" style="font-size:11px;">👁</button>`);
-  if (u.status !== 'active') btns.push(`<button class="btn btn-ghost" data-action="activate" data-user-id="${u.id}" style="font-size:11px;color:var(--success);">Activer</button>`);
-  if (u.status === 'active') btns.push(`<button class="btn btn-ghost" data-action="deactivate" data-user-id="${u.id}" style="font-size:11px;color:var(--danger);">Suspendre</button>`);
-  if (!u.subs.some(s => s.status === 'active')) btns.push(`<button class="btn btn-ghost" data-action="grant" data-user-id="${u.id}" style="font-size:11px;color:var(--accent-2);">Vie</button>`);
-  if (u.subs.some(s => s.status === 'active')) btns.push(`<button class="btn btn-ghost" data-action="revoke" data-user-id="${u.id}" style="font-size:11px;color:var(--danger);">Retirer</button>`);
-  if (!u.pays.some(p => p.status === 'completed')) btns.push(`<button class="btn btn-ghost" data-action="markpaid" data-user-id="${u.id}" style="font-size:11px;color:var(--success);">💰</button>`);
-  if (u.role === 'user') btns.push(`<button class="btn btn-ghost" data-action="makeadmin" data-user-id="${u.id}" style="font-size:11px;color:var(--accent);">Admin</button>`);
-  if (u.role === 'admin') btns.push(`<button class="btn btn-ghost" data-action="makeuser" data-user-id="${u.id}" style="font-size:11px;">User</button>`);
-  btns.push(`<button class="btn btn-ghost" data-action="delete" data-user-id="${u.id}" style="font-size:11px;color:var(--danger);">🗑</button>`);
+  const lifetime = hasLifetime(u);
+  const demo = demoSub(u);
+  const demoRunning = isDemoRunning(u);
+  const btn = (action, icon, color, label) =>
+    `<button class="btn btn-ghost" data-action="${action}" data-user-id="${u.id}" style="color:${color};" aria-label="${label}" title="${label}">${icon}</button>`;
+
+  btns.push(btn('detail', ICONS.eye, 'var(--muted)', 'Voir la fiche utilisateur'));
+  {
+    const waOk = hasWhatsapp(u);
+    btns.push(`<button class="btn btn-ghost" data-action="whatsapp" data-user-id="${u.id}" aria-haspopup="menu" ${waOk ? '' : 'disabled'} style="color:var(--success);" aria-label="${waOk ? 'Envoyer un message WhatsApp' : 'Aucun numéro WhatsApp'}" title="${waOk ? 'Envoyer un message WhatsApp' : 'Aucun numéro WhatsApp'}">${ICONS.whatsapp}</button>`);
+  }
+  if (u.role !== 'admin') btns.push(btn('resetpwd', ICONS.key, 'var(--muted)', 'Générer un nouveau mot de passe'));
+  if (u.status !== 'active') btns.push(btn('activate', ICONS.check, 'var(--success)', 'Activer l\'utilisateur'));
+  if (u.status === 'active') btns.push(btn('deactivate', ICONS.ban, 'var(--danger)', 'Suspendre l\'utilisateur'));
+  if (!lifetime && !demo) btns.push(btn('startdemo', ICONS.history, 'var(--warning)', 'Démo 24h'));
+  if (!lifetime && demoRunning) btns.push(btn('enddemo', ICONS.square, 'var(--danger)', 'Terminer la démo'));
+  if (!lifetime && demo && !demoRunning) btns.push(btn('redemo', ICONS['rotate-cw'], 'var(--warning)', 'Réautoriser la démo'));
+  if (!lifetime) btns.push(btn('grant', ICONS.infinity, 'var(--accent-2)', 'Accorder l\'accès à vie'));
+  if (lifetime) btns.push(btn('revoke', ICONS['user-minus'], 'var(--danger)', 'Retirer l\'accès'));
+  if (!u.pays.some(p => p.status === 'completed')) btns.push(btn('markpaid', ICONS.banknote, 'var(--success)', 'Marquer payé'));
+  if (u.role === 'user') btns.push(btn('makeadmin', ICONS.shield, 'var(--accent)', 'Promouvoir administrateur'));
+  if (u.role === 'admin') btns.push(btn('makeuser', ICONS.user, 'var(--muted-2)', 'Retirer les droits administrateur'));
+  btns.push(btn('delete', ICONS['trash-2'], 'var(--danger)', 'Supprimer l\'utilisateur'));
   return `<div class="admin-actions">${btns.join('')}</div>`;
 }
 
@@ -202,8 +248,19 @@ function statusBadge(s) {
 }
 
 function subBadge(subs) {
-  const active = subs.filter(s => s.status === 'active');
-  return active.length > 0 ? '<span class="admin-badge admin-badge-lifetime admin-badge-nowrap">À vie</span>' : '<span style="color:var(--muted);font-size:12px;">Aucun</span>';
+  const active = subs.filter(s => s.is_demo !== true && s.status === 'active');
+  if (active.length > 0) return '<span class="admin-badge admin-badge-lifetime admin-badge-nowrap">À vie</span>';
+  const demo = subs.find(s => s.is_demo === true);
+  if (demo) {
+    if (demo.status === 'active' && demo.expires_at && new Date(demo.expires_at) > new Date()) {
+      return `<span class="admin-badge admin-badge-demo admin-badge-nowrap">Démo 24h · ${formatDate(demo.expires_at)}</span>`;
+    }
+    if (demo.status === 'active') {
+      return '<span class="admin-badge admin-badge-demo-expired admin-badge-nowrap">Démo expirée</span>';
+    }
+    return '<span class="admin-badge admin-badge-demo-expired admin-badge-nowrap">Démo terminée</span>';
+  }
+  return '<span style="color:var(--muted);font-size:12px;">Aucun</span>';
 }
 
 function paymentBadge(pays) {

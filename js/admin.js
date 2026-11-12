@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       setAdminMenuOpen(!adminNav.classList.contains('open'));
     });
     document.addEventListener('click', function(e) {
-      if (!adminNav.contains(e.target) && e.target !== hamburger) {
+      if (!adminNav.contains(e.target) && !hamburger.contains(e.target)) {
         setAdminMenuOpen(false);
       }
     });
