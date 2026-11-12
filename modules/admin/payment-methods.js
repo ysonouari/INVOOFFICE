@@ -5,6 +5,7 @@
 import { getSupabase } from '../auth/supabase-client.js';
 import { showToast } from '../shared/ui.js';
 import { esc, escAttr } from './shared.js';
+import { ICONS } from '../../js/icons.js';
 
 export async function loadPaymentMethods() {
   const supabase = getSupabase();
@@ -32,8 +33,10 @@ export async function loadPaymentMethods() {
               <td style="font-size:12px;">${esc(m.account_number || m.rib || '-')}</td>
               <td>${m.is_active ? '<span class="admin-badge admin-badge-active">Actif</span>' : '<span class="admin-badge admin-badge-inactive">Inactif</span>'}</td>
               <td>
-                <button class="btn btn-ghost" style="font-size:11px;" data-action="edit-method" data-id="${m.id}">Modifier</button>
-                <button class="btn btn-ghost" style="font-size:11px;color:${m.is_active ? 'var(--danger)' : 'var(--success)'};" data-action="toggle-method" data-id="${m.id}" data-active="${m.is_active}">${m.is_active ? 'Désactiver' : 'Activer'}</button>
+                <div class="admin-actions">
+                  <button class="btn btn-ghost" data-action="edit-method" data-id="${m.id}" style="color:var(--accent-2);" aria-label="Modifier la méthode" title="Modifier la méthode">${ICONS.pencil}</button>
+                  <button class="btn btn-ghost" data-action="toggle-method" data-id="${m.id}" data-active="${m.is_active}" style="color:${m.is_active ? 'var(--danger)' : 'var(--success)'};" aria-label="${m.is_active ? 'Désactiver la méthode' : 'Activer la méthode'}" title="${m.is_active ? 'Désactiver la méthode' : 'Activer la méthode'}">${m.is_active ? ICONS.ban : ICONS.check}</button>
+                </div>
               </td>
             </tr>
           `).join('')}

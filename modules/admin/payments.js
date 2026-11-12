@@ -7,6 +7,7 @@ import { formatDate, formatDH } from './stats.js';
 import { updatePayment, validatePayment, refundPayment } from './user-actions.js';
 import { confirmAction, showToast } from '../shared/ui.js';
 import { esc, escAttr } from './shared.js';
+import { ICONS } from '../../js/icons.js';
 
 let allPayments = [];
 
@@ -66,13 +67,14 @@ function renderPayments() {
 
 function renderActions(p) {
   const btns = [];
-  btns.push(`<button class="btn btn-ghost" data-action="view-payment" data-id="${p.id}" style="font-size:11px;">Voir</button>`);
-  btns.push(`<button class="btn btn-ghost" data-action="edit-payment" data-id="${p.id}" style="font-size:11px;">Modifier</button>`);
+  const nameAttr = escAttr(p._profile?.full_name || '');
+  btns.push(`<button class="btn btn-ghost" data-action="view-payment" data-id="${p.id}" style="color:var(--muted);" aria-label="Voir le paiement" title="Voir le paiement">${ICONS.eye}</button>`);
+  btns.push(`<button class="btn btn-ghost" data-action="edit-payment" data-id="${p.id}" style="color:var(--accent-2);" aria-label="Modifier le paiement" title="Modifier le paiement">${ICONS.pencil}</button>`);
   if (p.status === 'pending') {
-    btns.push(`<button class="btn btn-ghost" data-action="validate-payment" data-id="${p.id}" data-user="${p.user_id}" data-name="${esc(p._profile?.full_name || '')}" style="font-size:11px;color:var(--success);">Valider</button>`);
+    btns.push(`<button class="btn btn-ghost" data-action="validate-payment" data-id="${p.id}" data-user="${p.user_id}" data-name="${nameAttr}" style="color:var(--success);" aria-label="Valider le paiement" title="Valider le paiement">${ICONS.check}</button>`);
   }
   if (p.status === 'completed') {
-    btns.push(`<button class="btn btn-ghost" data-action="refund-payment" data-id="${p.id}" data-user="${p.user_id}" data-name="${esc(p._profile?.full_name || '')}" data-amount="${p.amount}" style="font-size:11px;color:var(--danger);">Rembourser</button>`);
+    btns.push(`<button class="btn btn-ghost" data-action="refund-payment" data-id="${p.id}" data-user="${p.user_id}" data-name="${nameAttr}" data-amount="${p.amount}" style="color:var(--danger);" aria-label="Rembourser le paiement" title="Rembourser le paiement">${ICONS['rotate-ccw']}</button>`);
   }
   return `<div class="admin-actions">${btns.join('')}</div>`;
 }
@@ -258,7 +260,8 @@ function paymentBadge(s) {
 }
 
 document.addEventListener('click', (e) => {
-  if (e.target.dataset.action === 'close-payment-detail') {
+  const trigger = e.target instanceof Element ? e.target.closest('[data-action="close-payment-detail"]') : null;
+  if (trigger) {
     document.getElementById('paymentDetailOverlay').style.display = 'none';
   }
 });
