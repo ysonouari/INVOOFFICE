@@ -305,7 +305,7 @@ test.describe('Historique lazy loading (D3.2)', () => {
     await expect(page.locator('#authUser, #brandLogo').first()).toBeAttached({ timeout: 15000 });
 
     await page.waitForFunction(async () => {
-      const cache = await caches.open('facturation-v7');
+      const cache = await caches.open('facturation-v13');
       const urls = ['/js/history-view.js', '/js/history-actions.js'].map((p) => new URL(p, location.origin).href);
       const hits = await Promise.all(urls.map((u) => cache.match(u)));
       return hits.every((h) => !!h);

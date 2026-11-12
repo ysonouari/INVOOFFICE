@@ -1,4 +1,4 @@
-const CACHE_NAME = 'facturation-v7';
+const CACHE_NAME = 'facturation-v13';
 
 const PRECACHE_URLS = [
   './',
@@ -29,6 +29,7 @@ const PRECACHE_URLS = [
   'js/history.js',
   'js/history-view.js',
   'js/history-actions.js',
+  'js/calc.js',
   'js/i18n.js',
   'js/icons.js',
   'js/lines.js',

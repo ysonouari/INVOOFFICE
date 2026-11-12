@@ -37,7 +37,7 @@ async function loadLocale(lng) {
   } catch (e) {
     try {
       // Repli offline / precache SW : sans cache-bust, les fichiers sont
-      // servis par le Service Worker depuis facturation-v7.
+      // servis par le Service Worker depuis facturation-v13.
       const resp = await fetch(`js/locales/${lng}.json`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return await resp.json();
