@@ -49,11 +49,10 @@ const server = http.createServer((req, res) => {
   let resolved = path.normalize(path.join(ROOT, filePath));
   if (!resolved.startsWith(ROOT)) { res.writeHead(403); res.end(); return; }
 
-  // Servir le fichier
-  const ext = path.extname(filePath);
-  const contentType = MIME[ext] || 'application/octet-stream';
-  const headers = {
-    'Content-Type': contentType,
+  // Servir le fichier (le type MIME doit être calculé APRÈS la résolution
+  // dossier -> index.html, sinon un dossier est servi en application/octet-stream
+  // et le navigateur déclenche un téléchargement au lieu d'afficher la page).
+  const baseHeaders = {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -64,6 +63,11 @@ const server = http.createServer((req, res) => {
     if (!statErr && stats.isDirectory()) {
       resolved = path.join(resolved, 'index.html');
     }
+  const ext = path.extname(resolved);
+  const headers = {
+    ...baseHeaders,
+    'Content-Type': MIME[ext] || 'application/octet-stream',
+  };
   fs.readFile(resolved, (err, data) => {
     if (err) {
       if (err.code === 'ENOENT' || err.code === 'EISDIR' || err.code === 'EINVAL') {

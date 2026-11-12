@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { requireTestUser } from '../helpers/env';
 
 test.describe('Signup', () => {
   test.beforeEach(async ({ page }) => {
@@ -54,7 +55,8 @@ test.describe('Signup', () => {
   test('email déjà utilisé', async ({ page }) => {
     await page.click('button[data-action="show-signup"]');
     await page.fill('#signupName', 'Test');
-    await page.fill('#signupEmail', 'ys1onouari@gmail.com');
+    const { email } = requireTestUser();
+    await page.fill('#signupEmail', email);
     await page.fill('#signupWhatsapp', '+212600000000');
     await page.fill('#signupPassword', 'password123');
     await page.fill('#signupConfirm', 'password123');

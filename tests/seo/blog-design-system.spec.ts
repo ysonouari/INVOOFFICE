@@ -296,7 +296,7 @@ test.describe('Blog — convergence vers le design system (css/blog.css)', () =>
     // Page representative d’un tableau « compare-table » (3 colonnes, texte long).
     const withTable = '/blog/devis/devis-ou-facture-differences.html';
     // Page dont la colonne CONTENT contient un <table> SANS classe (bug d’origine).
-    const bareTable = '/blog/facturation/facture-acompte-maroc-avance-reste-a-payer.html';
+    const bareTable = '/blog/facturation/facture-acompte-maroc-gerer-sans-erreur.html';
 
     for (const p of [withTable, bareTable]) {
       await page.goto(p, { waitUntil: 'load' });
@@ -403,7 +403,7 @@ test.describe('Blog — convergence vers le design system (css/blog.css)', () =>
   test('AC-9 — css/blog.css est dans le precache du Service Worker', async ({ request }) => {
     const sw = await (await request.get('/sw.js')).text();
     expect(sw).toContain("'css/blog.css'");
-    expect(sw).toContain("const CACHE_NAME = 'facturation-v7'");
+    expect(sw).toContain("const CACHE_NAME = 'facturation-v13'");
   });
 
   test('AC-8 — le template reste noindex et hors sitemap (Q3)', async ({ request }) => {

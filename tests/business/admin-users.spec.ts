@@ -81,7 +81,7 @@ test.describe('Admin — Users table (Phase E3)', () => {
 
     await page.locator('#userSearch').fill('pending@e3.local');
     await expect(page.locator('#usersTable tbody tr')).toHaveCount(1);
-    await expect(page.locator('#usersTable')).toContainText('Salma Enattente');
+    await expect(page.locator('#usersTable')).toContainText('pending@e3.local');
 
     await page.locator('#userSearch').fill('');
     await expect(page.locator('#usersTable tbody tr')).toHaveCount(3);
@@ -116,6 +116,6 @@ test.describe('Admin — Users table (Phase E3)', () => {
     await refetch;
 
     await expect(page.locator('#usersTable tbody tr')).toHaveCount(3);
-    await expect(page.locator('#usersTable')).toContainText('Faiza Admin');
+    await expect(page.locator('#usersTable')).toContainText('admin@e3.local');
   });
 });

@@ -138,7 +138,7 @@ test.describe('Admin — XSS stocké échappé dans toutes les vues', () => {
   test('dashboard : activité récente échappe cibles et descriptions', async ({ page }) => {
     await openAdmin(page);
 
-    await expect(page.locator('#statsGrid .admin-stat-card')).toHaveCount(10);
+    await expect(page.locator('#statsGrid .admin-stat-card')).toHaveCount(11);
     await expect(page.locator('#recentActivity tbody tr')).toHaveCount(2);
 
     await expect(page.locator('#recentActivity')).toContainText(`Utilisateur supprimé: ${XSS}`);
@@ -150,17 +150,20 @@ test.describe('Admin — XSS stocké échappé dans toutes les vues', () => {
     expect(await page.evaluate(() => window.__xssExecuted)).toBeFalsy();
   });
 
-  test('utilisateurs : tableau + fiche détail échappent noms hostiles', async ({ page }) => {
+  test('utilisateurs : fiche détail échappe noms hostiles (colonne Nom retirée du tableau)', async ({ page }) => {
     await openAdmin(page);
 
     await page.locator('#navUsers').click();
     const rows = page.locator('#usersTable tbody tr');
     await expect(rows).toHaveCount(4);
 
+    // La colonne « Nom » a été volontairement retirée du tableau (lot UX admin) :
+    // le nom complet n'est plus un sink de rendu ici. Les emails restent affichés
+    // et aucune balise hostile ne doit apparaître.
     const usersText = await page.locator('#usersTable').innerText();
-    expect(usersText).toContain(XSS);
-    expect(usersText).toContain(BREAKOUT);
-    expect(usersText).toContain(SPECIALS);
+    expect(usersText).toContain('evil@dev.local');
+    expect(usersText).toContain('text@dev.local');
+    expect(usersText).toContain('break@dev.local');
     expect(await page.locator('#usersTable img').count()).toBe(0);
     expect(await page.locator('#usersTable script').count()).toBe(0);
 

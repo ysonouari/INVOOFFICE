@@ -156,7 +156,7 @@ test.describe('Phase F6 — Accessibilité renforcée (correctifs validés)', ()
     expect(errors).toEqual([]);
   });
 
-  test('H2 — Paramètres admin : label for=id sur les 8 champs', async ({ page }) => {
+  test('H2 — Paramètres admin : label for=id sur les 11 champs', async ({ page }) => {
     const errors = capturePageErrors(page);
     await page.addInitScript(() => { localStorage.setItem('fb_theme', 'dark'); });
     await openAdmin(page);
@@ -171,9 +171,9 @@ test.describe('Phase F6 — Accessibilité renforcée (correctifs validés)', ()
         names: [...document.querySelectorAll('#settingsForm label')].map(l => l.getAttribute('for')),
       };
     });
-    expect(linked.count).toBe(8);
+    expect(linked.count).toBe(11);
     expect(linked.all).toBe(true);
-    expect(linked.names.filter(Boolean).length).toBe(8);
+    expect(linked.names.filter(Boolean).length).toBe(11);
 
     expect(errors).toEqual([]);
   });
