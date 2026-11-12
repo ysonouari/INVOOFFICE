@@ -1,3 +1,5 @@
+import { ICONS } from './icons.js';
+
 export function toggleTheme() {
   const html = document.documentElement;
   const next = html.dataset.theme === 'light' ? 'dark' : 'light';
@@ -16,7 +18,7 @@ export function initThemeToggle(buttonId) {
   if (!btn) return;
   const update = () => {
     const isLight = getCurrentTheme() === 'light';
-    btn.textContent = isLight ? '🌙' : '☀️';
+    btn.innerHTML = isLight ? ICONS.moon : ICONS.sun;
     btn.setAttribute('aria-pressed', String(isLight));
   };
   update();

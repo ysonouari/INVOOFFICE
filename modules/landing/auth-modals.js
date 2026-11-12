@@ -135,7 +135,9 @@ document.addEventListener('click', (e) => {
   if (!input) return;
   const isPassword = input.type === 'password';
   input.type = isPassword ? 'text' : 'password';
-  toggle.textContent = isPassword ? '🙈' : '👁';
+  const use = toggle.querySelector('use');
+  if (use) use.setAttribute('href', isPassword ? '#i-eye-off' : '#i-eye');
+  toggle.setAttribute('aria-label', isPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
 });
 
 // Inscription

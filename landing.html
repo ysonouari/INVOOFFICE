@@ -24,9 +24,9 @@
   <meta name="twitter:image" content="https://www.invooffice.com/icons/og-image-1200x630.png">
   <meta name="theme-color" content="#121a2e">
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
-  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/fonts.css">
@@ -73,11 +73,29 @@
   </script>
 </head>
 <body>
+  <svg class="lp-sprite" aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute;overflow:hidden">
+    <defs>
+      <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></symbol>
+      <symbol id="i-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+      <symbol id="i-wifi-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></symbol>
+      <symbol id="i-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
+      <symbol id="i-whatsapp" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></symbol>
+    </defs>
+  </svg>
+
   <div id="signupOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="signupTitle">
     <div class="modal">
       <div class="modal-head">
         <h2 id="signupTitle">Créer votre compte</h2>
-        <button class="icon-btn" data-action="close-signup" aria-label="Fermer">&times;</button>
+        <button class="icon-btn" data-action="close-signup" aria-label="Fermer"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button>
       </div>
       <form id="signupForm" novalidate>
         <div class="field">
@@ -99,7 +117,7 @@
           <label for="signupPassword">Mot de passe <span style="color:var(--danger)">*</span></label>
           <div style="position:relative;">
             <input type="password" id="signupPassword" required placeholder="6 caractères minimum" minlength="6" autocomplete="new-password" style="padding-right:36px;" aria-describedby="signupPasswordError">
-            <button type="button" class="lp-password-toggle" data-target="signupPassword" aria-label="Afficher le mot de passe" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;">👁</button>
+            <button type="button" class="lp-password-toggle" data-target="signupPassword" aria-label="Afficher le mot de passe" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-eye"/></svg></button>
           </div>
           <div class="field-error" id="signupPasswordError" role="alert"></div>
         </div>
@@ -107,7 +125,7 @@
           <label for="signupConfirm">Confirmer le mot de passe <span style="color:var(--danger)">*</span></label>
           <div style="position:relative;">
             <input type="password" id="signupConfirm" required placeholder="Retapez votre mot de passe" autocomplete="new-password" style="padding-right:36px;" aria-describedby="signupConfirmError">
-            <button type="button" class="lp-password-toggle" data-target="signupConfirm" aria-label="Afficher le mot de passe" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;">👁</button>
+            <button type="button" class="lp-password-toggle" data-target="signupConfirm" aria-label="Afficher le mot de passe" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-eye"/></svg></button>
           </div>
           <div class="field-error" id="signupConfirmError" role="alert"></div>
         </div>
@@ -126,7 +144,7 @@
     <div class="modal">
       <div class="modal-head">
         <h2 id="signinTitle">Se connecter</h2>
-        <button class="icon-btn" data-action="close-signin" aria-label="Fermer">&times;</button>
+        <button class="icon-btn" data-action="close-signin" aria-label="Fermer"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button>
       </div>
       <form id="signinForm" novalidate>
         <div class="field">
@@ -138,7 +156,7 @@
           <label for="signinPassword">Mot de passe</label>
           <div style="position:relative;">
             <input type="password" id="signinPassword" required placeholder="Votre mot de passe" autocomplete="current-password" style="padding-right:36px;" aria-describedby="signinPasswordError">
-            <button type="button" class="lp-password-toggle" data-target="signinPassword" aria-label="Afficher le mot de passe" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;">👁</button>
+            <button type="button" class="lp-password-toggle" data-target="signinPassword" aria-label="Afficher le mot de passe" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-eye"/></svg></button>
           </div>
           <div class="field-error" id="signinPasswordError" role="alert"></div>
         </div>
@@ -160,7 +178,7 @@
     <div class="modal">
       <div class="modal-head">
         <h2 id="blockedTitle">Accès non autorisé</h2>
-        <button class="icon-btn" data-action="close-blocked" aria-label="Fermer">&times;</button>
+        <button class="icon-btn" data-action="close-blocked" aria-label="Fermer"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button>
       </div>
       <div style="text-align:center;padding:20px 0;">
         <p id="blockedMessage" style="font-size:14px;color:var(--muted);line-height:1.7;"></p>
@@ -174,7 +192,7 @@
   <header class="lp-header">
     <div class="lp-header-inner">
       <div class="brand">
-        <div class="logo" aria-hidden="true">IN</div>
+        <img class="lp-logo" src="/icons/icon.svg" width="46" height="46" alt="" aria-hidden="true">
         <div>
           <p class="brand-name">INVOOFFICE</p>
           <p>Facturation intelligente</p>
@@ -184,7 +202,7 @@
         <a href="#features">Tarif</a>
         <a href="#how-it-works">Fonctionnement</a>
         <a href="#faq">FAQ</a>
-        <button class="btn btn-ghost theme-btn" id="themeToggle" aria-label="Basculer le thème clair/sombre"></button>
+        <button class="btn btn-ghost theme-btn" id="themeToggle" type="button" aria-label="Activer le thème sombre"><svg class="icon theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg><svg class="icon theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></button>
         <button class="btn btn-ghost" data-action="show-signin">Connexion</button>
       </nav>
     </div>
@@ -233,39 +251,39 @@
 
             <div class="lp-premium-features">
               <div class="lp-pf-card">
-                <div class="lp-pf-icon">📄</div>
+                <div class="lp-pf-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-file"/></svg></div>
                 <div><strong>Devis &amp; Factures</strong><p>Devis et factures avec vos informations d'entreprise.</p></div>
               </div>
               <div class="lp-pf-card">
-                <div class="lp-pf-icon">📦</div>
+                <div class="lp-pf-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-package"/></svg></div>
                 <div><strong>Bons de livraison</strong><p>Créez vos bons de livraison rapidement.</p></div>
               </div>
               <div class="lp-pf-card">
-                <div class="lp-pf-icon">👥</div>
+                <div class="lp-pf-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-users"/></svg></div>
                 <div><strong>Gestion clients</strong><p>Retrouvez vos clients instantanément.</p></div>
               </div>
               <div class="lp-pf-card">
-                <div class="lp-pf-icon">📥</div>
+                <div class="lp-pf-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-download"/></svg></div>
                 <div><strong>Export PDF</strong><p>Exportez et partagez vos documents en un clic.</p></div>
               </div>
               <div class="lp-pf-card">
-                <div class="lp-pf-icon">📶</div>
+                <div class="lp-pf-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-wifi-off"/></svg></div>
                 <div><strong>Hors-ligne</strong><p>Vos données restent sur votre appareil.</p></div>
               </div>
               <div class="lp-pf-card">
-                <div class="lp-pf-icon">🇲🇦</div>
+                <div class="lp-pf-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-shield-check"/></svg></div>
                 <div><strong>Facturation adaptée au Maroc</strong><p>ICE, IF, TP, RC, CNSS. Adaptez le régime de TVA à votre activité.</p></div>
               </div>
             </div>
 
             <div class="lp-trust">
-              <span class="lp-trust-badge">✓ Adapté au Maroc</span>
-              <span class="lp-trust-badge">✓ TVA selon votre activité</span>
-              <span class="lp-trust-badge">✓ Paiement unique</span>
-              <span class="lp-trust-badge">✓ Fonctionne hors ligne</span>
-              <span class="lp-trust-badge">✓ Données locales</span>
-              <span class="lp-trust-badge">✓ Support WhatsApp</span>
-              <span class="lp-trust-badge">✓ Mises à jour incluses</span>
+              <span class="lp-trust-badge"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Adapté au Maroc</span>
+              <span class="lp-trust-badge"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>TVA selon votre activité</span>
+              <span class="lp-trust-badge"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Paiement unique</span>
+              <span class="lp-trust-badge"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Fonctionne hors ligne</span>
+              <span class="lp-trust-badge"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Données locales</span>
+              <span class="lp-trust-badge"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Support WhatsApp</span>
+              <span class="lp-trust-badge"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Mises à jour incluses</span>
             </div>
           </div>
 
@@ -276,13 +294,13 @@
               <h3>Accès à vie</h3>
               <div class="lp-premium-price">300<span>DH</span></div>
               <ul class="lp-premium-perks">
-                <li>✓ Devis, factures, BL et avoirs en illimité</li>
-                <li>✓ Aucun abonnement</li>
-                <li>✓ Export PDF professionnel</li>
-                <li>✓ Gestion de vos clients</li>
-                <li>✓ TVA adaptée à votre activité</li>
-                <li>✓ Mises à jour incluses</li>
-                <li>✓ Support WhatsApp</li>
+                <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Devis, factures, BL et avoirs en illimité</li>
+                <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Aucun abonnement</li>
+                <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Export PDF professionnel</li>
+                <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Gestion de vos clients</li>
+                <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>TVA adaptée à votre activité</li>
+                <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Mises à jour incluses</li>
+                <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Support WhatsApp</li>
               </ul>
               <div class="lp-premium-tags">
                 <span>Paiement unique</span>
@@ -418,7 +436,7 @@
               <div class="lp-cta-right">
                 <div class="lp-cta-price">300 <span>DH</span></div>
                 <button class="btn btn-accent btn-lg" data-action="show-signup">Créer mon compte</button>
-                <a class="btn btn-whatsapp btn-lg" href="https://wa.me/212782886792" target="_blank" rel="noopener">Contactez-nous sur WhatsApp</a>
+                <a class="btn btn-whatsapp btn-lg" href="https://wa.me/212782886792" target="_blank" rel="noopener"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-whatsapp"/></svg>Contactez-nous sur WhatsApp</a>
               </div>
             </div>
           </div>
@@ -445,7 +463,13 @@
   <script type="module" src="modules/landing/video.js"></script>
   <script type="module" src="modules/landing/faq.js"></script>
   <script type="module" src="modules/landing/auth-modals.js"></script>
-  <script type="module">import{initThemeToggle}from'./js/theme.js';initThemeToggle('themeToggle');</script>
+  <script type="module">
+    if (location.hash === '#signup') {
+      const b = document.querySelector('[data-action="show-signup"]');
+      if (b) b.click();
+    }
+  </script>
+  <script type="module">import{toggleTheme,getCurrentTheme}from'./js/theme.js';const b=document.getElementById('themeToggle');const sync=()=>b.setAttribute('aria-label',getCurrentTheme()==='light'?'Activer le thème sombre':'Activer le thème clair');b.addEventListener('click',()=>{toggleTheme();sync();});sync();</script>
   <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
 </body>
 </html>
