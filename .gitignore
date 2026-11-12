@@ -5,6 +5,7 @@
 !ROADMAP.md
 !AGENTS.md
 !docs/
+!docs/audit/DEMO_ACCESS.md
 
 # Dependencies
 node_modules/
@@ -39,6 +40,9 @@ yarn-error.log*
 *.swp
 *~
 ~$*
+
+# Supabase CLI temp
+supabase/.temp/
 
 # Python (live-test tooling)
 __pycache__/
