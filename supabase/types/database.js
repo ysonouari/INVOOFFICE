@@ -38,6 +38,7 @@
  * @property {string} user_id - UUID, FK → auth.users.id
  * @property {string} plan_id - UUID, FK → plans.id
  * @property {'pending'|'active'|'expired'|'cancelled'} status
+ * @property {boolean} is_demo - TRUE = abonnement de démo (essai 24h)
  * @property {string|null} activated_at - ISO 8601
  * @property {string|null} expires_at - ISO 8601, NULL = à vie
  * @property {string} created_at - ISO 8601
